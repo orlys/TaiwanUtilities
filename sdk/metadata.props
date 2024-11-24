@@ -1,0 +1,18 @@
+<Project>
+  <!-- Additional Metadata --> 
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadata">
+      <_Parameter1>RootNamespace</_Parameter1>
+      <_Parameter2>$(RootNamespace)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadata">
+      <_Parameter1>Language</_Parameter1>
+      <_Parameter2>$(Language)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+  
+</Project>
