@@ -1,5 +1,6 @@
 # TaiwanUtilities
-[![.NET](https://github.com/Orlys/TaiwanUtilities/actions/workflows/ci.yml/badge.svg)](https://github.com/Orlys/TaiwanUtilities/actions/workflows/ci.yml)
+[![.NET](https://github.com/Orlys/TaiwanUtilities/actions/workflows/ci.yml/badge.svg)](https://github.com/Orlys/TaiwanUtilities/actions/workflows/ci.yml) ![NuGet Version](https://img.shields.io/nuget/v/TaiwanUtilities)
+
 > 跟台灣相關的工具庫 
 
 ## 類型一覽
