@@ -35,7 +35,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
 
-    - name: Generate Holiday property
+    - name: Generate 'IsHoliday' property
       run: t4 ${{ github.workspace }}/src/TaiwanUtilities/RocDateTime/RocDateTime.Holidays.tt
 
     - name: Build the project
