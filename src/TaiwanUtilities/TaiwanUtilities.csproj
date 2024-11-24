@@ -27,9 +27,9 @@
     <!-- Pack Settings -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageTags>Taiwan,Utilities,Decimal,Chinese,Parser,Converter,InternationalNumericFormatter,RocDateTime</PackageTags>
-    <PackageVersion>1.0.1</PackageVersion>
-    <!--<PackageVersion>1.0.1-alpha.1</PackageVersion>-->
+    <PackageTags>Taiwan,Utilities,ChineseDecimal,ChineseNumeric,Numeric,Parser,Converter,InternationalNumericFormatter,RocDateTime</PackageTags>
+    <PackageVersion>1.0.2</PackageVersion>
+    <!--<PackageVersion>1.0.3-alpha.1</PackageVersion>-->
 
     <!-- Source Link Settings-->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>

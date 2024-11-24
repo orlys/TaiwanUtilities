@@ -49,7 +49,7 @@ public readonly partial struct RocDateTime
     /// <summary>
     /// 民國年。此值範圍為 1 至 999，若要判斷是否為民國前需使用 <see cref="BeforeEra"/> 屬性判斷。
     /// </summary>
-    public int Year => YearConversion.EraToMinguo(GetRawValue().Year, BeforeEra);
+    public int Year => YearConversion.EraToMinguo(GetRawValue().Year);
     public int Month => GetRawValue().Month;
     public int Day => GetRawValue().Day;
     public int Hour => GetRawValue().Hour;
@@ -172,16 +172,18 @@ public readonly partial struct RocDateTime
 
         private const int EraYearOffset = 1911;
 
-        public static int EraToMinguo(int eraYear, bool beforeEra)
+        public static int EraToMinguo(int eraYear)
         {
-            return eraYear - EraYearOffset + (beforeEra ? 1 : 0);
+            var value = eraYear > EraYearOffset
+                ? eraYear - EraYearOffset
+                : 1 + EraYearOffset - eraYear;
+            return value;
         }
         public static int MinguoToEra(int minGuoYear)
         {
             // 民國前一年為 1911, 民國一(元)年為 1912
-            return minGuoYear + EraYearOffset + (minGuoYear < 0 ? 1 : 0); ;
-
-
+            var value = minGuoYear + EraYearOffset + (minGuoYear < 1 ? 1 : 0);
+            return value;
         }
 
 
