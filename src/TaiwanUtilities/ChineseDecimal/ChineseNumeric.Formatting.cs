@@ -15,7 +15,7 @@ partial struct ChineseNumeric : IFormattable
     }
 
     /// <summary>
-    /// s
+    /// 
     /// </summary>
     /// <param name="format">
     /// <list type="bullet">
