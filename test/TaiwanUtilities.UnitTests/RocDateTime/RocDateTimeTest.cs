@@ -25,58 +25,59 @@ public partial class RocDateTimeTest
     public static void 年份轉換測試()
     {
         Assert.Equal(
-            expected: RocDateTime.Era.AddYears(-2),
-            actual: new RocDateTime(-2, 1, 1));
+            expected: new RocDateTime(-2, 1, 1),
+            actual: RocDateTime.Era.AddYears(-2));
 
         Assert.Equal(
-            expected: RocDateTime.Era.AddYears(-1),
-            actual: new RocDateTime(-1, 1, 1));
+            expected: new RocDateTime(-1, 1, 1),
+            actual: RocDateTime.Era.AddYears(-1));
 
         Assert.Equal(
-            expected: RocDateTime.Era,
-            actual: new RocDateTime(0, 1, 1));
+            expected: new RocDateTime(0, 1, 1),
+            actual: RocDateTime.Era.AddYears(0));
 
         Assert.Equal(
-            expected: RocDateTime.Era,
-            actual: new RocDateTime(1, 1, 1));
+            expected: new RocDateTime(1, 1, 1),
+            actual: RocDateTime.Era.AddYears(0));
 
         Assert.Equal(
-            expected: RocDateTime.Era.AddYears(+1),
-            actual: new RocDateTime(2, 1, 1));
+            expected: new RocDateTime(2, 1, 1),
+            actual: RocDateTime.Era.AddYears(1));
 
         Assert.Equal(
-            expected: RocDateTime.Era.AddYears(+2),
-            actual: new RocDateTime(3, 1, 1));
+            expected: new RocDateTime(3, 1, 1),
+            actual: RocDateTime.Era.AddYears(2));
+
 
 
         var _1913 = RocDateTime.Era.AddYears(+1);
         Assert.Equal(
-            expected: _1913.Year,
-            actual: 2);
+            expected: 2,
+            actual: _1913.Year);
         Assert.False(_1913.BeforeEra);
 
         var _1912 = RocDateTime.Era.AddYears(+0);
         Assert.Equal(
-            expected: _1912.Year,
-            actual: 1);
+            expected: 1,
+            actual: _1912.Year);
         Assert.False(_1912.BeforeEra);
 
         var _1911 = RocDateTime.Era.AddYears(-1);
         Assert.Equal(
-            expected: _1911.Year,
-            actual: 1);
+            expected: 1,
+            actual: _1911.Year);
         Assert.True(_1911.BeforeEra);
 
         var _1910 = RocDateTime.Era.AddYears(-2);
         Assert.Equal(
-            expected: _1910.Year,
-            actual: 2);
+            expected: 2,
+            actual: _1910.Year);
         Assert.True(_1910.BeforeEra);
 
         var _1909 = RocDateTime.Era.AddYears(-3);
         Assert.Equal(
-            expected: _1909.Year,
-            actual: 3);
+            expected: 3,
+            actual: _1909.Year);
         Assert.True(_1909.BeforeEra);
     }
 }
