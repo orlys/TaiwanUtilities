@@ -1,4 +1,8 @@
-﻿namespace TaiwanUtilities;
+﻿// Source: https://github.com/enylin/taiwan-id-validator
+// Commit Hash: 6a673c608e5ec2287a58457a6dc2317f7a03f338
+// Branch: main
+
+namespace TaiwanUtilities;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
