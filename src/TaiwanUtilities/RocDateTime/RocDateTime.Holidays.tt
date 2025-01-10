@@ -147,7 +147,8 @@ internal class Downloader {
         {
             try
             {
-                var url = $"https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/{year}.json";
+            
+                var url = $"https://raw.githubusercontent.com/ruyut/TaiwanCalendar/refs/heads/master/data/{year}.json";
                 var response = await client.GetAsync(url);
 
                 if (!response.IsSuccessStatusCode)
