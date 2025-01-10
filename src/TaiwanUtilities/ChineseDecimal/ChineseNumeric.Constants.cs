@@ -8,7 +8,7 @@ partial struct ChineseNumeric
     : IMinMaxValue<ChineseNumeric>
 #endif
 {
-    public static ChineseNumeric Zero { get; } = new ChineseNumeric(0m);
+    public static ChineseNumeric Zero { get; } = new (0m);
 
     public static ChineseNumeric MaxValue { get; } = new(decimal.MaxValue);
     public static ChineseNumeric MinValue => Zero;

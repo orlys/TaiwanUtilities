@@ -38,13 +38,18 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat> 
   </PropertyGroup>
   
+  <ItemGroup>
+    <Compile Remove="Properties\**" />
+    <EmbeddedResource Remove="Properties\**" />
+    <None Remove="Properties\**" />
+  </ItemGroup>
+  
   
   <!--<PropertyGroup Condition=" '$(CI)' == 'true' ">
     <PackageVersion>$(PackageVersion)</PackageVersion>
   </PropertyGroup>-->
 
   <ItemGroup>
-    <Folder Include="Properties\" />
     <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\" />
     <None Include="..\..\LICENSE" Link="LICENSE" Pack="true" PackagePath="\" />
   </ItemGroup>
