@@ -1,6 +1,5 @@
-﻿// Source: https://github.com/enylin/taiwan-id-validator
-// Commit Hash: 6a673c608e5ec2287a58457a6dc2317f7a03f338
-// Branch: main
+﻿// transpile from https://github.com/enylin/taiwan-id-validator/commit/6a673c608e5ec2287a58457a6dc2317f7a03f338
+// license: MIT
 
 namespace TaiwanUtilities;
 using System.Runtime.CompilerServices;
@@ -12,10 +11,10 @@ using System.Text.RegularExpressions;
 public static partial class TaiwanIdValidator
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool MatchCore(Regex pattern, string input)
+    private static bool MatchCore(Regex pattern, string input, bool caseSensitive = false)
     {
         return
             !string.IsNullOrWhiteSpace(input) &&
-            pattern.IsMatch(input.ToUpperInvariant());
+            pattern.IsMatch(caseSensitive ? input : input.ToUpperInvariant());
     }
 }

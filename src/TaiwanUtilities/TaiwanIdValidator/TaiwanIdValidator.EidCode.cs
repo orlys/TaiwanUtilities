@@ -1,4 +1,7 @@
-﻿namespace TaiwanUtilities;
+﻿// transpile from https://github.com/enylin/taiwan-id-validator/commit/6a673c608e5ec2287a58457a6dc2317f7a03f338
+// license: MIT
+
+namespace TaiwanUtilities;
 using System;
 using System.Text.RegularExpressions;
 
