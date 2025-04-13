@@ -34,3 +34,17 @@ var actual = RocDateTime.Parse("民國貳參年陸月玖日");
 // result: pass
 Assert.Equal<DateTime>(expect, actual);
 ```
+
+### `TaiwanIdValidator` 型別
+- 中華民國身分證字號驗證驗證
+- 新/舊版臺灣地區無戶籍國民、外國人、大陸地區人民及香港或澳門居民之專屬代號驗證
+- 營利事業統一編號驗證 (支援新/舊版統一編號檢查)
+- 自然人憑證編號驗證
+- 電子發票手機條碼驗證
+- 電子發票捐贈碼驗證
+```csharp
+using TaiwanUtilities;
+
+// result: pass
+Assert.True(TaiwanIdValidator.IsIdentityCardNumber("A123456789"));
+```

@@ -27,9 +27,8 @@
     <!-- Pack Settings -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageTags>Taiwan,Utilities,ChineseDecimal,ChineseNumeric,Numeric,Parser,Converter,InternationalNumericFormatter,RocDateTime</PackageTags>
-    <PackageVersion>1.0.2</PackageVersion>
-    <!--<PackageVersion>1.0.3-alpha.1</PackageVersion>-->
+    <PackageTags>Taiwan,Utilities,ChineseDecimal,ChineseNumeric,Numeric,Parser,Converter,InternationalNumericFormatter,RocDateTime,Validator</PackageTags>
+    <PackageVersion>1.0.3</PackageVersion>
 
     <!-- Source Link Settings-->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
@@ -57,7 +56,7 @@
 
 
 
-  <ItemGroup Condition=" $(TargetFramework) == 'netstandard2.0'">
+  <ItemGroup Condition=" $(TargetFramework) == 'netstandard2.0'"> 
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
     <PackageReference Include="Microsoft.Bcl.TimeProvider" Version="8.0.1" />
     <PackageReference Include="System.Collections.Immutable" Version="8.0.0" />
@@ -76,9 +75,7 @@
 
 
   <ItemGroup Condition=" $(TargetFramework) != 'net8' ">
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0">
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
   </ItemGroup>
 
 
