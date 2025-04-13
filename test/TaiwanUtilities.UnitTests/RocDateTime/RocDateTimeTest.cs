@@ -22,6 +22,12 @@ public partial class RocDateTimeTest
     }
 
     [Fact]
+    public static void 國定假日超出範圍判斷()
+    {
+        Assert.False(RocDateTime.Parse("999/12/31").IsHoliday);
+    }
+
+    [Fact]
     public static void 年份轉換測試()
     {
         Assert.Equal(
