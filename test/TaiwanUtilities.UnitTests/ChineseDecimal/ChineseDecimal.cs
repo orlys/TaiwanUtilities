@@ -1,4 +1,5 @@
 ﻿namespace TaiwanUtilities.UnitTests;
+
 using Xunit;
 
 public partial class ChineseNumericTest

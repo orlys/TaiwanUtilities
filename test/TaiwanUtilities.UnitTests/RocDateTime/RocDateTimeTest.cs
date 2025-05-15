@@ -18,7 +18,8 @@ public partial class RocDateTimeTest
     [Fact]
     public static void 國定假日判斷()
     {
-        Assert.True(RocDateTime.Parse("114/1/1").IsHoliday);
+        var y = (DateTime.UtcNow.Year - 1911);
+        Assert.True(RocDateTime.Parse(y + "/1/1").IsHoliday);
     }
 
     [Fact]

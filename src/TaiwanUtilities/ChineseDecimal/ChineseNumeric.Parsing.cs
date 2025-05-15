@@ -291,11 +291,28 @@ partial struct ChineseNumeric
         }
     }
 
-
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="str"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException" />
+    /// <exception cref="ArgumentOutOfRangeException" />
+    /// <exception cref="FormatException" />
     public static ChineseNumeric Parse(string str)
     {
         return Parse(str, null);
     }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="str"></param>
+    /// <param name="formatProvider"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException" />
+    /// <exception cref="ArgumentOutOfRangeException" />
+    /// <exception cref="FormatException" />
     public static ChineseNumeric Parse(string str, IFormatProvider formatProvider)
     {
         _ = ParseCore(str.AsSpan(), out var result, true);
