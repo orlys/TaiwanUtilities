@@ -1,10 +1,12 @@
 ﻿namespace TaiwanUtilities;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
+[DebuggerDisplay("{ToString(),nc}")]
 partial struct RocDateTime : IFormattable
 {
 

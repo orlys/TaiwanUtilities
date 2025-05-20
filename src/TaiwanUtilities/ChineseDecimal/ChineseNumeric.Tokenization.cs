@@ -130,22 +130,22 @@ partial struct ChineseNumeric
         {
             Unknown = new Token(TokenKind.Unknown, 0m);
 
-            Zero = new Token(TokenKind.Zero, 0m, '〇', '0', '零', '０');
+            Zero = new Token(TokenKind.Zero, 0m, '〇', '0', '零', '０', '零');
 
-            One = new Token(TokenKind.Unit, 1m, '一', '1', '壹', '１');
-            Two = new Token(TokenKind.Unit, 2m, '二', '2', '貳', '２', '贰', '兩');
-            Three = new Token(TokenKind.Unit, 3m, '三', '3', '參', '３', '参');
-            Four = new Token(TokenKind.Unit, 4m, '四', '4', '肆', '４');
+            One = new Token(TokenKind.Unit, 1m, '一', '1', '壹', '１', '壱', '弌');
+            Two = new Token(TokenKind.Unit, 2m, '二', '2', '貳', '２', '贰', '兩', '弐', '貮');
+            Three = new Token(TokenKind.Unit, 3m, '三', '3', '參', '３', '参', '叁', '叄', '弎');
+            Four = new Token(TokenKind.Unit, 4m, '四', '4', '肆', '４', '䦉');
             Five = new Token(TokenKind.Unit, 5m, '五', '5', '伍', '５');
             Six = new Token(TokenKind.Unit, 6m, '六', '6', '陸', '６', '陆');
-            Seven = new Token(TokenKind.Unit, 7m, '七', '7', '柒', '７');
+            Seven = new Token(TokenKind.Unit, 7m, '七', '7', '柒', '７', '漆');
             Eight = new Token(TokenKind.Unit, 8m, '八', '8', '捌', '８');
             Nine = new Token(TokenKind.Unit, 9m, '九', '9', '玖', '９');
 
             Unit = new Token(TokenKind.Unknown, 1m, char.MinValue);
-            Ten = new Token(TokenKind.Ten, 10m, '十', '拾');
-            Hundred = new Token(TokenKind.Hundred, 100m, '百', '佰');
-            Thousand = new Token(TokenKind.Thousand, 1000m, '千', '仟');
+            Ten = new Token(TokenKind.Ten, 10m, '十', '拾', '什');
+            Hundred = new Token(TokenKind.Hundred, 100m, '百', '佰', '陌');
+            Thousand = new Token(TokenKind.Thousand, 1000m, '千', '仟', '阡');
 
             TenThousand = new Token(TokenKind.GroupMultipler, value: 10_000m, '萬', '万');
             HundredMillion = new Token(TokenKind.GroupMultipler, value: 100_000_000m, '億', '亿');

@@ -1,9 +1,12 @@
 ﻿namespace TaiwanUtilities;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using System.Text;
 
+[DebuggerDisplay("{ToString(),nc}")]
 partial struct ChineseNumeric : IFormattable
 {
 
@@ -17,17 +20,18 @@ partial struct ChineseNumeric : IFormattable
     /// <summary>
     /// 
     /// </summary>
-    /// <param name="format">
+    /// <param name="format"> 字串格式
     /// <list type="bullet">
-    ///   <item><term>tw</term> <description>繁體小寫中文數字 (例: 一百二十三)</description></item>
-    ///   <item><term>TW</term> <description>繁體大寫中文數字 (例: 壹佰貳拾參)</description></item>
-    ///   <item><term>cn</term> <description>簡體小寫中文數字 (例: 一百二十三)</description></item>
-    ///   <item><term>CN</term> <description>簡體大寫中文數字 (例: 壹佰贰拾参)</description></item>
+    ///   <item><term>tw</term><description>繁體小寫(例: 一百二十三)</description></item>
+    ///   <item><term>TW</term><description>繁體大寫(例: 壹佰貳拾參)</description></item>
+    ///   <item><term>cn</term><description>簡體小寫(例: 一百二十三)</description></item>
+    ///   <item><term>CN</term><description>簡體大寫(例: 壹佰贰拾参)</description></item>
+    ///   <item><term>HW</term><description>半形數字(例: 123)</description></item>
+    ///   <item><term>FW</term><description>全形數字(例: １２３)</description></item>
+    ///   <item><description>遵照 <seealso langword="decimal"/> 的格式設定</description></item>
     /// </list>
-    /// 
     /// </param>
     /// <returns></returns>
-    /// 
     public string ToString(string format)
     {
         return ToString(format, s_formatProvider);
@@ -82,6 +86,8 @@ partial struct ChineseNumeric : IFormattable
                     "tw" or "zh-tw" => Format(cn, FormatterProfile.TraditionalLowercase),
                     "CN" or "zh-CN" => Format(cn, FormatterProfile.SimplifiedUppercase),
                     "cn" or "zh-cn" => Format(cn, FormatterProfile.SimplifiedLowercase),
+                    "FW" or "fw" => Format(cn, FormatterProfile.FullwidthWestern),
+                    "HW" or "hw" => Format(cn, FormatterProfile.HalfwidthWestern),
                     _ => cn.ToString(format, CultureInfo.CurrentCulture),
                 };
             }
@@ -96,7 +102,36 @@ partial struct ChineseNumeric : IFormattable
             }
         }
 
+
         private static string Format(ChineseNumeric input, FormatterProfile profile)
+        {
+            return profile.Mode.HasFlag(FormatterFlags.CrawlStack)
+                ? CrawlStack(input, profile)
+                : DirectTranslate(input, profile);
+        }
+
+        private static string DirectTranslate(ChineseNumeric input, FormatterProfile profile)
+        {
+            var cn = input.GetRawValue();
+
+            var str = cn.ToString("G");
+
+            if (!profile.Mode.HasFlag(FormatterFlags.Mapping))
+            {
+                return str;
+            }
+
+            var sb = new StringBuilder(str.Length);
+
+            foreach (var c in str)
+            {
+                sb.Append(profile.Digits[c - '0']);
+            }
+
+            return sb.ToString();
+        }
+
+        private static string CrawlStack(ChineseNumeric input, FormatterProfile profile)
         {
             var cn = input.GetRawValue();
 
@@ -165,7 +200,7 @@ partial struct ChineseNumeric : IFormattable
                     var value = (input % 10);
                     if (value > 0)
                     {
-                        segments.Push(groupTinyUnits[tiny++]);
+                        segments.Push(groupTinyUnits[++tiny]);
                         segments.Push(digits[(int)value]);
                     }
                     else
@@ -278,86 +313,112 @@ partial struct ChineseNumeric : IFormattable
             }
         }
 
+
+    }
+
+    [Flags]
+    private enum FormatterFlags
+    {
+        Mapping = 1,
+        CrawlStack = 2,
+        DirectTranslate = 4,
     }
 
     private class FormatterProfile
     {
-        /// <summary>
-        /// 繁體中文數字大寫
-        /// </summary>
-        public static FormatterProfile TraditionalUppercase { get; } = new('零', '壹', '貳', '參', '肆', '伍', '陸', '柒', '捌', '玖', '拾', '佰', '仟', '萬', '億', '兆', '京', '垓', '穰', '秭');
 
         /// <summary>
-        /// 繁體中文數字小寫
+        /// 繁體大寫
         /// </summary>
-        public static FormatterProfile TraditionalLowercase { get; } = new('零', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '百', '千', '萬', '億', '兆', '京', '垓', '穰', '秭');
+        public static FormatterProfile TraditionalUppercase { get; } = new(FormatterFlags.CrawlStack, "零", "壹", "貳", "參", "肆", "伍", "陸", "柒", "捌", "玖", "拾", "佰", "仟", "萬", "億", "兆", "京", "垓", "穰", "秭");
 
         /// <summary>
-        /// 簡體中文數字大寫
+        /// 繁體小寫
         /// </summary>
-        public static FormatterProfile SimplifiedUppercase { get; } = new('零', '壹', '贰', '参', '肆', '伍', '陆', '柒', '捌', '玖', '拾', '佰', '仟', '万', '亿', '兆', '京', '垓', '秭', '穰');
+        public static FormatterProfile TraditionalLowercase { get; } = new(FormatterFlags.CrawlStack, "零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "萬", "億", "兆", "京", "垓", "穰", "秭");
 
         /// <summary>
-        /// 簡體中文數字小寫
+        /// 簡體大寫
         /// </summary>
-        public static FormatterProfile SimplifiedLowercase { get; } = new('零', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '百', '千', '万', '亿', '兆', '京', '垓', '秭', '穰');
+        public static FormatterProfile SimplifiedUppercase { get; } = new(FormatterFlags.CrawlStack, "零", "壹", "贰", "参", "肆", "伍", "陆", "柒", "捌", "玖", "拾", "佰", "仟", "万", "亿", "兆", "京", "垓", "秭", "穰");
+
+        /// <summary>
+        /// 簡體小寫
+        /// </summary>
+        public static FormatterProfile SimplifiedLowercase { get; } = new(FormatterFlags.CrawlStack, "零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "万", "亿", "兆", "京", "垓", "秭", "穰");
+
+        /// <summary>
+        /// 全形數字
+        /// </summary>
+        public static FormatterProfile FullwidthWestern { get; } = new(FormatterFlags.DirectTranslate | FormatterFlags.Mapping, "０", "１", "２", "３", "４", "５", "６", "７", "８", "９", null, null, null, null, null, null, null, null, null, null);
+
+        /// <summary>
+        /// 半形數字
+        /// </summary>
+        public static FormatterProfile HalfwidthWestern { get; } = new(FormatterFlags.DirectTranslate, "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", null, null, null, null, null, null, null, null, null, null);
+
+
 
 
         internal IReadOnlyList<string> Digits { get; }
         internal IReadOnlyList<string> GroupTinyUnits { get; }
         internal IReadOnlyList<string> GroupUnits { get; }
+        public FormatterFlags Mode { get; }
 
         public FormatterProfile(
-            char zero,
-            char one,
-            char two,
-            char three,
-            char four,
-            char five,
-            char six,
-            char seven,
-            char eight,
-            char nine,
-            char ten,
-            char hundred,
-            char thousand,
-            char tenThousand,
-            char hundredMillion,
-            char trillion,
-            char tenQuadrillion,
-            char hundredQuintillion,
-            char septillion,
-            char tenOctillion)
+            FormatterFlags mode,
+            string zero,
+            string one,
+            string two,
+            string three,
+            string four,
+            string five,
+            string six,
+            string seven,
+            string eight,
+            string nine,
+            string ten,
+            string hundred,
+            string thousand,
+            string tenThousand,
+            string hundredMillion,
+            string trillion,
+            string tenQuadrillion,
+            string hundredQuintillion,
+            string septillion,
+            string tenOctillion)
         {
+            Mode = mode;
+
             Digits = [
-                zero.ToString(),
-                one.ToString(),
-                two.ToString(),
-                three.ToString(),
-                four.ToString(),
-                five.ToString(),
-                six.ToString(),
-                seven.ToString(),
-                eight.ToString(),
-                nine.ToString()
+                zero,
+                one,
+                two,
+                three,
+                four,
+                five,
+                six,
+                seven,
+                eight,
+                nine
             ];
 
             GroupTinyUnits = [
                 null!,
-                ten.ToString(),
-                hundred.ToString(),
-                thousand.ToString()
+                ten,
+                hundred,
+                thousand
             ];
 
             GroupUnits = [
                 null!,
-                tenThousand.ToString(),
-                hundredMillion.ToString(),
-                trillion.ToString(),
-                tenQuadrillion.ToString(),
-                hundredQuintillion.ToString(),
-                septillion.ToString(),
-                tenOctillion.ToString()
+                tenThousand,
+                hundredMillion,
+                trillion,
+                tenQuadrillion,
+                hundredQuintillion,
+                septillion,
+                tenOctillion
             ];
         }
 

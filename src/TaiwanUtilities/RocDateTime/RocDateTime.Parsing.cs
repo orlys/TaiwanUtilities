@@ -142,7 +142,8 @@ partial struct RocDateTime
 
     public static RocDateTime Parse(ReadOnlySpan<char> s)
     {
-        return Parse(s, null);
+        _ = ParseCore(s, true, out var rocDateTime);
+        return rocDateTime;
     }
     public static RocDateTime Parse(ReadOnlySpan<char> s, IFormatProvider provider)
     { 
@@ -152,7 +153,7 @@ partial struct RocDateTime
 
     public static bool TryParse(ReadOnlySpan<char> s, [MaybeNullWhen(false)] out RocDateTime result)
     {
-        return TryParse(s, null, out result);
+        return ParseCore(s, false, out result);
     }
     public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider provider, [MaybeNullWhen(false)] out RocDateTime result)
     {

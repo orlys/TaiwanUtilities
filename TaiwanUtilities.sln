@@ -9,12 +9,29 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaiwanUtilities", "src\Taiw
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D1F19B0A-5D1B-410D-AD36-E56A7D106032}"
 	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
 		.github\workflows\ci.yml = .github\workflows\ci.yml
 		LICENSE = LICENSE
 		sdk\metadata.props = sdk\metadata.props
 		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaiwanUtilities.Playground", "test\TaiwanUtilities.Playground\TaiwanUtilities.Playground.csproj", "{CCF4AFDE-56E1-4292-8490-7DC38CCE6EFF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{8C3F2752-F5EE-4FB2-B70E-A6E47095B1A0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{8694642A-D268-4464-A2D5-B8194B52945F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "data", "data", "{78BF5FF5-690B-4135-B5A7-6218AE8B2FF8}"
+	ProjectSection(SolutionItems) = preProject
+		data\zipcode.json = data\zipcode.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{2D875B24-ADC7-4FC5-A2DC-E1904695E889}"
+	ProjectSection(SolutionItems) = preProject
+		docs\experimental.md = docs\experimental.md
 	EndProjectSection
 EndProject
 Global
@@ -31,9 +48,18 @@ Global
 		{01F5EFEC-A02F-4228-BC5F-2AD3F6444807}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{01F5EFEC-A02F-4228-BC5F-2AD3F6444807}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{01F5EFEC-A02F-4228-BC5F-2AD3F6444807}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CCF4AFDE-56E1-4292-8490-7DC38CCE6EFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CCF4AFDE-56E1-4292-8490-7DC38CCE6EFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CCF4AFDE-56E1-4292-8490-7DC38CCE6EFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CCF4AFDE-56E1-4292-8490-7DC38CCE6EFF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7B207870-4147-4B3F-8395-AD08A7D8C7E8} = {8694642A-D268-4464-A2D5-B8194B52945F}
+		{01F5EFEC-A02F-4228-BC5F-2AD3F6444807} = {8C3F2752-F5EE-4FB2-B70E-A6E47095B1A0}
+		{CCF4AFDE-56E1-4292-8490-7DC38CCE6EFF} = {8694642A-D268-4464-A2D5-B8194B52945F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D25B48D9-AA58-4D62-AEBF-8485722890E4}

@@ -101,7 +101,7 @@ public partial class TaiwanIdValidatorTest
     public void 身分證號碼測試()
     {
         // 正確的身分證號碼
-        Assert.True(IsIdentityCardNumber("A123456789"));
+        Assert.True(IsIdentityCardNumber("Y190290172"));
         Assert.True(IsIdentityCardNumber("F131104093"));
         Assert.True(IsIdentityCardNumber("O158238845"));
         Assert.True(IsIdentityCardNumber("N116247806"));
@@ -111,7 +111,7 @@ public partial class TaiwanIdValidatorTest
 
         // 錯誤的身分證號碼
         Assert.False(IsIdentityCardNumber("A12345678"));
-        Assert.False(IsIdentityCardNumber("a123456789"));
+        Assert.False(IsIdentityCardNumber("y190290172"));
         Assert.False(IsIdentityCardNumber("A123456788"));
         Assert.False(IsIdentityCardNumber("F131104091"));
         Assert.False(IsIdentityCardNumber("O158238842"));
