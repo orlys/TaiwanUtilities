@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-
+using System.Runtime.InteropServices;
 
 [ExcludeFromCodeCoverage]
 [DebuggerNonUserCode]
@@ -17,7 +17,7 @@ internal static class Guard
     public static void ThrowIfLessThanOrEqual<T>(
         T value,
         T other,
-        [CallerArgumentExpression("value")] string? name = null)
+        [CallerArgumentExpression(nameof(value))] string? name = null)
         where T : struct, IComparable<T>
     {
 #if NET8_0_OR_GREATER
@@ -33,7 +33,7 @@ internal static class Guard
     }
 
     public static void ThrowIfNegative<T>(T value,
-        [CallerArgumentExpression("value")] string? name = null)
+        [CallerArgumentExpression(nameof(value))] string? name = null)
 #if NET7_0_OR_GREATER
         where T : INumberBase<T>
 #else
@@ -53,9 +53,31 @@ internal static class Guard
     }
 
 
+    public static void ThrowIfZero<T>(T value,
+        [CallerArgumentExpression(nameof(value))] string? name = null)
+#if NET7_0_OR_GREATER
+        where T : INumberBase<T>
+#else
+        where T : struct, IComparable<T>
+#endif
+    {
+
+#if NET7_0_OR_GREATER
+        ArgumentOutOfRangeException.ThrowIfZero(value, name);
+        return;
+#else
+        var v = default(T);
+        if(Unsafe.As<T, int>(ref v) is 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(value), "The argument must be a non-zero number.");
+        }
+#endif
+    }
+
+
     public static void ThrowIfNull<T>(
         [NotNull] T? value,
-        [CallerArgumentExpression("value")] string? name = null)
+        [CallerArgumentExpression(nameof(value))] string? name = null)
         where T : class
     {
         if (value is null)
@@ -66,7 +88,7 @@ internal static class Guard
 
     public static void ThrowIfNull(
         [NotNull] string? value,
-        [CallerArgumentExpression("value")] string? name = null)
+        [CallerArgumentExpression(nameof(value))] string? name = null)
     {
         if (value is null)
         {
@@ -76,9 +98,25 @@ internal static class Guard
     }
 
 
+    public static void ThrowIfNullOrEmpty(
+        [NotNull] string? value,
+        [CallerArgumentExpression(nameof(value))] string? name = null)
+    {
+        if (value is null)
+        {
+            throw new ArgumentNullException(name);
+        }
+
+        if (value.Length is 0)
+        {
+            throw new ArgumentException("Argument cannot be empty.", name);
+        }
+    }
+
+
     public static void ThrowIfNullOrWhiteSpace(
        [NotNull] string? value,
-       [CallerArgumentExpression("value")] string? name = null)
+       [CallerArgumentExpression(nameof(value))] string? name = null)
     {
 #if NET8_0_OR_GREATER
         ArgumentException.ThrowIfNullOrWhiteSpace(value, name);

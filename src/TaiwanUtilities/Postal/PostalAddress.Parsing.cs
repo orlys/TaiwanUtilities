@@ -2,7 +2,6 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
@@ -31,10 +30,14 @@ partial class PostalAddress
     private static Regex GetPattern() => s_patternCache.Value;
 #endif
 
+
+
     public static bool TryParse(
         string str,
-        [NotNullWhen(true)] out PostalAddress postalAddress) =>
-        ParseCore(str.AsSpan(), false, out postalAddress);
+        [NotNullWhen(true)] out PostalAddress postalAddress)
+    {
+        return ParseCore(str.AsSpan(), false, out postalAddress);
+    }
 
     public static PostalAddress Parse(string s)
     {
@@ -85,7 +88,7 @@ partial class PostalAddress
                village: NullIfEmpty(village),
                neighbor: NullIfEmpty(neighbor),
                area: string.Concat(county, town, village, neighbor),
-               street: NullIfEmpty(road),
+               road: NullIfEmpty(road),
                lane: NullIfEmpty(lane),
                alley: NullIfEmpty(alley),
                subAlley: NullIfEmpty(subAlley),
@@ -139,22 +142,10 @@ partial class PostalAddress
         string s,
         string format)
     {
-        var v = Regex.Replace(
+        return Regex.Replace(
             input: s,
             pattern: @"[0-9\uFF10-\uFF19零〇一二三四五六七八九十百千]+",
-            evaluator: (m) =>
-            {
-                var i = ChineseNumeric.Parse(m.Value);
-                if((int)i == 18)
-                {
-                    
-                }
-                var x =  i.ToString(format);
-
-                return x;
-            });
-
-        return v;
+            evaluator: (m) => ChineseNumeric.Parse(m.Value).ToString(format));
     }
 
     private static bool CheckIsTemporary(string s)

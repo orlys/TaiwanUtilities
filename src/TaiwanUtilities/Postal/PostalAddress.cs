@@ -9,14 +9,6 @@ using System.Runtime.CompilerServices;
 /// </summary>
 public sealed partial class PostalAddress
 {
-    private static string EnsureNotNull(string? value, [CallerArgumentExpression(nameof(value))] string paramName = default)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentNullException(paramName);
-        }
-        return value;
-    }
 
     private PostalAddress(
         string county,
@@ -24,7 +16,7 @@ public sealed partial class PostalAddress
         string? village,
         string? neighbor,
         string area,
-        string? street,
+        string? road,
         string? lane,
         string? alley,
         string? subAlley,
@@ -34,13 +26,13 @@ public sealed partial class PostalAddress
         string address,
         bool isTemporary)
     {
-        County = EnsureNotNull(county);
-        Town = EnsureNotNull(town);
+        County = county;
+        Town = town;
         Village = village;
         Neighbor = neighbor;
-        Area = EnsureNotNull(area);
+        Area = area;
 
-        Road = street;
+        Road = road;
         Lane = lane;
         Alley = alley;
         SubAlley = subAlley;
@@ -86,7 +78,7 @@ public sealed partial class PostalAddress
     /// 巷名
     /// </summary>
     public string? Lane { get; }
-    
+
     /// <summary>
     /// 弄號
     /// </summary>
@@ -101,7 +93,7 @@ public sealed partial class PostalAddress
     /// 戶號
     /// </summary>
     public string? Number { get; }
-    
+
     /// <summary>
     /// 樓
     /// </summary>
@@ -116,7 +108,7 @@ public sealed partial class PostalAddress
     /// 地址
     /// </summary>
     public string? Address { get; }
-     
+
 
     /// <summary>
     /// 是否為臨時地址
@@ -136,20 +128,21 @@ public sealed partial class PostalAddress
     //{
     //    None,
     //    County = 2,
-    //    Township = 4,
+    //    Town = 4,
     //    Village = 8,
-    //    Neighborhood = 16,
+    //    Neighbor = 16,
 
-    //    Region = County | Township | Village | Neighborhood,
+    //    Area = County | Town | Village | Neighbor,
 
-    //    Street = 32,
+    //    Road = 32,
     //    Lane = 64,
     //    Alley = 128,
     //    SubAlley = 256,
     //    Number = 512,
     //    Floor = 1024,
+    //    Room = 2048,
 
-    //    Address = Street | Lane | Alley | SubAlley | Number | Floor,
+    //    Address = Road | Lane | Alley | SubAlley | Number | Floor | Room,
     //}
 
     private string GetRawValue()

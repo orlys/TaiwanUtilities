@@ -28,7 +28,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>Taiwan,Utilities,ChineseDecimal,ChineseNumeric,Numeric,Parser,Converter,InternationalNumericFormatter,RocDateTime,Validator</PackageTags>
-    <PackageVersion>1.0.3</PackageVersion>
+    <PackageVersion>1.0.4</PackageVersion>
 
     <!-- Source Link Settings-->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
@@ -44,6 +44,10 @@
     <EmbeddedResource Remove="Postal\data\**" />
     <None Remove="Properties\**" />
     <None Remove="Postal\data\**" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\data\zipcode.json" Link="Postal\zipcode.json" />
   </ItemGroup>
   
   
