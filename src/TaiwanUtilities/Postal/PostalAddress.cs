@@ -2,11 +2,18 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 /// <summary>
 /// 地址
 /// </summary>
+
+#if NET8_0_OR_GREATER
+[Experimental(nameof(PostalAddress), UrlFormat = "https://github.com/orlys/TaiwanUtilities/blob/master/docs/experimental.md#{0}")]
+#else
+[Obsolete("This API is experimental and subject to change.", false)]
+#endif
 public sealed partial class PostalAddress
 {
 
@@ -147,6 +154,14 @@ public sealed partial class PostalAddress
 
     private string GetRawValue()
     {
-        return Area + Address;
+        return Value;
+    }
+
+    public string Value
+    {
+        get
+        {
+            return Area + Address;
+        }
     }
 }

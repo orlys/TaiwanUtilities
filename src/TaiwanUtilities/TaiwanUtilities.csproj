@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\sdk\metadata.props" />
-  
+
   <PropertyGroup>
-    
+
     <TargetFrameworks>net8;net6;netstandard2.0</TargetFrameworks>
     <Description>與台灣相關的常用通用邏輯相關的函式庫</Description>
     <Authors>Orlys</Authors>
@@ -34,9 +34,9 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat> 
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <Compile Remove="Properties\**" />
     <Compile Remove="Postal\data\**" />
@@ -45,25 +45,26 @@
     <None Remove="Properties\**" />
     <None Remove="Postal\data\**" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <EmbeddedResource Include="..\..\data\zipcode.json" Link="Postal\zipcode.json" />
   </ItemGroup>
-  
-  
-  <!--<PropertyGroup Condition=" '$(CI)' == 'true' ">
-    <PackageVersion>$(PackageVersion)</PackageVersion>
-  </PropertyGroup>-->
+
+
+  <ItemGroup Condition=" '$(CI)' != 'true' ">
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>TaiwanUtilities.Playground</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\" />
     <None Include="..\..\LICENSE" Link="LICENSE" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 
 
 
-  <ItemGroup Condition=" $(TargetFramework) == 'netstandard2.0'"> 
+  <ItemGroup Condition=" $(TargetFramework) == 'netstandard2.0'">
     <PackageReference Include="System.Text.Json" Version="8.*" />
     <PackageReference Include="Microsoft.Bcl.TimeProvider" Version="8.*" />
     <PackageReference Include="System.Collections.Immutable" Version="8.*" />
@@ -94,9 +95,9 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>RocDateTime.Holidays.tt</DependentUpon>
     </Compile>
-    <None Update="RocDateTime\RocDateTime.Holidays.tt"> 
-      <Generator>TextTemplatingFileGenerator</Generator> 
-      <LastGenOutput>RocDateTime.Holidays.g.cs</LastGenOutput> 
+    <None Update="RocDateTime\RocDateTime.Holidays.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>RocDateTime.Holidays.g.cs</LastGenOutput>
     </None>
   </ItemGroup>
 

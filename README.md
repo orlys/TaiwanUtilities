@@ -50,7 +50,9 @@ Assert.True(TaiwanIdValidator.IsIdentityCardNumber("Y190290172"));
 ```
 
 
-### 感謝
+
+
+## 感謝
 - `TaiwanIdValidator` 原始版本為 [enylin/taiwan-id-validator](https://github.com/enylin/taiwan-id-validator)，該儲存庫採用 [MIT](https://github.com/enylin/taiwan-id-validator/blob/main/LICENSE) 授權條款  
 <!--
 - `ZipCode` 的點子來自 [recca0120/twzipcode](https://github.com/recca0120/twzipcode) 這個儲存庫，該儲存庫採用 [MIT](https://github.com/recca0120/twzipcode/blob/main/LICENSE) 授權條款  

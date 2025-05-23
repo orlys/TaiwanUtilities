@@ -1,11 +1,35 @@
-﻿namespace TaiwanUtilities.Internal;
+﻿// source: https://github.com/kpol/trie/
+
+//
+// MIT License
+// 
+// Copyright (c) 2020 Kirill Polishchuk
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+namespace TaiwanUtilities.Internals;
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 internal class CharTrieNode(char key)
 {
@@ -39,6 +63,7 @@ internal class CharTrieNode(char key)
 
     public override string ToString() => $"Key: {Key}";
 }
+
 internal class TerminalCharTrieNode(char key) : CharTrieNode(key)
 {
     public override bool IsTerminal => true;
@@ -47,12 +72,14 @@ internal class TerminalCharTrieNode(char key) : CharTrieNode(key)
 
     public override string ToString() => $"Key: {Key}, Word: {Word}";
 }
+
 internal readonly record struct Character(char? Char)
 {
     public static Character Any { get; } = new();
 
     public static implicit operator Character(char c) => new(c);
 }
+
 internal sealed class Trie : ICollection<string>, IReadOnlyCollection<string>
 {
     private readonly IEqualityComparer<char> _comparer;
@@ -440,6 +467,7 @@ internal sealed class Trie : ICollection<string>, IReadOnlyCollection<string>
         return null;
     }
 }
+
 internal sealed class TrieDictionary<TValue>(IEqualityComparer<char>? comparer = null)
     : IDictionary<string, TValue>, IReadOnlyDictionary<string, TValue>
 {
