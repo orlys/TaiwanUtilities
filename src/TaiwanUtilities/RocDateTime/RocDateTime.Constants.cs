@@ -3,6 +3,7 @@ using System;
 
 #if NET7_0_OR_GREATER
 using System.Numerics;
+using System.Runtime.Serialization;
 #endif
 
 partial struct RocDateTime
@@ -41,6 +42,7 @@ partial struct RocDateTime
     /// <remarks>
     /// 這個值是西元 2910/12/31 23:59:59.9999999
     /// </remarks>
+    /// 
     public static RocDateTime MaxValue { get; }
 
     /// <summary>
@@ -75,7 +77,6 @@ partial struct RocDateTime
     /// <summary>
     /// 表示今日
     /// </summary>
+    
     public static RocDateTime Today => Now.Date;
-
-
 }

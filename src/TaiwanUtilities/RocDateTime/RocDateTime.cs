@@ -1,6 +1,5 @@
 ﻿namespace TaiwanUtilities;
 using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 /// <summary>
@@ -8,6 +7,7 @@ using System.Runtime.CompilerServices;
 /// </summary>
 public readonly partial struct RocDateTime
 {
+
     private readonly DateTimeOffset _value;
     private DateTimeOffset GetRawValue()
     {
@@ -35,8 +35,8 @@ public readonly partial struct RocDateTime
 
     public DateTime ToDateTime() => GetRawValue().DateTime;
     public DateTimeOffset ToDateTimeOffset() => GetRawValue();
-    public static RocDateTime FromDateTime(DateTime dt) => new RocDateTime(dt);
-    public static RocDateTime FromDateTimeOffset(DateTimeOffset dto) => new RocDateTime(dto);
+    public static RocDateTime From(DateTime dt) => new RocDateTime(dt);
+    public static RocDateTime From(DateTimeOffset dto) => new RocDateTime(dto);
 
 
     #region Properties 
@@ -63,13 +63,15 @@ public readonly partial struct RocDateTime
     /// <summary>
     /// 表示今日。
     /// </summary>
+#if NET472_OR_GREATER
+[System.Web.Script.Serialization.ScriptIgnore]
+#endif
     public RocDateTime Date => GetRawValue().Date;
 
     /// <summary>
     /// 表示一週中的星期名稱。
     /// </summary>
     public DayOfWeek DayOfWeek => GetRawValue().DayOfWeek;
-
 
     #endregion
 

@@ -24,11 +24,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{8C3F2752-F5E
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{8694642A-D268-4464-A2D5-B8194B52945F}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "data", "data", "{78BF5FF5-690B-4135-B5A7-6218AE8B2FF8}"
-	ProjectSection(SolutionItems) = preProject
-		data\zipcode.json = data\zipcode.json
-	EndProjectSection
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{2D875B24-ADC7-4FC5-A2DC-E1904695E889}"
 	ProjectSection(SolutionItems) = preProject
 		docs\experimental.md = docs\experimental.md

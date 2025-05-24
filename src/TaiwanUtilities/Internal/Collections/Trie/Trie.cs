@@ -78,6 +78,20 @@ internal readonly record struct Character(char? Char)
     public static Character Any { get; } = new();
 
     public static implicit operator Character(char c) => new(c);
+
+    public static Character[] FromString(string s)
+    {
+        if (string.IsNullOrEmpty(s))
+        {
+            return [];
+        }
+        var characters = new Character[s.Length];
+        for (int i = 0; i < s.Length; i++)
+        {
+            characters[i] = s[i];
+        }
+        return characters;
+    }
 }
 
 internal sealed class Trie : ICollection<string>, IReadOnlyCollection<string>

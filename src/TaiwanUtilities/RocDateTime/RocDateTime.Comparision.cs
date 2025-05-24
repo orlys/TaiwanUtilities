@@ -8,11 +8,11 @@ using System.Numerics;
 partial struct RocDateTime :
 #if NET7_0_OR_GREATER
     IComparisonOperators<RocDateTime, RocDateTime, bool>,
-    IComparisonOperators<RocDateTime, DateTime, bool>,
-    IComparisonOperators<RocDateTime, DateTimeOffset, bool>,
+    //IComparisonOperators<RocDateTime, DateTime, bool>,
+    //IComparisonOperators<RocDateTime, DateTimeOffset, bool>,
     IEqualityOperators<RocDateTime, RocDateTime, bool>,
-    IEqualityOperators<RocDateTime, DateTime, bool>,
-    IEqualityOperators<RocDateTime, DateTimeOffset, bool>,
+    //IEqualityOperators<RocDateTime, DateTime, bool>,
+    //IEqualityOperators<RocDateTime, DateTimeOffset, bool>,
 #endif
     IComparable<RocDateTime>,
     IEquatable<RocDateTime>,
@@ -66,22 +66,22 @@ partial struct RocDateTime :
     public static bool operator <=(RocDateTime left, RocDateTime right) => left.GetRawValue() <= right.GetRawValue();
     public static bool operator >=(RocDateTime left, RocDateTime right) => left.GetRawValue() >= right.GetRawValue();
 
-    public static bool operator >(RocDateTime left, DateTime right) => left.GetRawValue() > right;
-    public static bool operator <(RocDateTime left, DateTime right) => left.GetRawValue() < right;
-    public static bool operator >=(RocDateTime left, DateTime right) => left.GetRawValue() >= right;
-    public static bool operator <=(RocDateTime left, DateTime right) => left.GetRawValue() <= right;
+    //public static bool operator >(RocDateTime left, DateTime right) => left.GetRawValue() > right;
+    //public static bool operator <(RocDateTime left, DateTime right) => left.GetRawValue() < right;
+    //public static bool operator >=(RocDateTime left, DateTime right) => left.GetRawValue() >= right;
+    //public static bool operator <=(RocDateTime left, DateTime right) => left.GetRawValue() <= right;
 
-    public static bool operator >(RocDateTime left, DateTimeOffset right) => left.GetRawValue() > right;
-    public static bool operator <(RocDateTime left, DateTimeOffset right) => left.GetRawValue() < right;
-    public static bool operator <=(RocDateTime left, DateTimeOffset right) => left.GetRawValue() <= right;
-    public static bool operator >=(RocDateTime left, DateTimeOffset right) => left.GetRawValue() >= right;
+    //public static bool operator >(RocDateTime left, DateTimeOffset right) => left.GetRawValue() > right;
+    //public static bool operator <(RocDateTime left, DateTimeOffset right) => left.GetRawValue() < right;
+    //public static bool operator <=(RocDateTime left, DateTimeOffset right) => left.GetRawValue() <= right;
+    //public static bool operator >=(RocDateTime left, DateTimeOffset right) => left.GetRawValue() >= right;
 
     public static bool operator ==(RocDateTime left, RocDateTime right) => left.GetRawValue() == right.GetRawValue();
     public static bool operator !=(RocDateTime left, RocDateTime right) => left.GetRawValue() != right.GetRawValue();
 
-    public static bool operator ==(RocDateTime left, DateTime right) => left.GetRawValue() == right;
-    public static bool operator !=(RocDateTime left, DateTime right) => left.GetRawValue() != right;
+    //public static bool operator ==(RocDateTime left, DateTime right) => left.GetRawValue() == right;
+    //public static bool operator !=(RocDateTime left, DateTime right) => left.GetRawValue() != right;
 
-    public static bool operator ==(RocDateTime left, DateTimeOffset right) => left.GetRawValue() == right;
-    public static bool operator !=(RocDateTime left, DateTimeOffset right) => left.GetRawValue() != right;
+    //public static bool operator ==(RocDateTime left, DateTimeOffset right) => left.GetRawValue() == right;
+    //public static bool operator !=(RocDateTime left, DateTimeOffset right) => left.GetRawValue() != right;
 }

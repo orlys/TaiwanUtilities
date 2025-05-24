@@ -28,24 +28,21 @@ partial struct RocDateTime : IFormattable
 
     public string ToString(IFormatProvider formatProvider)
     {
-        return ToString(null, formatProvider ?? s_formatProvider);
+        return ToString(null, s_formatProvider);
     }
 
     public string ToString(string format, IFormatProvider formatProvider)
     {
-        formatProvider ??= s_formatProvider;
 
-        if (formatProvider.GetFormat(typeof(Formatter)) is Formatter formatter)
-        {
-            return formatter.Format(format, this, formatProvider);
-        }
+        var formatter = (Formatter)s_formatProvider.GetFormat(typeof(Formatter));
 
-        return GetRawValue().ToString(format, formatProvider);
+        return formatter.Format(format, this, formatProvider);
+
     }
 
     private static readonly IFormatProvider s_formatProvider = new FormatProvider();
 
-     
+
 
 
     private class FormatProvider : IFormatProvider

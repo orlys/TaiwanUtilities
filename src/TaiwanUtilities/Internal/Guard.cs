@@ -66,8 +66,9 @@ internal static class Guard
         ArgumentOutOfRangeException.ThrowIfZero(value, name);
         return;
 #else
-        var v = default(T);
-        if(Unsafe.As<T, int>(ref v) is 0)
+        var v = default(T); 
+        var isZero = value.CompareTo(v) == 0 || (value is BigInteger big && big.IsZero);
+        if(isZero)
         {
             throw new ArgumentOutOfRangeException(nameof(value), "The argument must be a non-zero number.");
         }

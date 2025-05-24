@@ -42,7 +42,8 @@ partial struct RocDateTime
     {
         return ParseCore(s.AsSpan(), false, out rocDateTime);
     }
-     
+
+
     private readonly static ISet<char> s_validCharacters = FrozenSet.ToFrozenSet([
         ' ', '\t',
         '/','-',':','^',
