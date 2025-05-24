@@ -26,7 +26,7 @@
 
     <!-- Pack Settings -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReadmeFile>readme.md</PackageReadmeFile>
     <PackageTags>Taiwan,Utilities,ChineseDecimal,ChineseNumeric,Numeric,Parser,Converter,InternationalNumericFormatter,RocDateTime,Validator</PackageTags>
     <PackageVersion>1.0.5</PackageVersion>
 
