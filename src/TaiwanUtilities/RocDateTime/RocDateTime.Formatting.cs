@@ -75,7 +75,7 @@ partial struct RocDateTime : IFormattable
         {
             public override bool IsMatch(string format)
             {
-                return format is "yyy";
+                return format is "yyy" or "YYY";
             }
 
             public override string Process(Formatter formatter, string format, RocDateTime rdt)
