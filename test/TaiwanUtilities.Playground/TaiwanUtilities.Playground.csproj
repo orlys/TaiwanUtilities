@@ -4,6 +4,7 @@
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
     <TargetFramework>net472</TargetFramework>
+    <LangVersion>preview</LangVersion>
     <!--<TargetFramework>net8.0</TargetFramework>-->
     <!--<ImplicitUsings>enable</ImplicitUsings>-->
     <!--<Nullable>enable</Nullable>--> 
@@ -11,6 +12,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\TaiwanUtilities\TaiwanUtilities.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Web.Extensions" />
+    <PackageReference Include="Polyfill" Version="*">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
   </ItemGroup> 
  
 

@@ -27,7 +27,7 @@
     <!-- Pack Settings -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression> 
     <PackageTags>Taiwan,Utilities,ChineseDecimal,ChineseNumeric,Numeric,Parser,Converter,InternationalNumericFormatter,RocDateTime,Validator,ZipCode</PackageTags>
-    <PackageVersion>1.0.5</PackageVersion>
+    <PackageVersion>1.0.6</PackageVersion>
 
     <!-- Source Link Settings-->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
@@ -50,6 +50,7 @@
 
 
   <ItemGroup Condition=" $(TargetFramework) == 'net472' ">
+    <PackageReference Include="Lib.Harmony" Version="2.3.6" />
     <Reference Include="System.Web.Extensions" />
     <PackageReference Include="System.Text.Json" Version="8.*" />
     <PackageReference Include="Microsoft.Bcl.TimeProvider" Version="8.*" />

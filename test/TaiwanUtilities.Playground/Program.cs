@@ -1,22 +1,31 @@
-﻿using TaiwanUtilities;
+﻿using HarmonyLib;
+
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Text;
+using System.Web.Script.Serialization;
+
+using TaiwanUtilities;
 
 static class Program
 {
     static void Main(string[] args)
-    {
-
-        //var c = TypeDescriptor.GetConverter(typeof(RocDateTime));
-
-        //var javaScriptSerializer = new JavaScriptSerializer { RecursionLimit = 3 };
-        
-        //var v = javaScriptSerializer.Serialize(RocDateTime.Now);
-        //Console.WriteLine(v);
-
-        var r = ZipCode.Find("台北市中區");
-
-        //Console.WriteLine(Convert.ToString((object)RocDateTime.Now, CultureInfo.CurrentCulture));
-        return;
+    { 
+        var javaScriptSerializer = new JavaScriptSerializer();
+        var vx = new { D = RocDateTime.MinValue };
+        var v = javaScriptSerializer.Serialize(new A
+        {
+            D = RocDateTime.Now
+        });
+        Console.WriteLine(v);
+         
     }
+
+}
+class A
+{
+    public RocDateTime D { get; set; }
 }
 
 

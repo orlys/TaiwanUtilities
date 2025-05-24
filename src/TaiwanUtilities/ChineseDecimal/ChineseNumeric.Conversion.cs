@@ -6,6 +6,9 @@ using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+#if NETFRAMEWORK
+[Serializable]
+#endif
 [JsonConverter(typeof(JsonConverter))]
 [TypeConverter(typeof(TypeConverter))]
 partial struct ChineseNumeric : ISerializable

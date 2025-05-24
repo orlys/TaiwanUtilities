@@ -17,6 +17,10 @@ partial struct RocDateTime
         MaxValue = new DateTimeOffset(ticks: 918306719999999999L, TimeZoneOffset);
         MinValue = new DateTimeOffset(ticks: 287797536000000001L, TimeZoneOffset);
         Era = new DateTimeOffset(ticks: 603052128000000000L, TimeZoneOffset);
+
+#if NET472_OR_GREATER
+        PatchJavaScriptSerializer();
+#endif
     }
 
     /// <summary>
