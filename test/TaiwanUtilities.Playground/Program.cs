@@ -2,30 +2,35 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Web.Script.Serialization;
 
 using TaiwanUtilities;
 
+
 static class Program
 {
     static void Main(string[] args)
     { 
-        var javaScriptSerializer = new JavaScriptSerializer();
-        var vx = new { D = RocDateTime.MinValue };
+        var javaScriptSerializer = new JavaScriptSerializer(); 
         var v = javaScriptSerializer.Serialize(new A
         {
-            D = RocDateTime.Now
+            D = PostalAddress.Parse("臺北市中正區信義路二段100號")
         });
+
         Console.WriteLine(v);
-         
+
+        var a = javaScriptSerializer.Deserialize<A>(v);
+        Console.WriteLine(a.D.Road);
     }
 
 }
 class A
 {
-    public RocDateTime D { get; set; }
+    public PostalAddress D { get; set; }
 }
 
 

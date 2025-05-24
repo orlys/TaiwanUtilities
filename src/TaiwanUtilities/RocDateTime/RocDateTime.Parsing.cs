@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
@@ -17,6 +18,7 @@ partial struct RocDateTime
     [GeneratedRegex(@"^(?<DATE>(民[國国])?(?<BEFORE_ERA>[前\-\^])?(?<YEAR>[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九][百佰]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]?[百佰]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[百佰]?[0０零〇]?[十拾]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[年\/\-]?(?<MONTH>[1１壹一][十拾]?[0-2０１２零〇壹一貳贰二]|[0０零〇]?[十拾]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[月\-\/]?(?<DAY>[3３參参三][十拾]?[0-1]|[1-2１２壹一貳贰二][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])([號号日])?)(?<TIME>(?<HOUR>[2２貳贰二][十拾]?[0-3０１２３零〇壹一貳贰二參参三]|[1１壹一][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[時點点时\-\:]?((?<MINUTE>[1-5１２３４５壹一貳贰二參参三肆四伍五][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[分\-\:]?)??((?<SECOND>[1-5１２３４５壹一貳贰二參参三肆四伍五][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])秒?)??)??$", RegexOptions.ExplicitCapture | RegexOptions.Compiled | RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.Singleline, 1000)]
     private static partial Regex GetPattern();
 #else
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private static readonly Lazy<Regex> s_patternCache = new (()=>new (@"^(?<DATE>(民[國国])?(?<BEFORE_ERA>[前\-\^])?(?<YEAR>[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九][百佰]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]?[百佰]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[百佰]?[0０零〇]?[十拾]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[年\/\-]?(?<MONTH>[1１壹一][十拾]?[0-2０１２零〇壹一貳贰二]|[0０零〇]?[十拾]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[月\-\/]?(?<DAY>[3３參参三][十拾]?[0-1]|[1-2１２壹一貳贰二][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])([號号日])?)(?<TIME>(?<HOUR>[2２貳贰二][十拾]?[0-3０１２３零〇壹一貳贰二參参三]|[1１壹一][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[時點点时\-\:]?((?<MINUTE>[1-5１２３４５壹一貳贰二參参三肆四伍五][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[分\-\:]?)??((?<SECOND>[1-5１２３４５壹一貳贰二參参三肆四伍五][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])秒?)??)??$", RegexOptions.ExplicitCapture | RegexOptions.Compiled | RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.Singleline, TimeSpan.FromSeconds(1)));
     private static Regex GetPattern() => s_patternCache.Value;
 #endif
@@ -44,6 +46,7 @@ partial struct RocDateTime
     }
 
 
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly static ISet<char> s_validCharacters = FrozenSet.ToFrozenSet([
         ' ', '\t',
         '/','-',':','^',
@@ -159,77 +162,6 @@ partial struct RocDateTime
     public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider provider, [MaybeNullWhen(false)] out RocDateTime result)
     {
         return ParseCore(s, false, out result);
-    }
-
-
-
-
-
-    //private static readonly Lazy<Regex> s_dateTimePattern = new Lazy<Regex>(() =>
-    //{
-    //    // lang = regex
-    //    var pattern = """
-    //            ^
-    //            (?<DATE>
-    //                (民[國国])?
-    //                (?<BEFORE_ERA>[前\-\^])?
-    //                (?<YEAR>
-    //                    [1-9][百佰]?[0-9][十拾]?[0-9]|
-    //                    [0-9]?[百佰]?[1-9][十拾]?[0-9]|
-    //                    [0]?[百佰]?[0]?[十拾]?[1-9]
-    //                )
-    //                [年\/\-]?
-    //                (?<MONTH>[1][十拾]?[0-2]|[0]?[十拾]?[1-9])
-    //                [月\-\/]?
-    //                (?<DAY>[3][十拾]?[0-1]|[1-2][十拾]?[0-9]|[0]?[十拾]?[1-9])
-    //                ([號号日])?
-    //            )
-    //            (?<TIME>
-    //                (?<HOUR>[2][十拾]?[0-3]|[1][十拾]?[0-9]|[0]?[十拾]?[0-9])
-    //                [時點点时\-\:]?
-
-    //                (
-    //                    (?<MINUTE>[1-5][十拾]?[0-9]|[0]?[十拾]?[0-9])
-    //                    [分\-\:]?
-    //                )??
-
-    //                (
-    //                    (?<SECOND>[1-5][十拾]?[0-9]|[0]?[十拾]?[0-9])
-    //                    秒?
-    //                )??
-    //            )??
-    //            $
-    //            """;
-
-    //    var patternString = pattern
-    //        .Replace(Environment.NewLine, null)
-    //        .Replace(" ", null)
-    //        .Replace("\t", null)
-    //        .Replace("[0]", "[0０零〇]")
-    //        .Replace("[1]", "[1１壹一]")
-    //        .Replace("[2]", "[2２貳二]")
-    //        .Replace("[3]", "[3３参三]")
-    //        .Replace("[0-2]", "[0-2０１２零〇壹一貳二]")
-    //        .Replace("[0-3]", "[0-3０１２３零〇壹一貳二参三]")
-    //        .Replace("[0-9]", "[0-9０１２３４５６７８９零〇壹一貳二参三肆四伍五陸六柒七捌八玖九]")
-    //        .Replace("[1-2]", "[1-2１２壹一貳二]")
-    //        .Replace("[1-5]", "[1-5１２３４５壹一貳二参三肆四伍五]")
-    //        .Replace("[1-9]", "[1-9１２３４５６７８９壹一貳二参三肆四伍五陸六柒七捌八玖九]")
-    //        ;
-
-    //    var dateTimePattern = new Regex(patternString,
-    //        RegexOptions.ExplicitCapture | RegexOptions.Compiled | RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-    //    return dateTimePattern;
-    //});
-    //internal static Regex DateTimePattern => s_dateTimePattern.Value;
-
-
-    ////// 日期+時間
-    ////internal readonly static Regex DateTimePattern = new Regex(
-    ////    @"^(?<DATE>(民[國国])?(?<BEFORE_ERA>[前\-\^])?(?<YEAR>[1-9][0-9]{2}|[0-9]?[1-9][0-9]|0{0,2}[1-9])[年\/\-]?(?<MONTH>1[0-2]|0?[1-9])[月\-\/]?(?<DAY>3[0-1]|[12][0-9]|0?[1-9])([號号日])?)(?<TIME>(?<HOUR>2[0-3]|1[0-9]|0?[0-9])[時點点时\-\:]?(?<MINUTE>[1-5][0-9]|0?[0-9])[分\-\:]?((?<SECOND>[1-5][0-9]|0?[0-9])秒?)??)??$",
-    ////    //@"^(?<DATE>(民[國国])?(?<BEFORE_ERA>[前\-\^])?(?<YEAR>[1-9][0-9]{2}|[0-9]?[1-9][0-9]|0{0,2}[1-9])[年\/\-]?(?<MONTH>1[0-2]|0?[1-9])[月\-\/]?(?<DAY>3[0-1]|[12][0-9]|0?[1-9])([號号日])?)(?<TIME>(?<HOUR>2[0-3]|1[0-9]|0?[0-9])[時點点时\-\:]?(?<MINUTE>[1-5][0-9]|0?[0-9])[分\-\:]?(?<SECOND>[1-5][0-9]|0?[0-9])(秒?))??$",
-    ////    RegexOptions.ExplicitCapture | RegexOptions.Compiled | RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
+    } 
 }
 

@@ -63,9 +63,6 @@ public readonly partial struct RocDateTime
     /// <summary>
     /// 表示今日。
     /// </summary>
-#if NET472_OR_GREATER
-[System.Web.Script.Serialization.ScriptIgnore]
-#endif
     public RocDateTime Date => GetRawValue().Date;
 
     /// <summary>

@@ -17,17 +17,12 @@
     <RepositoryType>git</RepositoryType>
     <NoWarn>CS1591;CS1685;CS0618;CS1574;CS1571;CS1573;CS8632</NoWarn>
     <DocumentationFile>bin\$(Configuration)\$(MSBuildProjectName).xml</DocumentationFile>
-    <!--<PackageIcon>icon.png</PackageIcon>-->
     <DebugSymbols>true</DebugSymbols>
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <LangVersion>preview</LangVersion>
 
 
-    <!-- Pack Settings -->
-    <PackageLicenseExpression>MIT</PackageLicenseExpression> 
-    <PackageTags>Taiwan,Utilities,ChineseDecimal,ChineseNumeric,Numeric,Parser,Converter,InternationalNumericFormatter,RocDateTime,Validator,ZipCode</PackageTags>
-    <PackageVersion>1.0.6</PackageVersion>
 
     <!-- Source Link Settings-->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
@@ -36,16 +31,24 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="Postal\zipcode.json" />
-  </ItemGroup>
+  <!-- Pack Settings -->
+  <PropertyGroup>
+    <PackageReadmeFile>readme.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>Taiwan,ChineseNumeric,InternationalNumericFormatter,RocDateTime,Validator,ZipCode</PackageTags>
+    <PackageVersion>1.0.7</PackageVersion>
+    <!--<PackageIcon>icon.png</PackageIcon>-->
+  </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\..\data\zipcode.json" Link="Postal\zipcode.json" />
-  </ItemGroup> 
-  <ItemGroup>
+    <None Include="..\..\readme.md" Link="readme.md" Pack="true" PackagePath="\" />
     <None Include="..\..\LICENSE" Link="LICENSE" Pack="true" PackagePath="\" />
   </ItemGroup>
+ 
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\data\zipcode.json" Link="Postal\zipcode.json" />
+  </ItemGroup>
+
 
 
 

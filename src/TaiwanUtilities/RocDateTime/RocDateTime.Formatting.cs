@@ -40,10 +40,8 @@ partial struct RocDateTime : IFormattable
 
     }
 
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private static readonly IFormatProvider s_formatProvider = new FormatProvider();
-
-
-
 
     private class FormatProvider : IFormatProvider
     {
@@ -162,7 +160,7 @@ partial struct RocDateTime : IFormattable
 
             public override string Process(Formatter formatter, string format, RocDateTime rdt)
             {
-                return formatter.Format("yyy/MM/dd hh:mm:ss", rdt, null);
+                return formatter.Format("YYY/MM/dd hh:mm:ss", rdt, null);
             }
         }
 
@@ -197,9 +195,14 @@ partial struct RocDateTime : IFormattable
 
             private static string GetChineseString(object cn, string fmt, RocDateTime rdt)
             {
-                if (fmt is "yyy")
+                if (fmt is "YYY")
                 {
                     return string.Format("民國{0}{1}年", rdt.BeforeEra ? "前" : null, cn);
+                }
+
+                if (fmt is "yyy")
+                {
+                    return string.Format("{0}{1}年", rdt.BeforeEra ? "前" : null, cn);
                 }
 
                 if (fmt is "MM")
@@ -247,6 +250,7 @@ partial struct RocDateTime : IFormattable
             public override string Process(Formatter formatter, string format, RocDateTime rdt)
             {
                 var v = new StringBuilder(format)
+                    .Replace("YYY", formatter.Format("YYY", rdt, null))
                     .Replace("yyy", formatter.Format("yyy", rdt, null))
                     .Replace("MM", formatter.Format("MM", rdt, null))
                     .Replace("dd", formatter.Format("dd", rdt, null))
@@ -263,17 +267,17 @@ partial struct RocDateTime : IFormattable
         public Formatter()
         {
             _processors = new List<FormatProcessor>
-        {
-            new YearProcessor(),
-            new MonthProcessor(),
-            new DayProcessor(),
-            new HourProcessor(),
-            new MinuteProcessor(),
-            new SecondProcessor(),
-            new FullDateTimeProcessor(),
-            new ChineseProcessor(),
-            new CompositedProcessor()
-        };
+            {
+                new YearProcessor(),
+                new MonthProcessor(),
+                new DayProcessor(),
+                new HourProcessor(),
+                new MinuteProcessor(),
+                new SecondProcessor(),
+                new FullDateTimeProcessor(),
+                new ChineseProcessor(),
+                new CompositedProcessor()
+            };
         }
 
 

@@ -1,5 +1,6 @@
 ﻿namespace TaiwanUtilities;
 using System;
+using System.Diagnostics;
 
 #if NET7_0_OR_GREATER
 using System.Numerics;
@@ -17,10 +18,7 @@ partial struct RocDateTime
         MaxValue = new DateTimeOffset(ticks: 918306719999999999L, TimeZoneOffset);
         MinValue = new DateTimeOffset(ticks: 287797536000000001L, TimeZoneOffset);
         Era = new DateTimeOffset(ticks: 603052128000000000L, TimeZoneOffset);
-
-#if NET472_OR_GREATER
-        PatchJavaScriptSerializer();
-#endif
+ 
     }
 
     /// <summary>
@@ -38,6 +36,8 @@ partial struct RocDateTime
     /// 取得時間提供者
     /// </summary>
     public static TimeProvider TimeProvider => s_timeProvider ??= TimeProvider.System;
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private static volatile TimeProvider s_timeProvider;
 
     /// <summary>

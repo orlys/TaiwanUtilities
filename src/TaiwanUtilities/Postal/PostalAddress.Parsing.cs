@@ -1,6 +1,7 @@
 ﻿namespace TaiwanUtilities;
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -26,6 +27,7 @@ partial class PostalAddress
     [GeneratedRegex(@"^(?<AREA>(((?<COUNTY>[\u4E00-\u9FFF]{2}市)(?<TOWN>[\u4E00-\u9FFF]{1,3}區)(?<VILLAGE>[\u4E00-\u9FFF]{2,3}里)?)|((?<COUNTY>[\u4E00-\u9FFF]{2,3}縣)((?<TOWN>[\u4E00-\u9FFF]{1,3}[市鎮](?<VILLAGE>[\u4E00-\u9FFF]{2,4}里)?)|(?<TOWN>[\u4E00-\u9FFF]{2,3}鄉)(?<VILLAGE>[\u4E00-\u9FFF]{2,3}村)?)))(?<NEIGHBOR>(?<=\<VILLAGE>)[0-9\uFF10-\uFF19零〇一二三四五六七八九十百]{1,5}?鄰)?)((?<ROAD>((?#林道規則)([桃竹中投嘉高屏花東宜]|嘉南|中苗)專([1\uFF11][0-9\uFF10-\uFF19]|[1-9\uFF11-\uFF19]|[一二三四五六七八九十]?)((?<OF>[\-‧·之])([1\uFF11][0-9\uFF10-\uFF19]|[1-9\uFF11-\uFF19]|[一二三四五六七八九十]?))?線)|((?#路與街道規則)([^\u5DF7\u5F04\u8855\u8856\u8857\u8DEF\s\d\uFF10-\uFF19]|[\u4E00-\u5DF6\u5DF8-\u5F03\u5F05-\u8854\u8857-\u9FFF]){1,12}?([路街]|林道|大道)(?<SECTION>([^\u5DF7\u5F04\u8855\u8856\s\d\uFF10-\uFF19]|[\u4E00-\u5DF6\u5DF8-\u5F03\u5F05-\u8854\u8857-\u9FFF]){0,4}?([1\uFF11][0-9\uFF10-\uFF19]|[1-9\uFF11-\uFF19]|[一二三四五六七八九十]?)段)?)?)|(?<LOCATION>(?#地區名稱規則)([^\u5DF7\u5F04\u8855\u8856\s\d\uFF10-\uFF19]|[\u4E00-\u5DF6\u5DF8-\u5F03\u5F05-\u8854\u8857-\u9FFF]){1,6}?[^\u5DF7\u5F04\u8855\u8856\s\d\uFF10-\uFF19]))?(?<LOCATION>(?#地區名稱規則)(?<!\<LOCATION>)([^\u5DF7\u5F04\u8855\u8856\s\d\uFF10-\uFF19]|[\u4E00-\u5DF6\u5DF8-\u5F03\u5F05-\u8854\u8857-\u9FFF]){1,6}?[^\u5DF7\u5F04\u8855\u8856\s\d\uFF10-\uFF19])?(?<LANE>((([1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,3}|[零〇一二三四五六七八九十百千]{1,7}?)((?<OF>[\-‧·之])([1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,2}|[零〇一二三四五六七八九十百]{1,5}?)){0,3}?|([^\u5DF7\u5F04\u8855\u8856\u8857\u8DEF\u9053\s\d\uFF10-\uFF19a-zA-Z]|[\u4E00-\u5DF6\u5DF8-\u5F03\u5F05-\u8854\u8858-\u8DEE\u8DF0-\u9FFF]){1,6}?)巷))?(?<ALLEY>(?<=\<LANE>)(([1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,2}|[零〇一二三四五六七八九十百]{1,5}?)((?<OF>[\-‧·之])([1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,2}|[零〇一二三四五六七八九十百]{1,5}?)){0,3}?|([^\u5DF7\u5F04\u8855\u8856\u8857\u8DEF\u9053\s\d\uFF10-\uFF19a-zA-Z]|[\u4E00-\u5DF6\u5DF8-\u5F03\u5F05-\u8854\u8858-\u8DEE\u8DF0-\u9FFF]){2,5}?)弄)?(?<SUB_ALLEY>(?<=\<ALLEY>)([1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,2}|[零〇一二三四五六七八九十百]{1,5}?)((?<OF>[\-‧·之])([1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,2}|[零〇一二三四五六七八九十百]{1,5}?)){0,3}?[衖衕])?(?<LOCATION>(?#地區名稱規則)(?<!\<LOCATION>)([^\u5DF7\u5F04\u8855\u8856\s\d\uFF10-\uFF19]|[\u4E00-\u5DF6\u5DF8-\u5F03\u5F05-\u8854\u8857-\u9FFF]){1,6}?[^\u5DF7\u5F04\u8855\u8856\s\d\uFF10-\uFF19])?(?<NUMBER>(?<NUMBER_TYPE>[臨])?([1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,3}|[零〇一二三四五六七八九十百千]{1,7}?)(?<SUB_NUMBER>(?<OF>[\-‧·之])[1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,3}|[零〇一二三四五六七八九十百千]{1,7}?)?號?)?(?<FLOOR>(?<=號)(地下([1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,1}|[一二三四五六七八九十]{1,3}?)|([1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,2}|[零〇一二三四五六七八九十百]{1,5}?))樓)?(?<ROOM>(?<=\<FLOOR>|號)([\-之‧·]?(([^\u5DF7\u5F04\u8855\u8856\s\d\uFF10-\uFF19]|[\u4E00-\u5DF6\u5DF8-\u5F03\u5F05-\u8854\u8857-\u9FFFa-zA-Z\d])+?)))?$", RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace, 1000)]
     private static partial Regex GetPattern();
 #else
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private static readonly Lazy<Regex> s_patternCache = new(() => new(@"^(?<AREA>(((?<COUNTY>[\u4E00-\u9FFF]{2}市)(?<TOWN>[\u4E00-\u9FFF]{1,3}區)(?<VILLAGE>[\u4E00-\u9FFF]{2,3}里)?)|((?<COUNTY>[\u4E00-\u9FFF]{2,3}縣)((?<TOWN>[\u4E00-\u9FFF]{1,3}[市鎮](?<VILLAGE>[\u4E00-\u9FFF]{2,4}里)?)|(?<TOWN>[\u4E00-\u9FFF]{2,3}鄉)(?<VILLAGE>[\u4E00-\u9FFF]{2,3}村)?)))(?<NEIGHBOR>(?<=\<VILLAGE>)[0-9\uFF10-\uFF19零〇一二三四五六七八九十百]{1,5}?鄰)?)((?<ROAD>((?#林道規則)([桃竹中投嘉高屏花東宜]|嘉南|中苗)專([1\uFF11][0-9\uFF10-\uFF19]|[1-9\uFF11-\uFF19]|[一二三四五六七八九十]?)((?<OF>[\-‧·之])([1\uFF11][0-9\uFF10-\uFF19]|[1-9\uFF11-\uFF19]|[一二三四五六七八九十]?))?線)|((?#路與街道規則)([^\u5DF7\u5F04\u8855\u8856\u8857\u8DEF\s\d\uFF10-\uFF19]|[\u4E00-\u5DF6\u5DF8-\u5F03\u5F05-\u8854\u8857-\u9FFF]){1,12}?([路街]|林道|大道)(?<SECTION>([^\u5DF7\u5F04\u8855\u8856\s\d\uFF10-\uFF19]|[\u4E00-\u5DF6\u5DF8-\u5F03\u5F05-\u8854\u8857-\u9FFF]){0,4}?([1\uFF11][0-9\uFF10-\uFF19]|[1-9\uFF11-\uFF19]|[一二三四五六七八九十]?)段)?)?)|(?<LOCATION>(?#地區名稱規則)([^\u5DF7\u5F04\u8855\u8856\s\d\uFF10-\uFF19]|[\u4E00-\u5DF6\u5DF8-\u5F03\u5F05-\u8854\u8857-\u9FFF]){1,6}?[^\u5DF7\u5F04\u8855\u8856\s\d\uFF10-\uFF19]))?(?<LOCATION>(?#地區名稱規則)(?<!\<LOCATION>)([^\u5DF7\u5F04\u8855\u8856\s\d\uFF10-\uFF19]|[\u4E00-\u5DF6\u5DF8-\u5F03\u5F05-\u8854\u8857-\u9FFF]){1,6}?[^\u5DF7\u5F04\u8855\u8856\s\d\uFF10-\uFF19])?(?<LANE>((([1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,3}|[零〇一二三四五六七八九十百千]{1,7}?)((?<OF>[\-‧·之])([1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,2}|[零〇一二三四五六七八九十百]{1,5}?)){0,3}?|([^\u5DF7\u5F04\u8855\u8856\u8857\u8DEF\u9053\s\d\uFF10-\uFF19a-zA-Z]|[\u4E00-\u5DF6\u5DF8-\u5F03\u5F05-\u8854\u8858-\u8DEE\u8DF0-\u9FFF]){1,6}?)巷))?(?<ALLEY>(?<=\<LANE>)(([1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,2}|[零〇一二三四五六七八九十百]{1,5}?)((?<OF>[\-‧·之])([1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,2}|[零〇一二三四五六七八九十百]{1,5}?)){0,3}?|([^\u5DF7\u5F04\u8855\u8856\u8857\u8DEF\u9053\s\d\uFF10-\uFF19a-zA-Z]|[\u4E00-\u5DF6\u5DF8-\u5F03\u5F05-\u8854\u8858-\u8DEE\u8DF0-\u9FFF]){2,5}?)弄)?(?<SUB_ALLEY>(?<=\<ALLEY>)([1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,2}|[零〇一二三四五六七八九十百]{1,5}?)((?<OF>[\-‧·之])([1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,2}|[零〇一二三四五六七八九十百]{1,5}?)){0,3}?[衖衕])?(?<LOCATION>(?#地區名稱規則)(?<!\<LOCATION>)([^\u5DF7\u5F04\u8855\u8856\s\d\uFF10-\uFF19]|[\u4E00-\u5DF6\u5DF8-\u5F03\u5F05-\u8854\u8857-\u9FFF]){1,6}?[^\u5DF7\u5F04\u8855\u8856\s\d\uFF10-\uFF19])?(?<NUMBER>(?<NUMBER_TYPE>[臨])?([1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,3}|[零〇一二三四五六七八九十百千]{1,7}?)(?<SUB_NUMBER>(?<OF>[\-‧·之])[1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,3}|[零〇一二三四五六七八九十百千]{1,7}?)?號?)?(?<FLOOR>(?<=號)(地下([1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,1}|[一二三四五六七八九十]{1,3}?)|([1-9\uFF11-\uFF19][0-9\uFF10-\uFF19]{0,2}|[零〇一二三四五六七八九十百]{1,5}?))樓)?(?<ROOM>(?<=\<FLOOR>|號)([\-之‧·]?(([^\u5DF7\u5F04\u8855\u8856\s\d\uFF10-\uFF19]|[\u4E00-\u5DF6\u5DF8-\u5F03\u5F05-\u8854\u8857-\u9FFFa-zA-Z\d])+?)))?$",  RegexOptions.ExplicitCapture | RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace, TimeSpan.FromSeconds(1)));
     private static Regex GetPattern() => s_patternCache.Value;
 #endif
@@ -69,8 +71,8 @@ partial class PostalAddress
         {
             var county = m.Groups["COUNTY"].Value;
             var town = m.Groups["TOWN"].Value;
-            var village = m.Groups["VILLAGE"].Value;
-            var neighbor = NormalizeDigits(m.Groups["NEIGHBOR"].Value, "hw").PadLeft(3, '0');
+            var village = NullIfEmpty(m.Groups["VILLAGE"].Value);
+            var neighbor = NullIfEmpty(NormalizeDigits(m.Groups["NEIGHBOR"].Value, "hw").PadLeft(3, '0'));
 
             var road = NormalizeDigits(NormalizeOfSymbol(m.Groups["ROAD"].Value), "tw");
             var lane = NormalizeDigits(NormalizeOfSymbol(m.Groups["LANE"].Value), "fw");
@@ -85,8 +87,8 @@ partial class PostalAddress
             postalAddress = new PostalAddress(
                county,
                town,
-               village: NullIfEmpty(village),
-               neighbor: NullIfEmpty(neighbor),
+               village: village,
+               neighbor: neighbor,
                area: string.Concat(county, town, village, neighbor),
                road: NullIfEmpty(road),
                lane: NullIfEmpty(lane),

@@ -124,7 +124,7 @@ partial struct ChineseNumeric
     }
 
 
-    private class Token
+    private sealed class Token
     {
         static Token()
         {

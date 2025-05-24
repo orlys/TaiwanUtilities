@@ -181,7 +181,11 @@ partial struct RocDateTime
         }}
     }}
 
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private static readonly Lazy<Downloader> s_downloader = new Lazy<Downloader>(() => new Downloader());
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private static readonly ConcurrentDictionary<int, ISet<DateTime>> s_cache = new ConcurrentDictionary<int, ISet<DateTime>>();
 
     private static DateTime ParseToDateTime(string s)
@@ -189,6 +193,7 @@ partial struct RocDateTime
         return DateTime.ParseExact(s, ""yyyyMMdd"", null);
     }}
 
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private static readonly ISet<DateTime> s_holidays = FrozenSet.ToFrozenSet(new []{{
 ");
     }

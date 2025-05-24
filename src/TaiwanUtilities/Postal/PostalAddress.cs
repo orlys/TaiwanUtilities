@@ -124,7 +124,17 @@ public sealed partial class PostalAddress
 
     private static string? NullIfEmpty(string s)
     {
-        return string.IsNullOrEmpty(s) ? null : s;
+        if(string.IsNullOrEmpty(s))
+        {
+            return null;
+        }
+
+        if(int.TryParse(s, out var v) && v == 0)
+        {
+            return null;
+        }
+
+        return s;
     }
 
     ///// <summary>
