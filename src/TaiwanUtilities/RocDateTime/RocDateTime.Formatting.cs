@@ -1,340 +1,168 @@
 ﻿namespace TaiwanUtilities;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
-using System.Text;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 [DebuggerDisplay("{ToString(),nc}")]
 partial struct RocDateTime : IFormattable
 {
 
-    public override string ToString()
-    {
-        return ToString(null, s_formatProvider);
-    }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="format"></param>
-    /// <example>ch(yyy)ch(MM)ch(dd) -> </example>
-    /// <returns></returns>
-    public string ToString(string format)
-    {
-        return ToString(format, s_formatProvider);
-    }
-
-    public string ToString(IFormatProvider formatProvider)
-    {
-        return ToString(null, s_formatProvider);
-    }
-
-    public string ToString(string format, IFormatProvider formatProvider)
-    {
-
-        var formatter = (Formatter)s_formatProvider.GetFormat(typeof(Formatter));
-
-        return formatter.Format(format, this, formatProvider);
-
-    }
-
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private static readonly IFormatProvider s_formatProvider = new FormatProvider();
 
-    private class FormatProvider : IFormatProvider
+    public override string ToString()
     {
-        private Formatter _formatter;
-
-        public FormatProvider()
-        {
-            _formatter = new Formatter();
-        }
-        public object GetFormat(Type formatType)
-        {
-            if (formatType == typeof(Formatter))
-            {
-                return _formatter;
-            }
-            return CultureInfo.GetCultureInfo("zh-TW");
-        }
+        return ToStringCore(null, s_formatProvider);
+    }
+    public string ToString(string format)
+    {
+        return ToStringCore(format, s_formatProvider);
+    }
+    public string ToString(IFormatProvider formatProvider)
+    {
+        return ToStringCore(null, s_formatProvider);
+    }
+    public string ToString(string format, IFormatProvider formatProvider)
+    {
+        return ToStringCore(format, s_formatProvider);
     }
 
-    private class Formatter : ICustomFormatter
+    private string ToStringCore(string format, IFormatProvider formatProvider)
     {
-        private List<FormatProcessor> _processors;
+        var str = (ICustomFormatter)formatProvider.GetFormat(typeof(ICustomFormatter));
+        return str.Format(format, this, formatProvider);
+    }
 
-        private abstract class FormatProcessor
+
+    private partial class FormatProvider : IFormatProvider, ICustomFormatter
+    {
+        public string Format(string format, object arg, IFormatProvider fp)
         {
-            public abstract bool IsMatch(string format);
-            public abstract string Process(Formatter formatter, string format, RocDateTime rdt);
-        }
-
-        private class YearProcessor : FormatProcessor
-        {
-            public override bool IsMatch(string format)
+            return arg switch
             {
-                return format is "yyy" or "YYY";
-            }
-
-            public override string Process(Formatter formatter, string format, RocDateTime rdt)
-            {
-                return string.Format(s_taiwanCultureInfo, "{0:d3}", rdt.BeforeEra ? -rdt.Year : rdt.Year);
-            }
-        }
-
-        private class MonthProcessor : FormatProcessor
-        {
-            public override bool IsMatch(string format)
-            {
-                return format is "MM";
-            }
-
-            public override string Process(Formatter formatter, string format, RocDateTime rdt)
-            {
-                return string.Format(s_taiwanCultureInfo, "{0:d2}", rdt.Month);
-            }
-        }
-
-        private class DayProcessor : FormatProcessor
-        {
-            public override bool IsMatch(string format)
-            {
-                return format is "dd";
-            }
-
-            public override string Process(Formatter formatter, string format, RocDateTime rdt)
-            {
-                return string.Format(s_taiwanCultureInfo, "{0:d2}", rdt.Day);
-            }
-        }
-
-        private class HourProcessor : FormatProcessor
-        {
-            public override bool IsMatch(string format)
-            {
-                return format is "hh";
-            }
-
-            public override string Process(Formatter formatter, string format, RocDateTime rdt)
-            {
-                return string.Format(s_taiwanCultureInfo, "{0:d2}", rdt.Hour);
-            }
-        }
-
-        private class MinuteProcessor : FormatProcessor
-        {
-            public override bool IsMatch(string format)
-            {
-                return format is "mm";
-            }
-
-            public override string Process(Formatter formatter, string format, RocDateTime rdt)
-            {
-                return string.Format(s_taiwanCultureInfo, "{0:d2}", rdt.Minute);
-            }
-        }
-
-        private class SecondProcessor : FormatProcessor
-        {
-            public override bool IsMatch(string format)
-            {
-                return format is "ss";
-            }
-
-            public override string Process(Formatter formatter, string format, RocDateTime rdt)
-            {
-                return string.Format(s_taiwanCultureInfo, "{0:d2}", rdt.Second);
-            }
-        }
-
-
-        private static readonly CultureInfo s_taiwanCultureInfo = CultureInfo.GetCultureInfo("zh-TW");
-        private class FullDateTimeProcessor : FormatProcessor
-        {
-            public override bool IsMatch(string format)
-            {
-                return string.IsNullOrWhiteSpace(format) || format is "G";
-            }
-
-            public override string Process(Formatter formatter, string format, RocDateTime rdt)
-            {
-                return formatter.Format("YYY/MM/dd hh:mm:ss", rdt, null);
-            }
-        }
-
-        private class ChineseProcessor : FormatProcessor
-        {
-            private static readonly Regex s_pattern = new(@"((ch|CH)\((?<FMT>[^\)]+)\))");
-
-            public override bool IsMatch(string format)
-            {
-                return s_pattern.IsMatch(format);
-            }
-
-            public override string Process(Formatter formatter, string format, RocDateTime rdt)
-            {
-                var sb = new StringBuilder(format);
-                foreach (Match m in s_pattern.Matches(format))
-                {
-                    var fmt = m.Groups["FMT"].Value;
-                    var stringValue = formatter.Format(fmt, rdt, s_taiwanCultureInfo);
-
-                    if (m.Value.StartsWith("CH"))
-                    {
-                        sb.Replace(m.Value, GetChineseString(ChineseNumeric.Parse(stringValue), fmt, rdt));
-                    }
-                    else
-                    {
-                        sb.Replace(m.Value, GetChineseString(stringValue, fmt, rdt));
-                    }
-                }
-                return sb.ToString();
-            }
-
-            private static string GetChineseString(object cn, string fmt, RocDateTime rdt)
-            {
-                if (fmt is "YYY")
-                {
-                    return string.Format("民國{0}{1}年", rdt.BeforeEra ? "前" : null, cn);
-                }
-
-                if (fmt is "yyy")
-                {
-                    return string.Format("{0}{1}年", rdt.BeforeEra ? "前" : null, cn);
-                }
-
-                if (fmt is "MM")
-                {
-                    return string.Format("{0}月", cn);
-                }
-
-                if (fmt is "dd")
-                {
-                    return string.Format("{0}日", cn);
-                }
-
-                if (fmt is "hh")
-                {
-                    return string.Format("{0}時", cn);
-                }
-
-                if (fmt is "mm")
-                {
-                    return string.Format("{0}分", cn);
-                }
-
-                if (fmt is "ss")
-                {
-                    return string.Format("{0}秒", cn);
-                }
-
-
-
-
-                return cn.ToString();
-
-            }
-        }
-
-        private class CompositedProcessor : FormatProcessor
-        {
-
-            public override bool IsMatch(string format)
-            {
-                return true;
-            }
-
-
-            public override string Process(Formatter formatter, string format, RocDateTime rdt)
-            {
-                var v = new StringBuilder(format)
-                    .Replace("YYY", formatter.Format("YYY", rdt, null))
-                    .Replace("yyy", formatter.Format("yyy", rdt, null))
-                    .Replace("MM", formatter.Format("MM", rdt, null))
-                    .Replace("dd", formatter.Format("dd", rdt, null))
-                    .Replace("hh", formatter.Format("hh", rdt, null))
-                    .Replace("mm", formatter.Format("mm", rdt, null))
-                    .Replace("ss", formatter.Format("ss", rdt, null));
-
-                return v.ToString();
-            }
-        }
-
-
-
-        public Formatter()
-        {
-            _processors = new List<FormatProcessor>
-            {
-                new YearProcessor(),
-                new MonthProcessor(),
-                new DayProcessor(),
-                new HourProcessor(),
-                new MinuteProcessor(),
-                new SecondProcessor(),
-                new FullDateTimeProcessor(),
-                new ChineseProcessor(),
-                new CompositedProcessor()
+                null => string.Empty,
+                RocDateTime rdt => FormatCore(format, rdt, fp),
+                IFormattable fmt => fmt.ToString(format, fp),
+                string s => s,
+                var o => o.ToString()
             };
         }
 
 
-        public string Format(string format, object arg, IFormatProvider formatProvider)
+#if NET7_0_OR_GREATER
+        // https://github.com/dotnet/runtime/issues/104212
+        [GeneratedRegex(
+            pattern: @"(?<FORMAT>(民國日期|date|DATE|time|TIME|full|FULL|民國年|yyy|MM|dd|hh|mm|ss|日期|時間|[年月日時分秒]|[GgTtFfYydd]))",
+            options: RegexOptions.ExplicitCapture | RegexOptions.Singleline,
+            matchTimeoutMilliseconds: 1000)]
+        private static partial Regex GetFormatPattern();
+#else
+    private static Regex BuildPattern()
+    {
+        return new (
+            pattern: @"(?<FORMAT>(民國日期|date|DATE|time|TIME|full|FULL|民國年|yyy|MM|dd|hh|mm|ss|日期|時間|[年月日時分秒]|[GgTtFfYydd]))",
+            options: RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Compiled ,
+            matchTimeout: TimeSpan.FromMinutes(1000));
+    }
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private static readonly Lazy<Regex> s_patternCache = new (BuildPattern);
+    private static Regex GetFormatPattern() => s_patternCache.Value;
+#endif
+
+
+        static string FormatCore(string format, RocDateTime rdt, IFormatProvider fp)
         {
-            if (arg is RocDateTime rdt)
+            format ??= DefaultFormat;
+
+            return format switch
             {
-                foreach (var processor in _processors)
+                "民國年" => rdt.BeforeEra
+                    ? $"民國前{ChineseNumeric.ToString(rdt.Year, "tw")}年"
+                    : $"民國{ChineseNumeric.ToString(rdt.Year, "tw")}年",
+
+                "年" => rdt.BeforeEra
+                    ? $"民前{ChineseNumeric.ToString(rdt.Year, "tw")}年"
+                    : $"{ChineseNumeric.ToString(rdt.Year, "tw")}年",
+
+                "月" => $"{ChineseNumeric.ToString(rdt.Month, "tw")}月",
+                "時" => $"{ChineseNumeric.ToString(rdt.Hour, "tw")}時",
+                "日" => $"{ChineseNumeric.ToString(rdt.Day, "tw")}日",
+                "分" => $"{ChineseNumeric.ToString(rdt.Minute, "tw")}分",
+                "秒" => $"{ChineseNumeric.ToString(rdt.Second, "tw")}秒",
+
+                "yyy" or "year" => rdt.BeforeEra
+                    ? $"{BeforeEraSymbol}{rdt.Year:D3}"
+                    : $"{rdt.Year:D3}",
+
+                "MM" or "month" => rdt.Month.ToString("D2"),
+                "dd" or "day" => rdt.Day.ToString("D2"),
+                "hh" or "hour" => rdt.Hour.ToString("D2"),
+                "mm" or "min" or "minute" => rdt.Minute.ToString("D2"),
+                "ss" or "sec" or "second" => rdt.Second.ToString("D2"),
+
+                // 年月模式
+                "y" => $"{(rdt.BeforeEra ? BeforeEraSymbol : null)}{rdt.Year:D}/{rdt.Month:D2}",
+                // 年月模式
+                "Y" => $"{(rdt.BeforeEra ? BeforeEraSymbol : null)}{rdt.Year:D}年{rdt.Month:D2}月",
+
+                // 簡短日期模式
+                "d" or "date" => $"{(rdt.BeforeEra ? BeforeEraSymbol : null)}{rdt.Year:D}/{rdt.Month:D2}/{rdt.Day:D2}",
+
+                // 完整日期模式
+                "D" or "DATE" => $"{(rdt.BeforeEra ? "民前" : null)}{rdt.Year:D}年{rdt.Month:D}月{rdt.Day:D}日",
+
+                // 簡短時間模式
+                "t" or "time" => $"{rdt.Hour:D2}:{rdt.Minute:D2}:{rdt.Second:D2}",
+
+                // 完整時間模式
+                "T" or "TIME" => $"{rdt.Hour:D}時{rdt.Minute:D}分{rdt.Second:D}秒",
+
+                // 完整日期/時間模式 (簡短時間)
+                "f" or "full" => string.Format(fp, "{0:date} {0:time}", rdt),
+
+                // 完整日期/時間模式 (完整時間)
+                "F" or "FULL" => string.Format(fp, "{0:DATE}{0:TIME}", rdt),
+
+                // 簡短通用模式
+                "g" => (rdt.Year, rdt.Month, rdt.Day, rdt.Hour, rdt.Minute, rdt.Second) switch
                 {
-                    if (processor.IsMatch(format))
-                    {
-                        return processor.Process(this, format, rdt);
-                    }
-                }
+                    (_, _, _, 0, 0, 0) => string.Format(fp, "{0:date}", rdt),
+                    _ => string.Format(fp, "{0:date} {0:time}", rdt)
+                },
 
-                throw new NotSupportedException();
-
-                //return format switch
-                //{
-                //    "yyy" => string.Format("{0:d3}", rdt.BeforeEra ? -rdt.Year : rdt.Year),
-                //    "MM" => string.Format("{0:d2}", rdt.Month),
-                //    "dd" => string.Format("{0:d2}", rdt.Day),
-                //    "hh" => string.Format("{0:d2}", rdt.Hour),
-                //    "mm" => string.Format("{0:d2}", rdt.Minute),
-                //    "ss" => string.Format("{0:d2}", rdt.Second),
-                //    "ms" => string.Format("{0}", rdt.Millisecond),
-                //    "us" => string.Format("{0}", rdt.Microsecond),
-                //    null or "G" => string.Format("{0}-{1}-{2} {3}:{4}:{5}", rdt.Year, rdt.Month, rdt.Day, rdt.Hour, rdt.Minute, rdt.Second),
-
-                //    var fmt => fmt
-                //        .Replace("yyy", Format("yyy", rdt, formatProvider))
-                //        .Replace("MM", Format("MM", rdt, formatProvider))
-                //        .Replace("dd", Format("dd", rdt, formatProvider))
-                //        .Replace("hh", Format("hh", rdt, formatProvider))
-                //        .Replace("mm", Format("mm", rdt, formatProvider))
-                //        .Replace("ss", Format("ss", rdt, formatProvider))
-                //        .Replace("ms", Format("ms", rdt, formatProvider))
-                //        .Replace("us", Format("us", rdt, formatProvider))
-                //};
-
-                //var formatBuilder = new StringBuilder();
-                //DateTime.Now.ToString("")
-                //if (format == "-DATE :TIME+")
-                //{
-                //    return string.Format("{0}-{1}-{2} {3}:{4}:{5}", rdt.Year, rdt.Month, rdt.Day, rdt.Hour, rdt.Minute, rdt.Second);
-                //}
-                //return string.Format("{0}", rdt.Year);
-            }
-            else
-            {
-                if (arg is IFormattable formattable)
+                // 完整通用模式
+                "G" => (rdt.Year, rdt.Month, rdt.Day, rdt.Hour, rdt.Minute, rdt.Second) switch
                 {
-                    return formattable.ToString(format, formatProvider);
-                }
+                    (_, _, _, 0, 0, 0) => string.Format(fp, "{0:DATE}", rdt),
+                    _ => string.Format(fp, "{0:DATE} {0:TIME}", rdt)
+                },
 
-                return arg.ToString();
-            }
+                "民國日期" => string.Format(fp, "{0:民國年}{0:月}{0:日}", rdt),
+                "日期" => string.Format(fp, "{0:年}{0:月}{0:日}", rdt),
+                "時間" => string.Format(fp, "{0:時}{0:分}{0:秒}", rdt),
+
+                //var formats when !string.IsNullOrWhiteSpace(formats) && GetFormatPattern().Replace(formats, x=>)
+                //    .Matches(formats) is { Count: > 0 } m
+                //=> string.Join(null, m.Cast<Match>().Select(m => FormatCore(m.Groups["FORMAT"].Value, rdt, fp))),
+
+                var formats when !string.IsNullOrWhiteSpace(formats)
+                    => GetFormatPattern().Replace(formats, x => FormatCore( x.Groups["FORMAT"].Value, rdt, fp)),
+
+
+                _ => throw new NotSupportedException($"Format '{format}' is not supported.")
+            };
         }
+
+        object IFormatProvider.GetFormat(Type formatType)
+        {
+            if (typeof(ICustomFormatter) == formatType)
+            {
+                return this;
+            }
+
+            return default;
+        }
+
     }
 }

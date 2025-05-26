@@ -38,6 +38,7 @@ partial class ChineseNumericTest
     [InlineData(1101, "壹仟壹佰零壹")]
     [InlineData(1110, "壹仟壹佰壹拾")]
     [InlineData(1111, "壹仟壹佰壹拾壹")]
+    [InlineData(1000_0100, "壹仟萬零壹佰")]
     public void 測試從十進位數值轉換為中文(decimal feed, string expected)
     {
         var actual = new ChineseNumeric(feed).ToString("TW");

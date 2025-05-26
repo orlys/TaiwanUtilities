@@ -3,6 +3,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -15,8 +17,41 @@ static class Program
 {
     static void Main(string[] args)
     {
+        for (int i = 0; i < 1000; i++)
+        {
 
-        Console.WriteLine(RocDateTime.Now);
+            Console.WriteLine(new ChineseNumeric(i).ToString("tw"));
+        }
+        //for (int i = 9000; i < 12000; i++)
+        //{
+
+        //    Console.WriteLine(new ChineseNumeric(i).ToString("tw"));
+        //}
+
+        foreach (var i in new[] {
+            1_0000_9999,
+            1_0000_9999_0000,
+            1_0000_9999_0100,
+            10000001,
+            10000,
+            //10001, 10010, 10011, 10000000,
+            //10000010, 10000011,
+            //90000000000000000,
+            //10001000,
+            //20000100,
+            //10000101,
+            //10001100,
+            //10101101,
+            //100010000
+        })
+        {
+
+            Console.WriteLine(new ChineseNumeric(i).ToString("tw"));
+        }
+
+        //RocDateTime.SetDefaultFormat("yyy/MM/dd 時分秒");
+        //Console.WriteLine(DateTime.Parse("1995/12/18").ToString("G"));
+        //Console.WriteLine(RocDateTime.Parse("^3/12/31 12:08:03"));
     }
 
 }

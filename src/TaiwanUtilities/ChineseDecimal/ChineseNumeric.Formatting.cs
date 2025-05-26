@@ -3,8 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Reflection;
+using System.Linq;
 using System.Text;
+
+using TaiwanUtilities.Internal;
 
 [DebuggerDisplay("{ToString(),nc}")]
 partial struct ChineseNumeric : IFormattable
@@ -68,7 +70,7 @@ partial struct ChineseNumeric : IFormattable
             {
                 return _formatter;
             }
-            return CultureInfo.GetCultureInfo("zh-TW");
+            return Constants.CultureInfo;
         }
     }
 
@@ -131,190 +133,356 @@ partial struct ChineseNumeric : IFormattable
             return sb.ToString();
         }
 
+        //private static string CrawlStack(ChineseNumeric input, FormatterProfile profile)
+        //{
+        //    var cn = input.GetRawValue();
+
+        //    // 寫得有夠醜，但我暫時沒想法，笑死
+        //    var segments = new Stack<(decimal currentSectionValue, string segmentString, bool directPop)>();
+
+        //    var groupUnits = profile.GroupUnits;
+
+        //    var ic = 0;
+
+        //    ProcessGroup:
+        //    var floor = Math.Floor(cn / 10000m);
+        //    if (floor > 0)
+        //    {
+        //        // currentSectionValue: 0 ~ 9999
+        //        var currentSectionValue = (cn % 10000m);
+
+
+        //        segments.Push(HandleTinySegment(false, currentSectionValue, profile));
+
+        //        if (currentSectionValue >= 100 && currentSectionValue % 10 == 0)
+        //        {
+        //            segments.Push((0, profile.Digits[0], true));
+        //            ic++;
+        //        }
+        //        cn = floor;
+        //        goto ProcessGroup;
+        //    }
+        //    else
+        //    {
+        //        segments.Push(HandleTinySegment(true, cn, profile));
+        //    }
+
+        //    var sb = new StringBuilder();
+        //    var isPreviousZero = false;
+        //    while (segments.TryPop(out var pair))
+        //    {
+        //        if (pair.directPop)
+        //        {
+        //            if (!isPreviousZero &&
+        //                segments.Count is 0 &&
+        //                pair.currentSectionValue is 0)
+        //            {
+
+        //                isPreviousZero = true;
+        //                ic--;
+        //                continue;
+        //            }
+
+        //            isPreviousZero = true;
+        //            sb.Append(pair.segmentString);
+        //            ic--;
+        //            continue;
+        //        }
+
+
+        //        if (pair.currentSectionValue > 0)
+        //        {
+        //            isPreviousZero = false;
+        //            sb.Append(pair.segmentString);
+        //            var group = groupUnits[segments.Count - ic];
+        //            sb.Append(group);
+        //            continue;
+        //        }
+
+
+        //        if (!isPreviousZero)
+        //        {
+        //            if (segments.Count is 0)
+        //            {
+        //                sb.Append(pair.segmentString);
+        //            }
+        //        }
+        //        isPreviousZero = true;
+        //    }
+
+        //    return sb.ToString();
+
+
+        //}
+
+
+
         private static string CrawlStack(ChineseNumeric input, FormatterProfile profile)
         {
-            var cn = input.GetRawValue();
+            return new Builder().ToString(input.GetRawValue(), profile);
+        }
+    }
 
-            // 寫得有夠醜，但我暫時沒想法，笑死
-            var segments = new Stack<(decimal Val, string SegStr)>();
+    private class Builder
+    {
+        private readonly record struct TinySection(decimal Value, string Content, bool IsLead)
+        {
+            /// <summary>
+            /// 是否為補償段落，補償段落是指當 Value 為 1000 的倍數時，會在前面補上零。
+            /// </summary>
+            public bool Compensation => Value >= 1000 && Value % 10 == 0;
 
-            var groupUnits = profile.GroupUnits;
+        }
 
-            ProcessGroup:
-            var floor = Math.Floor(cn / 10000m);
-            if (floor > 0)
+
+        public string ToString(decimal cn, FormatterProfile profile)
+        {
+            var sb = new StringBuilder();
+
+            var sections = new Queue<TinySection>();
+            PrepareSections(cn, profile, sections);
+
+            // 大單位群組位置
+            var groupPosition = -1;
+
+            // 用來記錄上個處理過的段落是否為 0 
+            var lastIsZero = false;
+            var compensated = false;
+            while (sections.TryDequeue(out var section))
             {
-                // value: 0 ~ 9999
+                var currentSectionValue = section.Value;
+                var currentIsZero = currentSectionValue is 0;
+                groupPosition++;
+
+                if (currentIsZero)
+                {
+                    if (lastIsZero && !section.IsLead)
+                    {
+                        // 如果上個段落也是 0，則不需要處理
+                        continue;
+                    }
+                    else if (section.IsLead)
+                    {
+                        // 如果是最後一個段落，則需要處理
+                        sb.Append(profile.Digits[0]);
+                        lastIsZero = true;
+                        continue;
+                    }
+                    else if (groupPosition is 0)
+                    {
+                        lastIsZero = true;
+                        continue;
+                    }
+                }
+
+                if (section.Compensation && !lastIsZero && groupPosition is not 0)
+                {
+                    // 如果是補償段落，則需要在前面補上零
+                    if (compensated)
+                    {
+                        compensated = false;
+                    }
+                    else
+                    {
+
+                        sb.Insert(0, profile.Digits[0]);
+                    }
+                }
+
+                if (section.Content.StartsWith(profile.Digits[0]) &&
+                    section.Content.Length > 1)
+                {
+                    compensated = true;
+                }
+
+
+                if (groupPosition is not 0 &&
+                   section.Value is 0)
+                {
+                    sb.Insert(0, profile.Digits[0]);
+                    compensated = true;
+                }
+                else
+                {
+
+                    var group = profile.GroupUnits[groupPosition];
+
+                    sb.Insert(0, $"{section.Content}{group}");
+                }
+
+
+
+
+                lastIsZero = currentIsZero;
+            }
+
+            var result = sb.ToString();
+
+            return result;
+        }
+
+        static void PrepareSections(decimal cn, FormatterProfile profile, Queue<TinySection> sections)
+        {
+            ProcessGroup:
+            if (Math.Floor(cn / 10000m) is var floor &&
+                floor > 0)
+            {
+                // currentSectionValue: 0 ~ 9999
                 var value = (cn % 10000m);
-                segments.Push(HandleTinySegment(false, value, profile));
+                sections.Enqueue(ProcessTinySection(false, value, profile));
                 cn = floor;
                 goto ProcessGroup;
             }
             else
             {
-                segments.Push(HandleTinySegment(true, cn, profile));
-            }
-
-            var sb = new StringBuilder();
-            var isPreviousZero = false;
-            while (segments.TryPop(out var pair))
-            {
-                if (pair.Val > 0)
-                {
-                    isPreviousZero = false;
-                    sb.Append(pair.SegStr);
-                    var group = groupUnits[segments.Count];
-                    sb.Append(group);
-                }
-                else
-                {
-                    if (!isPreviousZero)
-                    {
-                        sb.Append(pair.SegStr);
-                    }
-                    isPreviousZero = true;
-                }
-            }
-
-            return sb.ToString();
-
-
-            static (decimal value, string segmentStr) HandleTinySegment(bool isLead, decimal v, FormatterProfile profile)
-            {
-                var digits = profile.Digits;
-                var groupTinyUnits = profile.GroupTinyUnits;
-
-                if (!isLead && v == 0)
-                {
-                    return (v, digits[0]);
-                }
-
-                var input = v;
-                var segments = new Stack<string>();
-                var tiny = 0;
-                ProcessTiny:
-                var floor = (int)Math.Floor(input / 10m);
-                if (floor > 0)
-                {
-                    // value: 0 ~ 9 
-                    var value = (input % 10);
-                    if (value > 0)
-                    {
-                        segments.Push(groupTinyUnits[++tiny]);
-                        segments.Push(digits[(int)value]);
-                    }
-                    else
-                    {
-                        segments.Push(digits[(int)value]);
-                        tiny++;
-                    }
-                    input = floor;
-                    goto ProcessTiny;
-                }
-                else
-                {
-                    if (isLead)
-                    {
-                        if (tiny == 1)
-                        //if (tiny > 0)
-                        {
-                            segments.Push(groupTinyUnits[tiny]);
-                            if (input > 1m)
-                            {
-                                // 不為 1 跟 0
-                                segments.Push(digits[(int)input]);
-                            }
-                        }
-                        else
-                        {
-                            segments.Push(groupTinyUnits[tiny]);
-                            segments.Push(digits[(int)input]);
-                        }
-                    }
-                    else
-                    {
-                        if (tiny == 0)
-                        {
-                            segments.Push(digits[(int)input]);
-                        }
-                        else
-                        {
-                            segments.Push(groupTinyUnits[tiny]);
-                            segments.Push(digits[(int)input]);
-                        }
-
-                        if (tiny < 3)
-                        {
-                            // 最前面補 0 
-                            segments.Push(digits[0]);
-                        }
-                    }
-                }
-
-                // todo: Pooling
-                var sb = new StringBuilder();
-
-                var lastIsZero = false;
-                while (segments.TryPop(out var segment))
-                {
-                    if (segment == digits[0])
-                    {
-                        if (!lastIsZero)
-                        {
-                            lastIsZero = true;
-                            sb.Append(segment);
-                        }
-                    }
-                    else
-                    {
-                        lastIsZero = false;
-                        sb.Append(segment);
-                    }
-                }
-
-                if (EndsWith(sb, digits[0]))
-                {
-                    // 當不為個位數時才移除最後的零
-                    if (sb.Length > 1)
-                    {
-                        RemoveLast(sb);
-                    }
-                }
-
-                return (v, sb.ToString());
-
-                static bool EndsWith(StringBuilder sb, string str)
-                {
-                    if (sb.Length >= str.Length)
-                    {
-                        var flag = true;
-                        for (int offset = sb.Length - str.Length, i = 0; offset < sb.Length; offset++, i++)
-                        {
-                            if (sb[offset] != str[i])
-                            {
-                                flag = false;
-                                break;
-                            }
-                        }
-                        return flag;
-                    }
-                    return false;
-                }
-
-
-                static StringBuilder RemoveLast(StringBuilder sb)
-                {
-                    if (sb.Length > 0)
-                    {
-                        return sb.Remove(sb.Length - 1, 1);
-                    }
-                    return sb;
-                }
+                // floor == 0
+                sections.Enqueue(ProcessTinySection(true, cn, profile));
             }
         }
 
+        /// <summary>
+        /// 處理小於萬的數字段落，
+        /// </summary>
+        /// <param name="isLead"></param>
+        /// <param name="v"></param>
+        /// <param name="profile"></param>
+        /// <returns></returns>
+        static TinySection ProcessTinySection(bool isLead, decimal v, FormatterProfile profile)
+        {
+            var digits = profile.Digits;
+            var groupTinyUnits = profile.GroupTinyUnits;
 
+            if (!isLead && v is 0)
+            {
+                return new(v, digits[0], isLead);
+            }
+
+            var input = v;
+            var segments = new Stack<string>();
+            var tiny = 0;
+            Scan:
+            var floor = (int)Math.Floor(input / 10m);
+            if (floor > 0)
+            {
+                // currentSectionValue: 0 ~ 9 
+                var value = (input % 10);
+                if (value > 0)
+                {
+                    segments.Push(groupTinyUnits[tiny]);
+                    segments.Push(digits[(int)value]);
+                }
+                else
+                {
+                    segments.Push(digits[(int)value]);
+                }
+                tiny++;
+                input = floor;
+                goto Scan;
+            }
+            else
+            {
+                // 是最後一個段落
+                if (isLead)
+                {
+                    if (tiny == 1)
+                    {
+                        segments.Push(groupTinyUnits[tiny]);
+                        if (input > 1m)
+                        {
+                            // 不為 1 跟 0
+                            segments.Push(digits[(int)input]);
+                        }
+                    }
+                    else
+                    {
+                        segments.Push(groupTinyUnits[tiny]);
+                        segments.Push(digits[(int)input]);
+                    }
+                }
+
+                // 不是最後一個段落
+                else
+                {
+                    if (tiny == 0)
+                    {
+                        segments.Push(digits[(int)input]);
+                    }
+                    else
+                    {
+                        segments.Push(groupTinyUnits[tiny]);
+                        segments.Push(digits[(int)input]);
+                    }
+
+                    if (tiny < 3)
+                    {
+                        // 最前面補 0 
+                        segments.Push(digits[0]);
+                    }
+                }
+            }
+
+            // todo: Pooling
+            var sb = new StringBuilder();
+
+            var lastIsZero = false;
+            while (segments.TryPop(out var segment))
+            {
+                if (segment == digits[0])
+                {
+                    if (!lastIsZero)
+                    {
+                        lastIsZero = true;
+                        sb.Append(segment);
+                    }
+                }
+                else
+                {
+                    lastIsZero = false;
+                    sb.Append(segment);
+                }
+            }
+
+            if (EndsWith(sb, digits[0]))
+            {
+                // 當不為個位數時才移除最後的零
+                if (sb.Length > 1)
+                {
+                    RemoveLast(sb);
+                }
+            }
+
+            return new(v, sb.ToString(), isLead);
+
+            static bool EndsWith(StringBuilder sb, string str)
+            {
+                if (sb.Length >= str.Length)
+                {
+                    var flag = true;
+                    for (int offset = sb.Length - str.Length, i = 0; offset < sb.Length; offset++, i++)
+                    {
+                        if (sb[offset] != str[i])
+                        {
+                            flag = false;
+                            break;
+                        }
+                    }
+                    return flag;
+                }
+                return false;
+            }
+
+
+            static StringBuilder RemoveLast(StringBuilder sb)
+            {
+                if (sb.Length > 0)
+                {
+                    return sb.Remove(sb.Length - 1, 1);
+                }
+                return sb;
+            }
+        }
     }
+
 
     [Flags]
     private enum FormatterFlags

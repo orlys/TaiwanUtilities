@@ -45,19 +45,12 @@ partial struct ChineseNumeric
             {
                 if (throwError)
                 {
-                    throw new FormatException($"Invalid character '{c}' at index {i}, reason: Unknown Character")
-                    {
-                        Data =
-                        {
-                            [nameof(ParsingErrorKind)] = ParsingErrorKind.UnknownCharacter,
-                        }
-                    };
+                    throw InvalidToken.UnknownCharacter(c, i);
                 }
                 else
                 {
                     return false;
-                }
-
+                } 
             }
         }
 
@@ -124,14 +117,7 @@ partial struct ChineseNumeric
                 {
                     if (throwError)
                     {
-                        throw new FormatException($"Invalid character '{c}' at index {c.Index}, reason: Segment Overflow")
-                        {
-                            Data =
-                            {
-                                [nameof(ParsingErrorKind)] = ParsingErrorKind.SegmentOverflow,
-                                [nameof(Character)] = c
-                            }
-                        };
+                        throw InvalidToken.SegmentOverflow(c, c.Index);
                     }
                     else
                     {
@@ -143,14 +129,7 @@ partial struct ChineseNumeric
                 {
                     if (throwError)
                     {
-                        throw new FormatException($"Invalid character '{c}' at index {c.Index}, reason: Invalid Unit Position")
-                        {
-                            Data =
-                            {
-                                [nameof(ParsingErrorKind)] = ParsingErrorKind.InvalidUnitPosition,
-                                [nameof(Character)] = c
-                            }
-                        };
+                        throw InvalidToken.InvalidUnitPosition(c, c.Index); 
                     }
                     else
                     {
@@ -254,7 +233,7 @@ partial struct ChineseNumeric
             const decimal E_Inv = 0.3678794411714423215955237701614608674458111310317678m;
             const decimal Log10_Inv = 0.434294481903251827651128918916605082294397005803666566114m;
             const decimal E = 2.7182818284590452353602874713526624977572470936999595749m;
-             
+
             Guard.ThrowIfLessThanOrEqual(value, decimal.Zero);
 
             var count = 0;
@@ -350,25 +329,3 @@ partial struct ChineseNumeric
     }
 }
 
-
-#if NETSTANDARD2_0
-[ExcludeFromCodeCoverage]
-[DebuggerNonUserCode]
-[StackTraceHidden]
-internal static class StackExtensions
-{
-    public static bool TryPop<T>(this Stack<T> stack, out T value)
-    {
-        if (stack is { Count: > 0 })
-        {
-            value = stack.Pop();
-            return true;
-        }
-        else
-        {
-            value = default;
-            return false;
-        }
-    }
-}
-#endif

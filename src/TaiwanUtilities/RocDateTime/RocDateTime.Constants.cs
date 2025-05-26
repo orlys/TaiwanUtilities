@@ -36,9 +36,27 @@ partial struct RocDateTime
     /// 取得時間提供者
     /// </summary>
     public static TimeProvider TimeProvider => s_timeProvider ??= TimeProvider.System;
-
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private static volatile TimeProvider s_timeProvider;
+
+    /// <summary>
+    /// 設定預設的格式字串
+    /// </summary>
+    /// <param name="format"></param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void SetDefaultFormat(string format)
+    {
+        if (string.IsNullOrWhiteSpace(format))
+        {
+            throw new ArgumentNullException("Format cannot be null or whitespace.", nameof(format));
+        }
+        s_defaultFormat = format;
+    }
+
+    public static string DefaultFormat => s_defaultFormat ??= "G";
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private static volatile string? s_defaultFormat;
+
 
     /// <summary>
     /// 民國年物件支援的最大值
@@ -81,6 +99,11 @@ partial struct RocDateTime
     /// <summary>
     /// 表示今日
     /// </summary>
-    
     public static RocDateTime Today => Now.Date;
+
+    /// <summary>
+    /// 表示民國年物件的前綴符號。
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    public const string BeforeEraSymbol = "^";
 }

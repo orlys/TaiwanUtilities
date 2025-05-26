@@ -7,13 +7,13 @@ partial struct RocDateTime
 
     public static implicit operator RocDateTime(DateTimeOffset dateTimeOffset) => new(dateTimeOffset);
 
-    public static implicit operator RocDateTime(DateTime dateTime) => new RocDateTime(dateTime);
+    public static implicit operator RocDateTime(DateTime dateTime) => new(dateTime);
     public static implicit operator DateTime(RocDateTime rocDateTime) => rocDateTime.GetRawValue().DateTime;
     public static implicit operator DateTimeOffset(RocDateTime rocDateTime) => rocDateTime.GetRawValue();
 
 
-    public static implicit operator SqlDateTime(RocDateTime rocDateTime) => new SqlDateTime(rocDateTime.Date);
-    public static implicit operator RocDateTime(SqlDateTime sqlDateTime) => new RocDateTime(sqlDateTime.Value);
+    public static implicit operator SqlDateTime(RocDateTime rocDateTime) => new(rocDateTime.Date);
+    public static implicit operator RocDateTime(SqlDateTime sqlDateTime) => new(sqlDateTime.Value);
 
 
 

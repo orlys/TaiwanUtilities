@@ -166,5 +166,4 @@ partial struct RocDateTime : ISerializable, IConvertible
 
         throw InvalidCast(nameof(RocDateTime), type.Name);
     }
-
 }

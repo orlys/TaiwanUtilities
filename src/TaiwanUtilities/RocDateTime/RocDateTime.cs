@@ -47,6 +47,8 @@ public readonly partial struct RocDateTime
     /// 日期時間是否為民國元年前。
     /// </summary>
     public bool BeforeEra => GetRawValue() < Era.GetRawValue();
+     
+
     /// <summary>
     /// 民國年。此值範圍為 1 至 999，若要判斷是否為民國前需使用 <see cref="BeforeEra"/> 屬性判斷。
     /// </summary>

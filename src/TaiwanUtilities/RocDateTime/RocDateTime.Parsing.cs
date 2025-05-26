@@ -4,6 +4,7 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 
@@ -13,36 +14,48 @@ partial struct RocDateTime
     ISpanParsable<RocDateTime>
 #endif
 {
+
 #if NET7_0_OR_GREATER
     // https://github.com/dotnet/runtime/issues/104212
-    [GeneratedRegex(@"^(?<DATE>(民[國国])?(?<BEFORE_ERA>[前\-\^])?(?<YEAR>[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九][百佰]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]?[百佰]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[百佰]?[0０零〇]?[十拾]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[年\/\-]?(?<MONTH>[1１壹一][十拾]?[0-2０１２零〇壹一貳贰二]|[0０零〇]?[十拾]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[月\-\/]?(?<DAY>[3３參参三][十拾]?[0-1]|[1-2１２壹一貳贰二][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])([號号日])?)(?<TIME>(?<HOUR>[2２貳贰二][十拾]?[0-3０１２３零〇壹一貳贰二參参三]|[1１壹一][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[時點点时\-\:]?((?<MINUTE>[1-5１２３４５壹一貳贰二參参三肆四伍五][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[分\-\:]?)??((?<SECOND>[1-5１２３４５壹一貳贰二參参三肆四伍五][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])秒?)??)??$", RegexOptions.ExplicitCapture | RegexOptions.Compiled | RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.Singleline, 1000)]
+    [GeneratedRegex(
+        pattern: @"^(?<DATE>(民[國国]?)?(?<BEFORE_ERA>[前\-\^])?(?<YEAR>[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九][百佰]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]?[百佰]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[百佰]?[0０零〇]?[十拾]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[年\/\-]?(?<MONTH>[1１壹一][十拾]?[0-2０１２零〇壹一貳贰二]|[0０零〇]?[十拾]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[月\-\/]?(?<DAY>[3３參参三][十拾]?[0-1]|[1-2１２壹一貳贰二][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])([號号日])?)(?<TIME>(?<HOUR>[2２貳贰二][十拾]?[0-3０１２３零〇壹一貳贰二參参三]|[1１壹一][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[時點点时\-\:]?((?<MINUTE>[1-5１２３４５壹一貳贰二參参三肆四伍五][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[分\-\:]?)??((?<SECOND>[1-5１２３４５壹一貳贰二參参三肆四伍五][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])秒?)??)??$",
+        options: RegexOptions.ExplicitCapture | RegexOptions.Compiled | RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.Singleline,
+        matchTimeoutMilliseconds: 1000)]
     private static partial Regex GetPattern();
 #else
+    private static Regex BuildPattern()
+    {
+        return new (
+        pattern: @"^(?<DATE>(民[國国]?)?(?<BEFORE_ERA>[前\-\^])?(?<YEAR>[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九][百佰]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]?[百佰]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[百佰]?[0０零〇]?[十拾]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[年\/\-]?(?<MONTH>[1１壹一][十拾]?[0-2０１２零〇壹一貳贰二]|[0０零〇]?[十拾]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[月\-\/]?(?<DAY>[3３參参三][十拾]?[0-1]|[1-2１２壹一貳贰二][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])([號号日])?)(?<TIME>(?<HOUR>[2２貳贰二][十拾]?[0-3０１２３零〇壹一貳贰二參参三]|[1１壹一][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[時點点时\-\:]?((?<MINUTE>[1-5１２３４５壹一貳贰二參参三肆四伍五][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[分\-\:]?)??((?<SECOND>[1-5１２３４５壹一貳贰二參参三肆四伍五][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])秒?)??)??$",
+        options: RegexOptions.ExplicitCapture | RegexOptions.Compiled | RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.Singleline,
+            matchTimeout: TimeSpan.FromMinutes(1000));
+    }
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private static readonly Lazy<Regex> s_patternCache = new (()=>new (@"^(?<DATE>(民[國国])?(?<BEFORE_ERA>[前\-\^])?(?<YEAR>[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九][百佰]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]?[百佰]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[百佰]?[0０零〇]?[十拾]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[年\/\-]?(?<MONTH>[1１壹一][十拾]?[0-2０１２零〇壹一貳贰二]|[0０零〇]?[十拾]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[月\-\/]?(?<DAY>[3３參参三][十拾]?[0-1]|[1-2１２壹一貳贰二][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[1-9１２３４５６７８９壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])([號号日])?)(?<TIME>(?<HOUR>[2２貳贰二][十拾]?[0-3０１２３零〇壹一貳贰二參参三]|[1１壹一][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[時點点时\-\:]?((?<MINUTE>[1-5１２３４５壹一貳贰二參参三肆四伍五][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])[分\-\:]?)??((?<SECOND>[1-5１２３４５壹一貳贰二參参三肆四伍五][十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九]|[0０零〇]?[十拾]?[0-9０１２３４５６７８９零〇壹一貳贰二參参三肆四伍五陸陆六柒七捌八玖九])秒?)??)??$", RegexOptions.ExplicitCapture | RegexOptions.Compiled | RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.Singleline, TimeSpan.FromSeconds(1)));
+    private static readonly Lazy<Regex> s_patternCache = new (BuildPattern);
     private static Regex GetPattern() => s_patternCache.Value;
 #endif
 
-
     public static RocDateTime Parse(string s)
     {
-        return Parse(s, null);
+        Guard.ThrowIfNullOrWhiteSpace(s);
+        _ = ParseCore(s, true, out var rocDateTime);
+        return rocDateTime;
     }
 
     public static RocDateTime Parse(string s, IFormatProvider formatProvider)
     {
         Guard.ThrowIfNullOrWhiteSpace(s);
-        _ = ParseCore(s.AsSpan(), true, out var rocDateTime);
+        _ = ParseCore(s, true, out var rocDateTime);
         return rocDateTime;
     }
 
     public static bool TryParse(string s, out RocDateTime rocDateTime)
     {
-        return TryParse(s, null, out rocDateTime);
+        return ParseCore(s, false, out rocDateTime);
     }
     public static bool TryParse(string s, IFormatProvider formatProvider, out RocDateTime rocDateTime)
     {
-        return ParseCore(s.AsSpan(), false, out rocDateTime);
+        return ParseCore(s, false, out rocDateTime);
     }
 
 
@@ -71,10 +84,27 @@ partial struct RocDateTime
         return true;
     }
 
-    private static bool ParseCore(ReadOnlySpan<char> str, bool throwError, out RocDateTime rocDateTime)
+    private static bool ParseCore(
+        string str,
+        bool throwError,
+        out RocDateTime rocDateTime,
+        [CallerArgumentExpression(nameof(str))] string paramName = default)
+    {
+        return ParseCore(
+            str.AsSpan(),
+            throwError,
+            out rocDateTime,
+            paramName);
+    }
+
+    private static bool ParseCore(
+        ReadOnlySpan<char> str,
+        bool throwError,
+        out RocDateTime rocDateTime,
+        [CallerArgumentExpression(nameof(str))] string paramName = default)
     {
         rocDateTime = default;
-        
+
         if (str.IsEmpty || str.IsWhiteSpace())
         {
             if (throwError)
@@ -94,7 +124,7 @@ partial struct RocDateTime
             }
             return false;
         }
-        
+
         // 移除空白
         var emptyRemoved = Regex.Replace(str.ToString(), @"\s", string.Empty);
 
@@ -150,7 +180,7 @@ partial struct RocDateTime
         return rocDateTime;
     }
     public static RocDateTime Parse(ReadOnlySpan<char> s, IFormatProvider provider)
-    { 
+    {
         _ = ParseCore(s, true, out var rocDateTime);
         return rocDateTime;
     }
@@ -162,6 +192,6 @@ partial struct RocDateTime
     public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider provider, [MaybeNullWhen(false)] out RocDateTime result)
     {
         return ParseCore(s, false, out result);
-    } 
+    }
 }
 

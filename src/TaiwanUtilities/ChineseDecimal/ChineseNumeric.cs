@@ -42,5 +42,8 @@ public readonly partial struct ChineseNumeric
         }
     }
 
-
+    public static string ToString(decimal value, string format)
+    {
+        return new ChineseNumeric(value).ToString(format);
+    }
 }
