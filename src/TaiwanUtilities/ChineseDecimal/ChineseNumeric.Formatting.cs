@@ -509,7 +509,7 @@ partial struct ChineseNumeric : IFormattable
         /// <summary>
         /// 繁體小寫
         /// </summary>
-        public static FormatterProfile TraditionalLowercase { get; } = new(FormatterFlags.CrawlStack, "零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "萬", "億", "兆", "京", "垓", "秭", "穰");
+        public static FormatterProfile TraditionalLowercase { get; } = new(FormatterFlags.CrawlStack, "〇", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "萬", "億", "兆", "京", "垓", "秭", "穰");
 
         /// <summary>
         /// 簡體大寫
@@ -519,7 +519,7 @@ partial struct ChineseNumeric : IFormattable
         /// <summary>
         /// 簡體小寫
         /// </summary>
-        public static FormatterProfile SimplifiedLowercase { get; } = new(FormatterFlags.CrawlStack, "零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "万", "亿", "兆", "京", "垓", "秭", "穰");
+        public static FormatterProfile SimplifiedLowercase { get; } = new(FormatterFlags.CrawlStack, "〇", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "万", "亿", "兆", "京", "垓", "秭", "穰");
 
         /// <summary>
         /// 全形數字
