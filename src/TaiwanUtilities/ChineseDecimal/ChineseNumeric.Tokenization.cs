@@ -185,7 +185,7 @@ partial struct ChineseNumeric
             TenQuadrillion = new(TokenKind.GroupMultipler, value: 1_0000_0000_0000_0000m, '京');
             HundredQuintillion = new(TokenKind.GroupMultipler, value: 1_0000_0000_0000_0000_0000m, '垓');
             Septillion = new(TokenKind.GroupMultipler, value: 1_0000_0000_0000_0000_0000_0000m, '秭');
-            TenOctillion = new(TokenKind.GroupMultipler, value: 1_0000_0000_0000_0000_0000_0000_0000m, '穰');
+            TenOctillion = new(TokenKind.GroupMultipler, value: 1_0000_0000_0000_0000_0000_0000_0000m, '穰');  
 
 
             Unknown.PreviousToken = Unknown;

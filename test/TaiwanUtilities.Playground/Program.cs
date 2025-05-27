@@ -17,11 +17,11 @@ static class Program
 {
     static void Main(string[] args)
     {
-        for (int i = 0; i < 1000; i++)
-        {
+        //for (int i = 11098; i < 11122; i++)
+        //{
+        //    Console.WriteLine($"[InlineData({i}, \"{new ChineseNumeric(i).ToString("tw")}\")]");
+        //}
 
-            Console.WriteLine(new ChineseNumeric(i).ToString("tw"));
-        }
         //for (int i = 9000; i < 12000; i++)
         //{
 
@@ -29,11 +29,12 @@ static class Program
         //}
 
         foreach (var i in new[] {
-            1_0000_9999,
-            1_0000_9999_0000,
-            1_0000_9999_0100,
-            10000001,
-            10000,
+            decimal.Parse("10000000000".Replace("_", null)),
+            //1_0000_9999,
+            //1_0000_9999_0000,
+            //1_0000_9999_0100,
+            //10000001,
+            //10000,
             //10001, 10010, 10011, 10000000,
             //10000010, 10000011,
             //90000000000000000,

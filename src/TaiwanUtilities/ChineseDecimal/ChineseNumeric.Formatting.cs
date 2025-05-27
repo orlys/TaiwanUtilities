@@ -273,6 +273,12 @@ partial struct ChineseNumeric : IFormattable
                         lastIsZero = true;
                         continue;
                     }
+                    else if (compensated)
+                    {
+                        lastIsZero = true;
+                        compensated = false;
+                        continue;
+                    }
                 }
 
                 if (section.Compensation && !lastIsZero && groupPosition is not 0)
@@ -498,12 +504,12 @@ partial struct ChineseNumeric : IFormattable
         /// <summary>
         /// 繁體大寫
         /// </summary>
-        public static FormatterProfile TraditionalUppercase { get; } = new(FormatterFlags.CrawlStack, "零", "壹", "貳", "參", "肆", "伍", "陸", "柒", "捌", "玖", "拾", "佰", "仟", "萬", "億", "兆", "京", "垓", "穰", "秭");
+        public static FormatterProfile TraditionalUppercase { get; } = new(FormatterFlags.CrawlStack, "零", "壹", "貳", "參", "肆", "伍", "陸", "柒", "捌", "玖", "拾", "佰", "仟", "萬", "億", "兆", "京", "垓",  "秭","穰");
 
         /// <summary>
         /// 繁體小寫
         /// </summary>
-        public static FormatterProfile TraditionalLowercase { get; } = new(FormatterFlags.CrawlStack, "零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "萬", "億", "兆", "京", "垓", "穰", "秭");
+        public static FormatterProfile TraditionalLowercase { get; } = new(FormatterFlags.CrawlStack, "零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "萬", "億", "兆", "京", "垓", "秭", "穰");
 
         /// <summary>
         /// 簡體大寫
