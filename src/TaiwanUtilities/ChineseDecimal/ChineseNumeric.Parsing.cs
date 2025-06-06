@@ -21,103 +21,82 @@ partial struct ChineseNumeric
         SegmentOverflow
     }
 
+
+
     private static bool ParseCore(ReadOnlySpan<char> str, out ChineseNumeric result, bool throwError)
     {
         result = Zero;
-        // 檢查空字串
-        if (str.IsWhiteSpace())
+
+        if (Token.Tokenize(str, throwError) is not { } tokens)
         {
-            if (throwError)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
-            else
-            {
-                return false;
-            }
+            return false;
         }
 
-        // 檢查是否包含無效字元
-        for (var i = 0; i < str.Length; i++)
-        {
-            var c = str[i];
-            if (!Token.ContainsToken(c))
-            {
-                if (throwError)
-                {
-                    throw InvalidToken.UnknownCharacter(c, i);
-                }
-                else
-                {
-                    return false;
-                } 
-            }
-        }
-
-        var characters = Tokenizer.Tokenize(str);
-
-        var aggregateRoot = 0m;
+        var sumRoot = 0m;
         var digitStack = new Stack<decimal>(4);
         var hugeStack = new Stack<decimal>(7);
-        var lastTinyMultipler = default(Token);
-        var lastHugeMultipler = default(Token);
+
+        var lastTinyMultiplerCharacter = default(Character);
+        var lastLargeMultiplierCharacter = default(Character);
+        var lastLargeMultiplierToken = default(Token);
+
         var previousUnit = 3;
         var previousIsZero = false;
 
-#if NET_5_0_OR_GREATER
-        foreach (var c in CollectionsMarshal.AsSpan(characters))
-#else
-        foreach (var c in characters)
-#endif
+        foreach (var token in tokens)
         {
-
-            if (c.IsDigit)
+            // 零~九
+            if (token.IsDigit)
             {
                 if (previousUnit < 3 &&
                     digitStack.TryPop(out var digit))
                 {
-                    if (lastTinyMultipler is Token ltm)
+                    if (lastTinyMultiplerCharacter is { } ltm)
                     {
-                        lastTinyMultipler = ltm.PreviousToken;
+                        lastTinyMultiplerCharacter = ltm.Previous;
                     }
 
                     if (previousIsZero)
                     {
                         previousIsZero = false;
-                        digitStack.Push(c);
+                        digitStack.Push(token);
                     }
                     else
                     {
-                        digitStack.Push((digit * Token.Ten) + c);
+                        digitStack.Push((digit * Character.Ten) + token);
                     }
                 }
                 else
                 {
-                    if (lastTinyMultipler is Token ltm && c.IsZero)
+                    if (lastTinyMultiplerCharacter is { } ltm && token.IsZero)
                     {
-                        lastTinyMultipler = ltm.PreviousToken;
+                        lastTinyMultiplerCharacter = ltm.Previous;
                         previousIsZero = true;
-                        digitStack.Push(c);
+                        digitStack.Push(token);
                     }
                     else
                     {
-                        digitStack.Push(c);
+                        digitStack.Push(token);
                         previousIsZero = false;
+                        if (token.IsZero)
+                        {
+                            previousUnit++;
+                        }
                     }
                 }
                 --previousUnit;
                 continue;
             }
 
-            if (c.IsGroupTinyMultipler)
+            // 千百十
+            if (token.IsTinyMultipler)
             {
-
-                var log10 = (int)Log10((int)c.Token.Value) - 1;
+                var log10 = (int)Log10((int)token.Character.Value) - 1;
                 if (previousUnit < log10)
                 {
                     if (throwError)
                     {
-                        throw InvalidToken.SegmentOverflow(c, c.Index);
+                        throw InvalidToken.SegmentOverflow(token, token.Index);
                     }
                     else
                     {
@@ -125,11 +104,12 @@ partial struct ChineseNumeric
                     }
                 }
 
-                if (lastTinyMultipler is Token ltm && ltm.Value < c)
+                if (lastTinyMultiplerCharacter is { } ltm &&
+                    ltm.Value < token)
                 {
                     if (throwError)
                     {
-                        throw InvalidToken.InvalidUnitPosition(c, c.Index); 
+                        throw InvalidToken.InvalidUnitPosition(token, token.Index);
                     }
                     else
                     {
@@ -138,17 +118,17 @@ partial struct ChineseNumeric
                 }
                 else
                 {
-                    lastTinyMultipler = c.Token;
+                    lastTinyMultiplerCharacter = token.Character;
                 }
 
 
                 if (digitStack.TryPop(out var digit) && !previousIsZero)
                 {
-                    aggregateRoot += c * digit;
+                    sumRoot += token * digit;
                 }
                 else
                 {
-                    aggregateRoot += c;
+                    sumRoot += token;
                 }
                 previousIsZero = false;
                 previousUnit = 3;
@@ -156,68 +136,111 @@ partial struct ChineseNumeric
             }
 
 
-            if (c.IsGroupMultipler)
+            if (token.IsLargeMultiplier)
             {
-                lastHugeMultipler = c.Token;
+                lastLargeMultiplierCharacter = token.Character;
+                lastLargeMultiplierToken = token;
                 if (!previousIsZero && digitStack.TryPop(out var digit))
                 {
-                    hugeStack.Push(c * (aggregateRoot + digit));
+                    hugeStack.Push(token * (sumRoot + digit));
                 }
                 else
                 {
-                    if (aggregateRoot is 0m)
+                    if (sumRoot is 0m)
                     {
-                        hugeStack.Push(c);
+                        hugeStack.Push(token);
                     }
                     else
                     {
-                        hugeStack.Push(c * aggregateRoot);
+                        hugeStack.Push(token * sumRoot);
                     }
                 }
-                aggregateRoot = 0;
+                sumRoot = 0;
                 previousUnit = 3;
                 previousIsZero = false;
-                lastTinyMultipler = default(Token);
+                lastTinyMultiplerCharacter = default(Character);
                 continue;
             }
         }
 
         if (digitStack.TryPop(out var digit2))
         {
-            if (lastTinyMultipler is Token ltm)
+            if (lastTinyMultiplerCharacter is Character ltm)
             {
-                var prev = ltm.PreviousToken;
+                var prev = ltm.Previous;
                 if (prev.IsUnknown)
                 {
-                    aggregateRoot += digit2;
+                    sumRoot += digit2;
                 }
                 else
                 {
-                    aggregateRoot += digit2 * prev;
+                    sumRoot += digit2 * prev;
                 }
 
             }
             else
             {
-                if (lastHugeMultipler is Token lhm)
+                if (lastLargeMultiplierCharacter is Character lhm)
                 {
+                    if (lastLargeMultiplierToken is { Previous: { IsZero: true } })
+                    {
+                        if (lastLargeMultiplierToken.Next is { IsZero: true })
+                        {
+                            // 1000000000
+                            sumRoot += digit2 * lhm.Previous;
+                        }
+                        else
+                        {
+                            // 1000000001
+                            sumRoot += digit2 * (lhm / Character.Ten);
+                        }
+                    }
+                    else if (lastLargeMultiplierToken.Next is { IsZero: true } nextToken)
+                    {
+                        // 找到下個 large multiplier token
+                        FindNext:
+                        if (nextToken?.Next is { IsLargeMultiplier: true } n)
+                        {
+                            nextToken = n;
+                        }
+                        else
+                        {
+                            if (nextToken is not null)
+                            {
+                                nextToken = nextToken.Next;
+                                goto FindNext;
+                            }
+                            else
+                            {
+                                nextToken = null;
+                            }
+                        }
 
-                    aggregateRoot += digit2 * (lhm / Token.Ten);
+
+                        // 1000000000
+                        sumRoot += digit2 * (nextToken ?? 1m);
+                    }
+                    else
+                    {
+
+                        sumRoot += digit2 * (lhm / Character.Ten);
+                    }
+
                 }
                 else
                 {
-                    aggregateRoot += digit2;
+                    sumRoot += digit2;
                 }
             }
         }
 
         while (hugeStack.TryPop(out var huge))
         {
-            aggregateRoot += huge;
+            sumRoot += huge;
         }
 
         // assign
-        result = aggregateRoot;
+        result = sumRoot;
         return true;
 
 

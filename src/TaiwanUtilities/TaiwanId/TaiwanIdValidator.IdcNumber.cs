@@ -79,7 +79,7 @@ partial class TaiwanIdValidator
     /**
     *  A=10 台北市     J=18 新竹縣     S=26 高雄縣
     *  B=11 台中市     K=19 苗栗縣     T=27 屏東縣
-    *  C=12 基隆市     L=20 台中縣     U=28 花蓮縣
+    *  Character=12 基隆市     L=20 台中縣     U=28 花蓮縣
     *  D=13 台南市     M=21 南投縣     V=29 台東縣
     *  E=14 高雄市     N=22 彰化縣     W=32 金門縣*
     *  F=15 台北縣     O=35 新竹市*    X=30 澎湖縣
@@ -93,7 +93,7 @@ partial class TaiwanIdValidator
     private static readonly int[] TAIWAN_ID_LOCALE_CODE_LIST = [
         1,  // A -> 10 -> 1 * 1 + 9 * 0 = 1
         10, // B -> 11 -> 1 * 1 + 9 * 1 = 10
-        19, // C -> 12 -> 1 * 1 + 9 * 2 = 19
+        19, // Character -> 12 -> 1 * 1 + 9 * 2 = 19
         28, // D
         37, // E
         46, // F
@@ -122,7 +122,7 @@ partial class TaiwanIdValidator
     private static readonly int[] RESIDENT_CERTIFICATE_NUMBER_LIST = [
         0, // A
         1, // B
-        2, // C
+        2, // Character
         3, // D
         4, // E
         5, // F

@@ -25,65 +25,127 @@ partial struct ChineseNumeric
         }
 
         internal static FormatException SegmentOverflow(
-            Character character,
+            Token character,
             int index)
         {
             return Create(character.Value, index, "Segment overflow");
         }
 
         internal static FormatException InvalidUnitPosition(
-            Character character,
+            Token character,
             int index)
         {
             return Create(character.Value, index, "Invalid unit position");
         }
 
     }
-    internal readonly record struct Character(char Value, int Index, Token Token)
+    internal record Token(char Value, int Index, Character Character)
     {
+        public static List<Token>? Tokenize(ReadOnlySpan<char> str, bool throwError)
+        {
+            // 檢查空字串
+            if (str.IsWhiteSpace())
+            {
+                if (throwError)
+                {
+                    throw new ArgumentNullException(nameof(str));
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            // 檢查是否包含無效字元
+            for (var i = 0; i < str.Length; i++)
+            {
+                var c = str[i];
+                if (!Character.Contains(c))
+                {
+                    if (throwError)
+                    {
+                        throw InvalidToken.UnknownCharacter(c, i);
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+            }
+
+
+            var list = new List<Token>(str.Length);
+            var previous = default(Token);
+
+            for (var index = 0; index < str.Length; index++)
+            {
+                var character = str[index];
+
+                var token = Character.Get(character);
+
+                var current = new Token(character, index, token);
+
+                current.Previous = previous;
+                if (previous is { } p)
+                {
+                    p.Next = current;
+                }
+                previous = current;
+
+                list.Add(current);
+            }
+
+            return list;
+        }
+
+
+        public Token Previous { get; internal set; }
+
+        public Token Next { get; internal set; }
+
         /// <summary>
         /// 判斷是否為未知。
         /// </summary> 
         /// <returns></returns>
-        public bool IsUnknown => Token.IsKindOf(TokenKind.Unknown);
+        public bool IsUnknown => Character.IsKindOf(CharacterKind.Unknown);
 
         /// <summary>
         /// 判斷是否為零。
         /// </summary> 
         /// <returns></returns>
-        public bool IsZero => Token.IsKindOf(TokenKind.Zero);
+        public bool IsZero => Character.IsKindOf(CharacterKind.Zero);
 
         /// <summary>
         /// 判斷是否為零到九(不包含零)。
         /// </summary> 
         /// <returns></returns>
-        public bool IsDigit => Token.IsKindOf(TokenKind.Digit);
+        public bool IsDigit => Character.IsKindOf(CharacterKind.Digit);
 
         /// <summary>
         /// 判斷是否為一到九。
         /// </summary> 
         /// <returns></returns>
-        public bool IsUnit => Token.IsKindOf(TokenKind.Unit);
+        public bool IsUnit => Character.IsKindOf(CharacterKind.Unit);
 
 
         /// <summary>
         /// 判斷是否為複合字。
         /// </summary> 
         /// <returns></returns>
-        public bool IsDuplex => Token.IsKindOf(TokenKind.Duplex);
+        public bool IsDuplex => Character.IsKindOf(CharacterKind.Duplex);
 
 
         /// <summary>
         /// 判斷是否為十百千。
         /// </summary> 
         /// <returns></returns>
-        public bool IsGroupTinyMultipler => Token.IsKindOf(TokenKind.GroupTinyMultipler);
+        public bool IsTinyMultipler => Character.IsKindOf(CharacterKind.GroupTinyMultipler);
 
         /// <summary>
         /// 判斷是否為萬億兆京垓秭穰。
         /// </summary> 
         /// <returns></returns>
-        public bool IsGroupMultipler => Token.IsKindOf(TokenKind.GroupMultipler);
+        public bool IsLargeMultiplier => Character.IsKindOf(CharacterKind.GroupMultipler);
 
         public override string ToString()
         {
@@ -91,152 +153,138 @@ partial struct ChineseNumeric
         }
 
 
-        public static implicit operator decimal(Character character)
+        public static implicit operator decimal(Token character)
         {
-            return character.Token.Value;
+            return character.Character.Value;
         }
 
 
-        public static decimal operator *(Character left, decimal right)
+        public static decimal operator *(Token left, decimal right)
         {
-            return left.Token.Value * right;
+            return left.Character.Value * right;
         }
 
-        public static decimal operator *(decimal left, Character right)
+        public static decimal operator *(decimal left, Token right)
         {
-            return left * right.Token.Value;
+            return left * right.Character.Value;
         }
 
-        public static decimal operator *(Character left, Character right)
+        public static decimal operator *(Token left, Token right)
         {
-            return left.Token.Value * right.Token.Value;
+            return left.Character.Value * right.Character.Value;
         }
 
 
-        public static decimal operator +(Character left, decimal right)
+        public static decimal operator +(Token left, decimal right)
         {
-            return left.Token.Value + right;
+            return left.Character.Value + right;
         }
 
-        public static decimal operator +(decimal left, Character right)
+        public static decimal operator +(decimal left, Token right)
         {
-            return left + right.Token.Value;
+            return left + right.Character.Value;
         }
 
-        public static decimal operator +(Character left, Character right)
+        public static decimal operator +(Token left, Token right)
         {
-            return left.Token.Value + right.Token.Value;
+            return left.Character.Value + right.Character.Value;
         }
 
-        public static bool operator >(Character left, Character right)
+        public static bool operator >(Token left, Token right)
         {
-            return left.Token.Value > right.Token.Value;
+            return left.Character.Value > right.Character.Value;
         }
-        public static bool operator <(Character left, Character right)
+        public static bool operator <(Token left, Token right)
         {
-            return left.Token.Value < right.Token.Value;
-        }
-    }
-    private static class Tokenizer
-    {
-        public static List<Character> Tokenize(ReadOnlySpan<char> str)
-        {
-
-            var list = new List<Character>(str.Length);
-
-            for (var index = 0; index < str.Length; index++)
-            {
-                var character = str[index];
-
-                var token = Token.GetToken(character);
-                list.Add(new Character(character, index, token));
-            }
-
-            return list;
+            return left.Character.Value < right.Character.Value;
         }
     }
 
-    internal sealed class Token
+    [DebuggerDisplay("{ToString(),nc}")]
+    internal sealed class Character
     {
-        static Token()
+        static Character()
         {
-            Unknown = new(TokenKind.Unknown, 0m);
+            Unknown = new(CharacterKind.Unknown, 0m);
 
-            Zero = new(TokenKind.Zero, 0m, '〇', '0', '零', '０', '零');
+            Zero = new(CharacterKind.Zero, 0m, '〇', '0', '零', '０', '零');
 
-            One = new(TokenKind.Unit, 1m, '一', '1', '壹', '１', '壱', '弌');
-            Two = new(TokenKind.Unit, 2m, '二', '2', '貳', '２', '贰', '兩', '弐', '貮');
-            Three = new(TokenKind.Unit, 3m, '三', '3', '參', '３', '参', '叁', '叄', '弎');
-            Four = new(TokenKind.Unit, 4m, '四', '4', '肆', '４', '䦉');
-            Five = new(TokenKind.Unit, 5m, '五', '5', '伍', '５');
-            Six = new(TokenKind.Unit, 6m, '六', '6', '陸', '６', '陆');
-            Seven = new(TokenKind.Unit, 7m, '七', '7', '柒', '７', '漆');
-            Eight = new(TokenKind.Unit, 8m, '八', '8', '捌', '８');
-            Nine = new(TokenKind.Unit, 9m, '九', '9', '玖', '９');
+            One = new(CharacterKind.Unit, 1m, '一', '1', '壹', '１', '壱', '弌');
+            Two = new(CharacterKind.Unit, 2m, '二', '2', '貳', '２', '贰', '兩', '弐', '貮');
+            Three = new(CharacterKind.Unit, 3m, '三', '3', '參', '３', '参', '叁', '叄', '弎');
+            Four = new(CharacterKind.Unit, 4m, '四', '4', '肆', '４', '䦉');
+            Five = new(CharacterKind.Unit, 5m, '五', '5', '伍', '５');
+            Six = new(CharacterKind.Unit, 6m, '六', '6', '陸', '６', '陆');
+            Seven = new(CharacterKind.Unit, 7m, '七', '7', '柒', '７', '漆');
+            Eight = new(CharacterKind.Unit, 8m, '八', '8', '捌', '８');
+            Nine = new(CharacterKind.Unit, 9m, '九', '9', '玖', '９');
 
-            Unit = new(TokenKind.Unknown, 1m, char.MinValue);
-            Ten = new(TokenKind.Ten, 10m, '十', '拾', '什');
-            Hundred = new(TokenKind.Hundred, 100m, '百', '佰', '陌');
-            Thousand = new(TokenKind.Thousand, 1000m, '千', '仟', '阡');
+            Unit = new(CharacterKind.Unknown, 1m, char.MinValue);
+            Ten = new(CharacterKind.Ten, 10m, '十', '拾', '什');
+            Hundred = new(CharacterKind.Hundred, 100m, '百', '佰', '陌');
+            Thousand = new(CharacterKind.Thousand, 1000m, '千', '仟', '阡');
 
-            TenThousand = new(TokenKind.GroupMultipler, value: 1_0000m, '萬', '万');
-            HundredMillion = new(TokenKind.GroupMultipler, value: 1_0000_0000m, '億', '亿');
-            Trillion = new(TokenKind.GroupMultipler, value: 1_0000_0000_0000m, '兆');
-            TenQuadrillion = new(TokenKind.GroupMultipler, value: 1_0000_0000_0000_0000m, '京');
-            HundredQuintillion = new(TokenKind.GroupMultipler, value: 1_0000_0000_0000_0000_0000m, '垓');
-            Septillion = new(TokenKind.GroupMultipler, value: 1_0000_0000_0000_0000_0000_0000m, '秭');
-            TenOctillion = new(TokenKind.GroupMultipler, value: 1_0000_0000_0000_0000_0000_0000_0000m, '穰');  
-
-
-            Unknown.PreviousToken = Unknown;
-            Unknown.NextToken = Unknown;
-
-            Zero.PreviousToken = Unknown;
-            Zero.NextToken = Unknown;
-
-            One.PreviousToken = Unknown;
-            One.NextToken = Two;
-            Two.PreviousToken = One;
-            Two.NextToken = Three;
-            Three.PreviousToken = Two;
-            Three.NextToken = Four;
-            Four.PreviousToken = Three;
-            Four.NextToken = Five;
-            Five.PreviousToken = Four;
-            Five.NextToken = Six;
-            Six.PreviousToken = Five;
-            Six.NextToken = Seven;
-            Seven.PreviousToken = Six;
-            Seven.NextToken = Eight;
-            Eight.PreviousToken = Seven;
-            Eight.NextToken = Nine;
-            Nine.PreviousToken = Eight;
-            Nine.NextToken = Unknown;
+            GroupUnit = new(CharacterKind.Unknown, 1m, char.MinValue);
+            TenThousand = new(CharacterKind.GroupMultipler, value: 1_0000m, '萬', '万');
+            HundredMillion = new(CharacterKind.GroupMultipler, value: 1_0000_0000m, '億', '亿');
+            Trillion = new(CharacterKind.GroupMultipler, value: 1_0000_0000_0000m, '兆');
+            TenQuadrillion = new(CharacterKind.GroupMultipler, value: 1_0000_0000_0000_0000m, '京');
+            HundredQuintillion = new(CharacterKind.GroupMultipler, value: 1_0000_0000_0000_0000_0000m, '垓');
+            Septillion = new(CharacterKind.GroupMultipler, value: 1_0000_0000_0000_0000_0000_0000m, '秭');
+            TenOctillion = new(CharacterKind.GroupMultipler, value: 1_0000_0000_0000_0000_0000_0000_0000m, '穰');
 
 
-            Unit.PreviousToken = Unknown;
-            Unit.NextToken = Ten;
-            Ten.PreviousToken = Unit;
-            Ten.NextToken = Hundred;
-            Hundred.PreviousToken = Ten;
-            Hundred.NextToken = Thousand;
-            Thousand.PreviousToken = Hundred;
-            Thousand.NextToken = Unknown;
+            Unknown.Previous = Unknown;
+            Unknown.Next = Unknown;
 
-            TenThousand.PreviousToken = Unknown;
-            TenThousand.NextToken = HundredMillion;
-            HundredMillion.PreviousToken = TenThousand;
-            HundredMillion.NextToken = Trillion;
-            Trillion.PreviousToken = HundredMillion;
-            Trillion.NextToken = TenQuadrillion;
-            TenQuadrillion.PreviousToken = Trillion;
-            TenQuadrillion.NextToken = HundredQuintillion;
-            HundredQuintillion.PreviousToken = TenQuadrillion;
-            HundredQuintillion.NextToken = Septillion;
-            Septillion.PreviousToken = HundredQuintillion;
-            Septillion.NextToken = TenOctillion;
-            TenOctillion.PreviousToken = Septillion;
-            TenOctillion.NextToken = Unknown;
+            Zero.Previous = Unknown;
+            Zero.Next = Unknown;
+
+            One.Previous = Unknown;
+            One.Next = Two;
+            Two.Previous = One;
+            Two.Next = Three;
+            Three.Previous = Two;
+            Three.Next = Four;
+            Four.Previous = Three;
+            Four.Next = Five;
+            Five.Previous = Four;
+            Five.Next = Six;
+            Six.Previous = Five;
+            Six.Next = Seven;
+            Seven.Previous = Six;
+            Seven.Next = Eight;
+            Eight.Previous = Seven;
+            Eight.Next = Nine;
+            Nine.Previous = Eight;
+            Nine.Next = Unknown;
+
+
+            Unit.Previous = Unknown;
+            Unit.Next = Ten;
+            Ten.Previous = Unit;
+            Ten.Next = Hundred;
+            Hundred.Previous = Ten;
+            Hundred.Next = Thousand;
+            Thousand.Previous = Hundred;
+            Thousand.Next = Unknown;
+
+            GroupUnit.Previous = Unknown;
+            GroupUnit.Next = TenThousand;
+            TenThousand.Previous = GroupUnit;
+            TenThousand.Next = HundredMillion;
+            HundredMillion.Previous = TenThousand;
+            HundredMillion.Next = Trillion;
+            Trillion.Previous = HundredMillion;
+            Trillion.Next = TenQuadrillion;
+            TenQuadrillion.Previous = Trillion;
+            TenQuadrillion.Next = HundredQuintillion;
+            HundredQuintillion.Previous = TenQuadrillion;
+            HundredQuintillion.Next = Septillion;
+            Septillion.Previous = HundredQuintillion;
+            Septillion.Next = TenOctillion;
+            TenOctillion.Previous = Septillion;
+            TenOctillion.Next = Unknown;
 
 
             List = [
@@ -261,10 +309,10 @@ partial struct ChineseNumeric
                 Septillion,
                 TenOctillion,
             ];
-            var numericTokens = new Dictionary<char, Token>();
+            var numericTokens = new Dictionary<char, Character>();
             foreach (var token in List)
             {
-                foreach (var c in token.Characters)
+                foreach (var c in token.CandidateList)
                 {
                     numericTokens[c] = token;
                 }
@@ -273,78 +321,149 @@ partial struct ChineseNumeric
             s_numericTokens = FrozenDictionary.ToFrozenDictionary(numericTokens);
 
         }
+        /// <summary>
+        /// 零
+        /// </summary>
+        public static Character Zero { get; }
+        /// <summary>
+        /// 一
+        /// </summary>
+        public static Character One { get; }
+        /// <summary>
+        /// 二
+        /// </summary>
+        public static Character Two { get; }
+        /// <summary>
+        /// 三
+        /// </summary>
+        public static Character Three { get; }
+        /// <summary>
+        /// 四
+        /// </summary>
+        public static Character Four { get; }
+        /// <summary>
+        /// 五
+        /// </summary>
+        public static Character Five { get; }
+        /// <summary>
+        /// 六
+        /// </summary>
+        public static Character Six { get; }
+        /// <summary>
+        /// 七
+        /// </summary>
+        public static Character Seven { get; }
+        /// <summary>
+        /// 八
+        /// </summary>
+        public static Character Eight { get; }
+        /// <summary>
+        /// 九
+        /// </summary>
+        public static Character Nine { get; }
 
-        public static Token Zero { get; }
-        public static Token One { get; }
-        public static Token Two { get; }
-        public static Token Three { get; }
-        public static Token Four { get; }
-        public static Token Five { get; }
-        public static Token Six { get; }
-        public static Token Seven { get; }
-        public static Token Eight { get; }
-        public static Token Nine { get; }
+
+        public static Character Unit { get; }
+
+        /// <summary>
+        /// 十
+        /// </summary>
+        public static Character Ten { get; }
+        /// <summary>
+        /// 百
+        /// </summary>
+        public static Character Hundred { get; }
+        /// <summary>
+        /// 千
+        /// </summary>
+        public static Character Thousand { get; }
 
 
-        public static Token Unit { get; }
-        public static Token Ten { get; }
-        public static Token Hundred { get; }
-        public static Token Thousand { get; }
+        public static Character GroupUnit { get; }
 
+        /// <summary>
+        /// 萬
+        /// </summary>
+        public static Character TenThousand { get; }
+        /// <summary>
+        /// 億
+        /// </summary>
+        public static Character HundredMillion { get; }
+        /// <summary>
+        /// 兆
+        /// </summary>
+        public static Character Trillion { get; }
+        /// <summary>
+        /// 京
+        /// </summary>
+        public static Character TenQuadrillion { get; }
+        /// <summary>
+        /// 垓
+        /// </summary>
+        public static Character HundredQuintillion { get; }
+        /// <summary>
+        /// 秭
+        /// </summary>
+        public static Character Septillion { get; }
+        /// <summary>
+        /// 穰
+        /// </summary>
+        public static Character TenOctillion { get; }
 
-        public static Token TenThousand { get; }
-        public static Token HundredMillion { get; }
-        public static Token Trillion { get; }
-        public static Token TenQuadrillion { get; }
-        public static Token HundredQuintillion { get; }
-        public static Token Septillion { get; }
-        public static Token TenOctillion { get; }
+        /// <summary>
+        /// 表示未知的字元
+        /// </summary>
+        public static Character Unknown { get; }
 
-        public static Token Unknown { get; }
-
-        public static bool ContainsToken(char character)
+        public static bool Contains(char character)
         {
             return s_numericTokens.ContainsKey(character);
         }
 
 
-        public static Token GetToken(char character)
+        public static Character Get(char character)
         {
             return s_numericTokens.GetValueOrDefault(character, Unknown);
         }
 
-        private static readonly IReadOnlyDictionary<char, Token> s_numericTokens;
+        private static readonly IReadOnlyDictionary<char, Character> s_numericTokens;
 
         public static IReadOnlyList<char> CharSet => (IReadOnlyList<char>)s_numericTokens.Keys;
 
-        public static IReadOnlyList<Token> List { get; }
+        public static IReadOnlyList<Character> List { get; }
 
-        public bool IsUnknown => IsKindOf(TokenKind.Unknown);
+        public bool IsUnknown => IsKindOf(CharacterKind.Unknown);
 
-        internal Token(TokenKind kind, decimal value, params char[] characters)
+        internal Character(CharacterKind kind, decimal value, params char[] characters)
         {
             Kind = kind;
-            Characters = characters;
+            CandidateList = characters;
             Value = value;
         }
 
-        public Token NextToken { get; private set; }
-        public Token PreviousToken { get; private set; }
+        public Character Next { get; private set; }
 
-        public TokenKind Kind { get; }
-        public char[] Characters { get; }
+        public Character Previous { get; private set; }
+
+        public CharacterKind Kind { get; }
+        public char[] CandidateList { get; }
         public decimal Value { get; }
 
-        public bool IsKindOf(TokenKind flag)
+        public bool IsKindOf(CharacterKind flag)
         {
             return Kind.HasFlag(flag);
         }
 
-        public static implicit operator decimal(Token token) => token.Value;
+        public static implicit operator decimal(Character token) => token.Value;
+
+        public override string ToString()
+        {
+            return $"Value = {Value}, Kind = {Kind}, CandidateList = [{string.Join(",", CandidateList)}]";
+        }
     }
 
     [Flags]
-    internal enum TokenKind
+    internal enum CharacterKind
     {
         /// <summary> 表示整數 </summary>
         Integer = 0,
@@ -384,7 +503,7 @@ partial struct ChineseNumeric
     {
         get
         {
-            return Token.CharSet;
+            return Character.CharSet;
         }
     }
 

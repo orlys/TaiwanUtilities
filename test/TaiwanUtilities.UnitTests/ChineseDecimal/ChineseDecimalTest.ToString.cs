@@ -161,11 +161,14 @@ partial class ChineseNumericTest
     [InlineData(10_0234, "十萬〇二百三十四")]
     [InlineData(1_0000_9999, "一億〇九千九百九十九")]
     [InlineData(1000_0100, "一千萬〇一百")]
-    public void 測試從十進位數值轉換為中文(object feed, string expected)
+    public void 轉換(object feed, string str)
     {
         var value = feed is decimal d ? d : decimal.Parse(feed.ToString().Replace("_", null)!);
 
-        var actual = new ChineseNumeric(value).ToString("tw");
-        Assert.Equal(expected, actual);
+        var stringifyValue = new ChineseNumeric(value).ToString("tw");
+        Assert.Equal(expected: str, actual: stringifyValue);
+
+        var parsedValue = ChineseNumeric.Parse(str);
+        Assert.Equal(expected: value, actual: (decimal)parsedValue);
     }
-} 
+}

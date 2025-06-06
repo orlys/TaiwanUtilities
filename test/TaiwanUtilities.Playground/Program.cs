@@ -1,19 +1,4 @@
-﻿using HarmonyLib;
-
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Globalization;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Web.Script.Serialization;
-
-using TaiwanUtilities;
-
-
-static class Program
+﻿static class Program
 {
     static void Main(string[] args)
     {
@@ -28,44 +13,34 @@ static class Program
         //    Console.WriteLine(new ChineseNumeric(i).ToString("tw"));
         //}
 
-        foreach (var i in new[] {
-            decimal.Parse("10000000000".Replace("_", null)),
-            //1_0000_9999,
-            //1_0000_9999_0000,
-            //1_0000_9999_0100,
-            //10000001,
-            //10000,
-            //10001, 10010, 10011, 10000000,
-            //10000010, 10000011,
-            //90000000000000000,
-            //10001000,
-            //20000100,
-            //10000101,
-            //10001100,
-            //10101101,
-            //100010000
-        })
-        {
+        //foreach (var i in new[] {
+        //    decimal.Parse("10000000000".Replace("_", null)),
+        //    //1_0000_9999,
+        //    //1_0000_9999_0000,
+        //    //1_0000_9999_0100,
+        //    //10000001,
+        //    //10000,
+        //    //10001, 10010, 10011, 10000000,
+        //    //10000010, 10000011,
+        //    //90000000000000000,
+        //    //10001000,
+        //    //20000100,
+        //    //10000101,
+        //    //10001100,
+        //    //10101101,
+        //    //100010000
+        //})
+        //{
 
-            Console.WriteLine(new ChineseNumeric(i).ToString("tw"));
-        }
-
+        //    Console.WriteLine(new ChineseNumeric(i).ToString("tw"));
+        //} 
         //RocDateTime.SetDefaultFormat("yyy/MM/dd 時分秒");
         //Console.WriteLine(DateTime.Parse("1995/12/18").ToString("G"));
         //Console.WriteLine(RocDateTime.Parse("^3/12/31 12:08:03"));
     }
 
-}
-class A
-{
-    public PostalAddress D { get; set; }
-}
-
-
-//if (OperatingSystem.IsWindows())
-//{
-//    Console.BufferHeight = short.MaxValue - 1;
-//}
+} 
+ 
 
 
 //var p = Path.Combine([Environment.CurrentDirectory, .. Enumerable.Repeat("..", 5), "data", "zipcode.json"]);
