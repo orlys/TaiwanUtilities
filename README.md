@@ -9,11 +9,11 @@
 純值類型均有以下特性
 1. 提供隱含轉換至原生相似、對應類型
 2. 無須預先註冊轉換器，原生支援 `Newtonsoft.Json` 與 `System.Text.Json` 的序列化與反序列化
-3. ASP.NET MVC 原生支援 `JavaScriptSerializer` 的直接序列化與反序列化
+3. 原生支援 `JavaScriptSerializer` 的直接序列化與反序列化
 
 #### `ChineseDecimal` 結構
 - 提供中文大小寫數字與 ```decimal``` 間的隱含互換，但解析部分不支援小數點
-- 可補足 ```InternationalNumericFormatter.dll``` 中無法處理的部分
+- 可補足 [```InternationalNumericFormatter.dll```](https://www.microsoft.com/zh-tw/download/details.aspx?id=18970) 中無法處理的部分
 ```csharp
 using TaiwanUtilities;
 

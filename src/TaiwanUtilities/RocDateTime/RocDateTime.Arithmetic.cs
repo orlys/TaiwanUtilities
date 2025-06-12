@@ -10,20 +10,16 @@ partial struct RocDateTime
 #if NET7_0_OR_GREATER
     : IAdditionOperators<RocDateTime, TimeSpan, RocDateTime>,
     ISubtractionOperators<RocDateTime, TimeSpan, RocDateTime>,
-    ISubtractionOperators<RocDateTime, RocDateTime, TimeSpan>
+    ISubtractionOperators<RocDateTime, RocDateTime, TimeSpan>,
+    ISubtractionOperators<RocDateTime, DateTime, TimeSpan>,
+    ISubtractionOperators<RocDateTime, DateTimeOffset, TimeSpan>
 #endif
 {
 
     public static RocDateTime operator +(RocDateTime time, TimeSpan span) => time.Add(span);
     public static RocDateTime operator -(RocDateTime time, TimeSpan span) => time.Add(-span);
-
-    /// <summary>
-    /// 計算時間差異
-    /// </summary>
-    /// <param name="left"></param>
-    /// <param name="right"></param>
-    /// <returns></returns>
     public static TimeSpan operator -(RocDateTime left, RocDateTime right) => left.GetRawValue() - right.GetRawValue();
-
+    public static TimeSpan operator -(RocDateTime left, DateTime right) => left.GetRawValue() - right;
+    public static TimeSpan operator -(RocDateTime left, DateTimeOffset right) => left.GetRawValue() - right;
 }
 

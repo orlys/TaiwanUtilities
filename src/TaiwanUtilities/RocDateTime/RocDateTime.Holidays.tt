@@ -14,6 +14,7 @@
 
 <#@ output extension=".g.cs" #>
 <#
+    //var sourceUrl = "https://data.ntpc.gov.tw/api/datasets/308dcd75-6434-45bc-a95f-584da4fed251/json?page=0&size=100000";
     var sourceUrl = "https://raw.githubusercontent.com/ruyut/TaiwanCalendar/refs/heads/master/data/{0}.json";
     var downloader = new Downloader(sourceUrl);
     var holidays = downloader.DownloadHolidays();
@@ -133,7 +134,11 @@ partial struct RocDateTime
                 }}
 
                 var jsonString = await response.Content.ReadAsStringAsync();
-                var yearHolidays = JsonSerializer.Deserialize<List<DateInfo>>(jsonString);
+                var jsonSerializerOptions = new JsonSerializerOptions
+                {{
+                    PropertyNameCaseInsensitive = true
+                }};
+                var yearHolidays = JsonSerializer.Deserialize<List<DateInfo>>(jsonString, jsonSerializerOptions);
                 
                 if (yearHolidays != null)
                 {{
@@ -159,7 +164,9 @@ partial struct RocDateTime
     /// <summary>
     /// 判斷是否為法定假日
     /// </summary>
-    /// <remarks>僅支援民國 {(supportedFrom - 1911)} 年到民國 {(supportedTo - 1911)} 年的法定假日，行政院人事行政總處每年年中才會公布隔年的辦公日曆表</remarks>
+    /// <remarks>僅支援民國 {(supportedFrom - 1911)} 年到民國 {(supportedTo - 1911)} 年的法定假日，行政院人事行政總處每年年中才會公布隔年的辦公日曆表，
+    /// 此屬性的目前使用 <see href=""https://github.com/ruyut/TaiwanCalendar""/> 作為資料來源
+    /// </remarks>
     public bool IsHoliday
     {{
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -167,12 +174,12 @@ partial struct RocDateTime
         {{
             var dateTime = GetRawValue().DateTime;
             var year = dateTime.Year;
-            if (year < 2017)
+            if (year < {supportedFrom})
             {{
                 return false;
             }}
 
-            if (year < 2026)
+            if (year < {supportedTo})
             {{
                 return s_holidays.Contains(dateTime);
             }}
@@ -273,7 +280,11 @@ internal class Downloader {
                 }
 
                 var jsonString = await response.Content.ReadAsStringAsync();
-                var yearHolidays = JsonSerializer.Deserialize<List<DateInfo>>(jsonString);
+                var jsonSerializerOptions = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var yearHolidays = JsonSerializer.Deserialize<List<DateInfo>>(jsonString, jsonSerializerOptions);
                 
                 if (yearHolidays != null)
                 {

@@ -1,46 +1,98 @@
-﻿static class Program
+﻿using System;
+using System.Linq;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
+using System.Text.RegularExpressions;
+
+using TaiwanUtilities;
+
+static class Program
 {
     static void Main(string[] args)
     {
-        //for (int i = 11098; i < 11122; i++)
-        //{
-        //    Console.WriteLine($"[InlineData({i}, \"{new ChineseNumeric(i).ToString("tw")}\")]");
-        //}
-
-        //for (int i = 9000; i < 12000; i++)
-        //{
-
-        //    Console.WriteLine(new ChineseNumeric(i).ToString("tw"));
-        //}
-
-        //foreach (var i in new[] {
-        //    decimal.Parse("10000000000".Replace("_", null)),
-        //    //1_0000_9999,
-        //    //1_0000_9999_0000,
-        //    //1_0000_9999_0100,
-        //    //10000001,
-        //    //10000,
-        //    //10001, 10010, 10011, 10000000,
-        //    //10000010, 10000011,
-        //    //90000000000000000,
-        //    //10001000,
-        //    //20000100,
-        //    //10000101,
-        //    //10001100,
-        //    //10101101,
-        //    //100010000
-        //})
-        //{
-
-        //    Console.WriteLine(new ChineseNumeric(i).ToString("tw"));
-        //} 
-        //RocDateTime.SetDefaultFormat("yyy/MM/dd 時分秒");
-        //Console.WriteLine(DateTime.Parse("1995/12/18").ToString("G"));
-        //Console.WriteLine(RocDateTime.Parse("^3/12/31 12:08:03"));
+        //var r = new Regex(@"[\u4E00-\uFFF3]");
+        var v = "𢊬";
+        var m = IsChinese("1" + "𢊬");
+        
+        var vx = Encoding.Unicode.GetBytes("𢊬");
+        Console.WriteLine(vx.Length);
     }
 
-} 
- 
+    static bool IsChinese(string s)
+    {
+        
+        var l = s.Length;
+        return s.EnumerateRunes().All(r =>
+            (r.Value >= 0x4E00 && r.Value <= 0x9FFF) ||   // 基本
+            (r.Value >= 0x3400 && r.Value <= 0x4DBF) ||   // 擴展A
+            (r.Value >= 0x20000 && r.Value <= 0x2A6DF) || // 擴展B
+            (r.Value >= 0x2A700 && r.Value <= 0x2B73F) || // 擴展C
+            (r.Value >= 0x2B740 && r.Value <= 0x2B81F) || // 擴展D
+            (r.Value >= 0x2B820 && r.Value <= 0x2CEAF) || // 擴展E
+            (r.Value >= 0x2CEB0 && r.Value <= 0x2EBEF) || // 擴展F
+            (r.Value >= 0x30000 && r.Value <= 0x3134F));  // 擴展G
+    }
+}
+
+public class JsonC : JsonConverter<bool>
+{
+    public JsonC()
+    {
+
+    }
+    public override bool ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        return base.ReadAsPropertyName(ref reader, typeToConvert, options);
+    }
+    public override bool Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType is JsonTokenType.True or JsonTokenType.False)
+        {
+            return reader.GetBoolean();
+        }
+
+        if (reader.TokenType is JsonTokenType.String &&
+            reader.GetString() is { } str)
+        {
+            return str is "是" ? true :
+                   str is "否" ? false :
+                   throw new JsonException($"Invalid boolean value: {str}");
+        }
+
+        throw new JsonException($"Unexpected token {reader.TokenType} when parsing boolean value.");
+    }
+
+    public override void Write(Utf8JsonWriter writer, bool value, JsonSerializerOptions options)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+sealed class DateInfo
+{
+    [JsonPropertyName("date")]
+    public string Date { get; set; }
+
+    [JsonConverter(typeof(JsonC))]
+    //[JsonPropertyName("isholiday")]
+    public bool IsHoliday { get; set; }
+
+    public override int GetHashCode()
+    {
+        {
+            return Date?.GetHashCode() ?? 0;
+        }
+    }
+
+    public override bool Equals(object obj)
+    {
+        {
+            return obj is DateInfo di ? GetHashCode() == di.GetHashCode() : false;
+        }
+    }
+}
 
 
 //var p = Path.Combine([Environment.CurrentDirectory, .. Enumerable.Repeat("..", 5), "data", "zipcode.json"]);

@@ -19,8 +19,7 @@ public readonly partial struct RocDateTime
     }
 
     #region Operations
-    public RocDateTime AddTicks(long ticks) => GetRawValue().AddTicks(ticks);
-
+    public RocDateTime AddTicks(long ticks) => GetRawValue().AddTicks(ticks); 
     public RocDateTime AddMilliseconds(double milliseconds) => GetRawValue().AddMilliseconds(milliseconds);
     public RocDateTime AddSeconds(double seconds) => GetRawValue().AddSeconds(seconds);
     public RocDateTime AddMinutes(double minutes) => GetRawValue().AddMinutes(minutes);
@@ -126,13 +125,7 @@ public readonly partial struct RocDateTime
         ThrowIfOutOfRange(0, 59, second);
         ThrowIfOutOfRange(0, 999, millisecond);
 
-        static void ThrowIfOutOfRange(int min, int max, int value, [CallerArgumentExpression(nameof(value))] string paramName = default)
-        {
-            if (value < min || value > max)
-            {
-                throw new ArgumentOutOfRangeException(paramName, value, $"The {paramName} must be between '{min}' and '{max}'.");
-            }
-        }
+       
         try
         {
             _value = new DateTimeOffset(YearConversion.MinguoToEra(year), month, day, hour, minute, second, millisecond, TimeZoneOffset);
@@ -141,8 +134,17 @@ public readonly partial struct RocDateTime
         {
             throw;
         }
-    }
 
+
+        static void ThrowIfOutOfRange(int min, int max, int value, [CallerArgumentExpression(nameof(value))] string paramName = default)
+        {
+            if (value < min || value > max)
+            {
+                throw new ArgumentOutOfRangeException(paramName, value, $"The {paramName} must be between '{min}' and '{max}'.");
+            }
+        }
+    }
+     
 
     /// <summary>
     /// 直接透過西元年建立新的民國年物件實體。
@@ -162,7 +164,17 @@ public readonly partial struct RocDateTime
     /// <exception cref="ArgumentOutOfRangeException" />
     private RocDateTime(DateTimeOffset dt)
     {
+        ThrowIfOutOfRange(MaxValue, MinValue, dt);
+        
         _value = dt;
+
+        static void ThrowIfOutOfRange(DateTimeOffset min, DateTimeOffset max, DateTimeOffset value, [CallerArgumentExpression(nameof(value))] string paramName = default)
+        {
+            if (value < min || value > max)
+            {
+                throw new ArgumentOutOfRangeException(paramName, value, $"The {paramName} must be between '{min}' and '{max}'.");
+            }
+        }
     }
 
     #endregion
