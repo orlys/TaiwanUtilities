@@ -15,10 +15,17 @@ partial struct RocDateTime
     static RocDateTime()
     {
         TimeZoneOffset = TimeSpan.FromHours(+8);
-        MaxValue = new DateTimeOffset(ticks: 918306719999999999L, TimeZoneOffset);
-        MinValue = new DateTimeOffset(ticks: 287797536000000001L, TimeZoneOffset);
-        Era = new DateTimeOffset(ticks: 603052128000000000L, TimeZoneOffset); 
+        s_rawEra = new DateTimeOffset(ticks: 603052128000000000L, TimeZoneOffset);
+        s_rawMaxValue = new DateTimeOffset(ticks: 918306719999999999L, TimeZoneOffset);
+        s_rawMinValue = new DateTimeOffset(ticks: 287797536000000001L, TimeZoneOffset);
     }
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private static readonly DateTimeOffset s_rawEra;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private static readonly DateTimeOffset s_rawMaxValue;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private static readonly DateTimeOffset s_rawMinValue;
 
     /// <summary>
     /// 設定時間提供者
@@ -64,7 +71,7 @@ partial struct RocDateTime
     /// 這個值是西元 2910/12/31 23:59:59.9999999
     /// </remarks>
     /// 
-    public static RocDateTime MaxValue { get; }
+    public static RocDateTime MaxValue { get; } = new (s_rawMaxValue);
 
     /// <summary>
     /// 民國年物件支援的最小值
@@ -72,7 +79,7 @@ partial struct RocDateTime
     /// <remarks>
     /// 這個值是西元 0912/12/30 12:00:00 0000001
     /// </remarks> 
-    public static RocDateTime MinValue { get; }
+    public static RocDateTime MinValue { get; } = new (s_rawMinValue);
 
     /// <summary>
     /// 取得時區偏移量
@@ -88,7 +95,7 @@ partial struct RocDateTime
     /// <remarks>
     /// 這個值是西元 1912/01/01 00:00:00 0000000
     /// </remarks> 
-    public static RocDateTime Era { get; }
+    public static RocDateTime Era { get; } = new (s_rawEra);
 
     /// <summary>
     /// 表示現在時間

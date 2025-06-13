@@ -16,6 +16,12 @@ public partial class RocDateTimeTest
     }
 
     [Fact]
+    public static void 初始化()
+    {
+        Assert.IsType<RocDateTime>(new RocDateTime(115, 1, 1));
+    }
+
+    [Fact]
     public static void 國定假日判斷()
     {
         var y = (DateTime.UtcNow.Year - 1911);

@@ -164,7 +164,7 @@ public readonly partial struct RocDateTime
     /// <exception cref="ArgumentOutOfRangeException" />
     private RocDateTime(DateTimeOffset dt)
     {
-        ThrowIfOutOfRange(MaxValue, MinValue, dt);
+        ThrowIfOutOfRange(s_rawMinValue, s_rawMinValue, dt);
         
         _value = dt;
 
