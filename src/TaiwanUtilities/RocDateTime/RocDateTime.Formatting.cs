@@ -53,7 +53,7 @@ partial struct RocDateTime : IFormattable
 #if NET7_0_OR_GREATER
         // https://github.com/dotnet/runtime/issues/104212
         [GeneratedRegex(
-            pattern: @"(?<FORMAT>(民國日期|date|DATE|time|TIME|full|FULL|民國年|yyy|MM|dd|hh|mm|ss|日期|時間|[年月日時分秒]|[GgTtFfYydd]))",
+            pattern: @"(?<FORMAT>(民國日期|date|DATE|time|TIME|full|FULL|民國年|yyy|MM|dd|hh|mm|ss|日期|時間|[年月日時分秒]|[GgTtFfMmDd]))",
             options: RegexOptions.ExplicitCapture | RegexOptions.Singleline,
             matchTimeoutMilliseconds: 1000)]
         private static partial Regex GetFormatPattern();
@@ -61,7 +61,7 @@ partial struct RocDateTime : IFormattable
     private static Regex BuildPattern()
     {
         return new (
-            pattern: @"(?<FORMAT>(民國日期|date|DATE|time|TIME|full|FULL|民國年|yyy|MM|dd|hh|mm|ss|日期|時間|[年月日時分秒]|[GgTtFfYydd]))",
+            pattern: @"(?<FORMAT>(民國日期|date|DATE|time|TIME|full|FULL|民國年|yyy|MM|dd|hh|mm|ss|日期|時間|[年月日時分秒]|[GgTtFfMmDd]))",
             options: RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Compiled ,
             matchTimeout: TimeSpan.FromMinutes(1000));
     }
@@ -102,9 +102,9 @@ partial struct RocDateTime : IFormattable
                 "ss" or "sec" or "second" => rdt.Second.ToString("D2"),
 
                 // 年月模式
-                "y" => $"{(rdt.BeforeEra ? BeforeEraSymbol : null)}{rdt.Year:D}/{rdt.Month:D2}",
+                "m" => $"{(rdt.BeforeEra ? BeforeEraSymbol : null)}{rdt.Year:D}/{rdt.Month:D2}",
                 // 年月模式
-                "Y" => $"{(rdt.BeforeEra ? BeforeEraSymbol : null)}{rdt.Year:D}年{rdt.Month:D2}月",
+                "M" => $"{(rdt.BeforeEra ? BeforeEraSymbol : null)}{rdt.Year:D}年{rdt.Month:D2}月",
 
                 // 簡短日期模式
                 "d" or "date" => $"{(rdt.BeforeEra ? BeforeEraSymbol : null)}{rdt.Year:D}/{rdt.Month:D2}/{rdt.Day:D2}",

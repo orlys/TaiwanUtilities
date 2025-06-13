@@ -13,7 +13,7 @@ public readonly partial struct RocDateTime
     {
         if (_value == default(DateTimeOffset))
         {
-            return Era;
+            return s_rawEra;
         }
         return _value;
     }
@@ -164,7 +164,7 @@ public readonly partial struct RocDateTime
     /// <exception cref="ArgumentOutOfRangeException" />
     private RocDateTime(DateTimeOffset dt)
     {
-        ThrowIfOutOfRange(s_rawMinValue, s_rawMinValue, dt);
+        ThrowIfOutOfRange(s_rawMinValue, s_rawMaxValue, dt);
         
         _value = dt;
 
