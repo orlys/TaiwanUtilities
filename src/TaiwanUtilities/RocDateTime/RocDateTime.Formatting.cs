@@ -53,7 +53,7 @@ partial struct RocDateTime : IFormattable
 #if NET7_0_OR_GREATER
         // https://github.com/dotnet/runtime/issues/104212
         [GeneratedRegex(
-            pattern: @"(?<FORMAT>(民國日期|date|DATE|time|TIME|full|FULL|民國年|yyy|MM|dd|hh|mm|ss|日期|時間|[年月日時分秒]|[GgTtFfMmDd]))",
+            pattern: @"(?<FORMAT>(民國日期|date|DATE|time|TIME|full|FULL|民國年|yyy|MM|dd|HH|mm|ss|日期|時間|[年月日時分秒]|[GgTtFfMmDd]))",
             options: RegexOptions.ExplicitCapture | RegexOptions.Singleline,
             matchTimeoutMilliseconds: 1000)]
         private static partial Regex GetFormatPattern();
@@ -61,7 +61,7 @@ partial struct RocDateTime : IFormattable
     private static Regex BuildPattern()
     {
         return new (
-            pattern: @"(?<FORMAT>(民國日期|date|DATE|time|TIME|full|FULL|民國年|yyy|MM|dd|hh|mm|ss|日期|時間|[年月日時分秒]|[GgTtFfMmDd]))",
+            pattern: @"(?<FORMAT>(民國日期|date|DATE|time|TIME|full|FULL|民國年|yyy|MM|dd|HH|mm|ss|日期|時間|[年月日時分秒]|[GgTtFfMmDd]))",
             options: RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Compiled ,
             matchTimeout: TimeSpan.FromMinutes(1000));
     }
@@ -97,7 +97,7 @@ partial struct RocDateTime : IFormattable
 
                 "MM" or "month" => rdt.Month.ToString("D2"),
                 "dd" or "day" => rdt.Day.ToString("D2"),
-                "hh" or "hour" => rdt.Hour.ToString("D2"),
+                "HH" or "hour" => rdt.Hour.ToString("D2"),
                 "mm" or "min" or "minute" => rdt.Minute.ToString("D2"),
                 "ss" or "sec" or "second" => rdt.Second.ToString("D2"),
 

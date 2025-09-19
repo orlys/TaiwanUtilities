@@ -23,7 +23,7 @@ partial class RocDateTimeTest
     [InlineData("12", "month")]
     [InlineData("01", "dd")]
     [InlineData("01", "day")]
-    [InlineData("10", "hh")]
+    [InlineData("10", "HH")]
     [InlineData("10", "hour")]
     [InlineData("23", "mm")]
     [InlineData("23", "min")]

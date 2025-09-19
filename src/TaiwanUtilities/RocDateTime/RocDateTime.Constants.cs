@@ -63,7 +63,6 @@ partial struct RocDateTime
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private static volatile string? s_defaultFormat;
 
-
     /// <summary>
     /// 民國年物件支援的最大值
     /// </summary>
@@ -71,7 +70,7 @@ partial struct RocDateTime
     /// 這個值是西元 2910/12/31 23:59:59.9999999
     /// </remarks>
     /// 
-    public static RocDateTime MaxValue { get; } = new (s_rawMaxValue);
+    public static RocDateTime MaxValue { get; } = new(s_rawMaxValue);
 
     /// <summary>
     /// 民國年物件支援的最小值
@@ -79,7 +78,7 @@ partial struct RocDateTime
     /// <remarks>
     /// 這個值是西元 0912/12/30 12:00:00 0000001
     /// </remarks> 
-    public static RocDateTime MinValue { get; } = new (s_rawMinValue);
+    public static RocDateTime MinValue { get; } = new(s_rawMinValue);
 
     /// <summary>
     /// 取得時區偏移量
@@ -95,7 +94,7 @@ partial struct RocDateTime
     /// <remarks>
     /// 這個值是西元 1912/01/01 00:00:00 0000000
     /// </remarks> 
-    public static RocDateTime Era { get; } = new (s_rawEra);
+    public static RocDateTime Era { get; } = new(s_rawEra);
 
     /// <summary>
     /// 表示現在時間
