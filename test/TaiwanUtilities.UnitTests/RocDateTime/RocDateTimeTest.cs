@@ -93,4 +93,17 @@ public partial class RocDateTimeTest
             actual: _1909.Year);
         Assert.True(_1909.BeforeEra);
     }
+
+    [Fact]
+    public static void 確保轉換為台北時間()
+    { 
+        var n = DateTimeOffset.Parse("2025/09/26T01:23:45Z");
+
+        var expected = "114年9月26日 9時23分45秒";
+
+        Assert.Equal(expected, ((RocDateTime)n).ToString());
+        Assert.Equal(expected, ((RocDateTime)n.ToLocalTime()).ToString());
+        Assert.Equal(expected, ((RocDateTime)(n.LocalDateTime)).ToString());
+        Assert.Equal(expected, ((RocDateTime)n.UtcDateTime).ToString());
+    }
 }

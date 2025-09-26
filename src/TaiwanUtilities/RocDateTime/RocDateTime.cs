@@ -124,7 +124,7 @@ public readonly partial struct RocDateTime
         ThrowIfOutOfRange(0, 59, minute);
         ThrowIfOutOfRange(0, 59, second);
         ThrowIfOutOfRange(0, 999, millisecond);
-         
+
         try
         {
             _value = new DateTimeOffset(
@@ -165,29 +165,18 @@ public readonly partial struct RocDateTime
 
     private static DateTimeOffset Normalize(DateTime dt)
     {
-        var TimeZoneOffset = TimeSpan.FromHours(8); // 台北時間是 UTC+8
-
-        if (dt.Kind is DateTimeKind.Local)
-        {
-            return new DateTimeOffset(dt.ToUniversalTime()).ToOffset(TimeZoneOffset);
-        }
-        else if (dt.Kind is DateTimeKind.Utc)
-        {
-            return new DateTimeOffset(dt).ToOffset(TimeZoneOffset);
-        }
-        else
-        {
-            // Unspecified 當作 UTC 處理
-            return new DateTimeOffset(dt).ToOffset(TimeZoneOffset);
-        }
+        return new DateTimeOffset(dt.Kind is DateTimeKind.Local ? dt.ToUniversalTime() : dt)
+            .ToOffset(TimeZoneOffset);
     }
     /// <summary>
-    /// 直接透過西元年建立新的民國年物件實體。
+    /// 建立新的民國年物件實體。
     /// </summary>
-    /// <param name="dt">西元年。</param>
+    /// <param name="dateTimeOffset"></param>
     /// <exception cref="ArgumentOutOfRangeException" />
-    private RocDateTime(DateTimeOffset dt)
+    private RocDateTime(DateTimeOffset dateTimeOffset)
     {
+        var dt = dateTimeOffset.ToUniversalTime().ToOffset(TimeZoneOffset);
+
         ThrowIfOutOfRange(s_rawMinValue, s_rawMaxValue, dt);
 
         _value = dt;
