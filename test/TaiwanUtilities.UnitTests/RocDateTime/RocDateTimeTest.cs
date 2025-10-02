@@ -95,8 +95,8 @@ public partial class RocDateTimeTest
     }
 
     [Fact]
-    public static void 確保轉換為台北時間()
-    { 
+    public static void 確保轉換為台北時間_1()
+    {
         var n = DateTimeOffset.Parse("2025/09/26T01:23:45Z");
 
         var expected = "114年9月26日 9時23分45秒";
@@ -105,5 +105,15 @@ public partial class RocDateTimeTest
         Assert.Equal(expected, ((RocDateTime)n.ToLocalTime()).ToString());
         Assert.Equal(expected, ((RocDateTime)(n.LocalDateTime)).ToString());
         Assert.Equal(expected, ((RocDateTime)n.UtcDateTime).ToString());
+    }
+
+    [Fact]
+    public static void 確保轉換為台北時間_2()
+    {
+        var localNow = DateTime.Now;
+
+        var now = RocDateTime.Now;
+         
+        Assert.InRange(now.TimeOfDay, localNow.TimeOfDay, localNow.TimeOfDay.Add(TimeSpan.FromSeconds(1)));
     }
 }

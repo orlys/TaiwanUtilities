@@ -99,7 +99,7 @@ partial struct RocDateTime
     /// <summary>
     /// 表示現在時間
     /// </summary>
-    public static RocDateTime Now => TimeProvider.GetUtcNow().Add(TimeZoneOffset);
+    public static RocDateTime Now => TimeProvider.GetUtcNow();
 
     /// <summary>
     /// 表示今日

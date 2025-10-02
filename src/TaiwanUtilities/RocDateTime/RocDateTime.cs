@@ -7,8 +7,12 @@ using System.Runtime.CompilerServices;
 /// </summary>
 public readonly partial struct RocDateTime
 {
+    /// <summary>
+    /// 已經偏移過後的民國年時間
+    /// </summary>
 
     private readonly DateTimeOffset _value;
+
     private DateTimeOffset GetRawValue()
     {
         if (_value == default(DateTimeOffset))
@@ -70,6 +74,11 @@ public readonly partial struct RocDateTime
     /// 表示一週中的星期名稱。
     /// </summary>
     public DayOfWeek DayOfWeek => GetRawValue().DayOfWeek;
+
+    /// <summary>
+    /// 表示一天的時間
+    /// </summary>
+    public TimeSpan TimeOfDay => GetRawValue().TimeOfDay;
 
     #endregion
 
