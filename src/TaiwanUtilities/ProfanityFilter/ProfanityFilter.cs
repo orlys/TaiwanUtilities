@@ -39,7 +39,7 @@ public static class ProfanityFilter
             	- 自{{aux}}慰
             	- 站{{aux}}壁
             	- 射在?\w+?上
-            	- (手|賣){{aux}}淫
+            	- (手|賣|姦){{aux}}淫
                 - (肏|操|草|糙|耖){{aux}}蛋
 
             	- (死|臭|破|賤)?淫{{aux}}(蕩|婦)
@@ -95,8 +95,6 @@ public static class ProfanityFilter
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Select(x => x.Replace("-", null).Trim()));
 
-
-        Console.WriteLine(g);
         return new(
             pattern: $@"(?<PART>(?#PART){g})",
             options: RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Compiled | RegexOptions.Multiline,

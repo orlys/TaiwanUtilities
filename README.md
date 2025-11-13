@@ -76,6 +76,14 @@ using TaiwanUtilities;
 Assert.Equal<string>("100", ZipCode.Find("臺北市中正區"));
 ```
 
+#### `ProfanityFilter` 類別
+台味滿滿的髒話、不雅字彙過濾器
+
+```csharp
+using TaiwanUtilities;
+
+Assert.True(ProfanityFilter.Censor("幹你娘都是說說的而已"));
+```
 
 
 ## 感謝
