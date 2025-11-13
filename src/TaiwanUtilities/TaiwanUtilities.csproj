@@ -35,7 +35,7 @@
     <PackageReadmeFile>readme.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>Taiwan,ChineseNumeric,InternationalNumericFormatter,RocDateTime,Validator,ZipCode</PackageTags>
-    <PackageVersion>1.0.20</PackageVersion>
+    <PackageVersion>1.0.21</PackageVersion>
     <!--<PackageIcon>icon.png</PackageIcon>-->
   </PropertyGroup>
 
@@ -43,7 +43,7 @@
     <None Include="..\..\readme.md" Link="readme.md" Pack="true" PackagePath="\" />
     <None Include="..\..\LICENSE" Link="LICENSE" Pack="true" PackagePath="\" />
   </ItemGroup>
- 
+
   <ItemGroup>
     <EmbeddedResource Include="..\..\data\zipcode.json" Link="Postal\zipcode.json" />
   </ItemGroup>
@@ -63,6 +63,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="*" PrivateAssets="All" />
   </ItemGroup>
 
 
@@ -75,19 +76,8 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="*" PrivateAssets="All" />
   </ItemGroup>
-
-
-  <!--<ItemGroup Condition=" $(TargetFramework) == 'net6.0' ">
-    <PackageReference Include="Microsoft.Bcl.TimeProvider" Version="8.*" />
-    <PackageReference Include="System.Collections.Immutable" Version="8.*" />
-  </ItemGroup>-->
-
-
-  <!--<ItemGroup Condition=" $(TargetFramework) != 'net10.0' ">
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.*" PrivateAssets="All" />
-  </ItemGroup>-->
-
 
   <ItemGroup>
     <!-- Holiday -->

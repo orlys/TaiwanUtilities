@@ -1,7 +1,6 @@
 ﻿namespace TaiwanUtilities;
 
 using System;
-using System.IO.Pipes;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -19,7 +18,7 @@ public static class ProfanityFilter
 
         var patterns = $$"""
                         
-            	- (淦|贛|幹){{aux}}(砲)
+            	- (淦|贛|幹){{aux}}(砲|炮)
             	- (性|做)愛{{aux}}(?!做)
             	- (咖)(小|洨)
             	- (哭|靠|看)?{{aux}}(山|三|沙|殺|莎){{aux}}(小|洨)
@@ -118,12 +117,8 @@ public static class ProfanityFilter
     /// <returns></returns>
     public static bool Censor(string? text)
     {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return false;
-        }
-
-        return Mask(text, '\ufffe').Contains('\ufffe');
+        return !string.IsNullOrWhiteSpace(text) &&
+            Mask(text, '\ufffe').Contains('\ufffe');
     }
 
     /// <summary>
