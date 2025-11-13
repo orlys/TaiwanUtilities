@@ -5,7 +5,7 @@
   <PropertyGroup>
 
     <TargetFrameworks>net8;net6;netstandard2.0;net472</TargetFrameworks>
-    <Description>與台灣相關的常用通用邏輯相關的函式庫</Description>
+    <Description>與台灣相關的通用邏輯函式庫</Description>
     <Authors>Orlys</Authors>
     <GenerateLibraryLayout>true</GenerateLibraryLayout>
     <RootNamespace>TaiwanUtilities</RootNamespace>
@@ -53,14 +53,14 @@
 
 
   <ItemGroup Condition=" $(TargetFramework) == 'net472' ">
-    <PackageReference Include="Lib.Harmony" Version="2.3.6" />
+    <PackageReference Include="Lib.Harmony" Version="2.4.2" />
     <Reference Include="System.Web.Extensions" />
     <PackageReference Include="System.Text.Json" Version="8.*" />
     <PackageReference Include="Microsoft.Bcl.TimeProvider" Version="8.*" />
     <PackageReference Include="System.Collections.Immutable" Version="8.*" />
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="*" />
     <PackageReference Include="System.Net.Http" Version="4.*" />
-    <PackageReference Include="Polyfill" Version="*">
+    <PackageReference Include="Polyfill" Version="8.*">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
@@ -72,7 +72,7 @@
     <PackageReference Include="Microsoft.Bcl.TimeProvider" Version="8.*" />
     <PackageReference Include="System.Collections.Immutable" Version="8.*" />
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="*" />
-    <PackageReference Include="Polyfill" Version="*">
+    <PackageReference Include="Polyfill" Version="8.*">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>

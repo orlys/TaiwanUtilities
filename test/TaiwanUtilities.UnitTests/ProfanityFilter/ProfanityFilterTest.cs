@@ -10,6 +10,7 @@ public class ProfanityFilterTest
         // 測試文章
         var testArticle =
             """
+                欠人姦是不是
                 靠你媽北
                 靠你媽的北
                 靠北三小
