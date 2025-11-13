@@ -41,6 +41,8 @@ public readonly partial struct RocDateTime
     public static RocDateTime From(DateTime dt) => new RocDateTime(dt);
     public static RocDateTime From(DateTimeOffset dto) => new RocDateTime(dto);
 
+    public static RocDateTime? From(DateTime? dt) => dt.HasValue ? new RocDateTime(dt.Value) : null;
+    public static RocDateTime? From(DateTimeOffset? dto) => dto.HasValue ? new RocDateTime(dto.Value) : null;
 
     #region Properties 
 

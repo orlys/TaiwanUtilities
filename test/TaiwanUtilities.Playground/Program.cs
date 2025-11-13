@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
@@ -12,265 +15,44 @@ static class Program
 {
     static void Main(string[] args)
     {
-        //var r = new Regex(@"[\u4E00-\uFFF3]");
-        var v = "𢊬";
-        var m = IsChinese("1" + "𢊬");
-        
-        var vx = Encoding.Unicode.GetBytes("𢊬");
-        Console.WriteLine(vx.Length);
-    }
+        var paragraph = """
+            靠你媽北
+            靠你媽的北
+            靠北三小
 
-    static bool IsChinese(string s)
-    {
-        
-        var l = s.Length;
-        return s.EnumerateRunes().All(r =>
-            (r.Value >= 0x4E00 && r.Value <= 0x9FFF) ||   // 基本
-            (r.Value >= 0x3400 && r.Value <= 0x4DBF) ||   // 擴展A
-            (r.Value >= 0x20000 && r.Value <= 0x2A6DF) || // 擴展B
-            (r.Value >= 0x2A700 && r.Value <= 0x2B73F) || // 擴展C
-            (r.Value >= 0x2B740 && r.Value <= 0x2B81F) || // 擴展D
-            (r.Value >= 0x2B820 && r.Value <= 0x2CEAF) || // 擴展E
-            (r.Value >= 0x2CEB0 && r.Value <= 0x2EBEF) || // 擴展F
-            (r.Value >= 0x30000 && r.Value <= 0x3134F));  // 擴展G
-    }
+            這個妓女真是低端人渣，根本就是垃圾人渣和社會敗類。那個廢物整天像廢柴一樣，根本是個廢人。他媽的機掰和雞巴破麻、破狗、破雞、破妓、破鞋，還有破婊子都不如。
+            那些龜公、龜頭、龜狗、龜兒子、龜孫子根本是畜生和畜牲。欠幹、破幹、下幹、欠淦、破淦、下淦、欠贛、破贛、下贛的賤人和賤貨。
+            白痴、白癡、白目、白爛加上智障、智缺、啟智、乞智、腦殘、腦弱、腦包、低能兒、低能、弱雞、弱智。
+            北七、北柒、北爛、87、笨蛋、混蛋、傻瓜、傻子、傻逼、傻B、傻屄、傻屌、三小、三洨、王八蛋、王八羔子。
+            
+            
+            你這個智障是不是腦袋有問題？整天在那邊亂講話，根本就是個社會敗類。看你那副死樣子就知道是個廢物，連基本常識都沒有還敢出來丟人現眼。
+            別以為自己很厲害，其實就是個笨蛋罷了。你媽沒教你怎麼做人嗎？還是說你天生就是個白痴？看你講話的方式就知道智商堪憂，根本腦殘到不行。
+            閉上你那張臭嘴好嗎？每次看到你發言都覺得噁心，真不知道哪來的勇氣一直在那邊叫囂。你以為你是誰啊？不過就是個垃圾，還真把自己當一回事了。
+            滾一邊去吧，別在這裡礙眼。你這種人就該被封鎖，省得污染大家的眼睛。看了就煩，懶得理你這種貨色。
+            
+            幹你娘機掰！不會開車就別上路啦，你他媽的是在龜三小？這個雞巴王八蛋根本不配握方向盤，開車跟狗屎一樣爛。
+            你是瞎了嗎？眼睛長在屁眼上是不是？這死傻逼真的是北七到極點，連個轉彎都不會打方向燈。幹你老母的三小垃圾，害老子差點撞上去。
+            靠北啊！你這賤人是沒考過駕照還是用買的？整個就是低能兒在開車，智障到讓人無言。你全家都是廢物是吧？教出你這種垃圾人渣來禍害社會。
+            滾你媽的蛋！老子今天心情不好，別惹我發火。你再這樣亂開信不信我下車扁你？死雞掰臭婊子，看你那副慫樣就知道是個孬種。
+            操你媽的破麻爛貨！這龜兒子根本就是馬路三寶，應該被吊銷執照一輩子不准開車。幹！真他媽倒楣遇到你這畜生。
+            
+            肏
+            
+            你這個狗娘養的混帳東西！真是個沒用的廢柴，爛到骨子裡了。這種爛咖根本就是人間敗筆，連狗都不如的玩意兒。
+            你算什麼鳥蛋？整天在那邊裝模作樣，其實就是個軟腳蝦。看你那副熊樣就覺得噁心，根本就是個窩囊廢。
+            去死啦你！這種垃圾咖小還敢在這裡大小聲？你腦子進水了是吧？整個就是個草包，中看不中用的繡花枕頭。
+            閉嘴啦臭俗辣！你這個孬貨、慫包、膿包，連個屁都不敢放還敢嗆聲？真是不要臉到極點，恬不知恥的爛人。
+            滾遠點啦！看到你就倒胃口，整個就是個活該被淘汰的loser。你這種貨色就該被社會拋棄，別出來丟人現眼了。
+            """;
+
+
+        var result = ProfanityFilter.Censor(paragraph);
+
+
+        Console.WriteLine(  result);
+
+
+    } 
 }
-
-public class JsonC : JsonConverter<bool>
-{
-    public JsonC()
-    {
-
-    }
-    public override bool ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-    {
-        return base.ReadAsPropertyName(ref reader, typeToConvert, options);
-    }
-    public override bool Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-    {
-        if (reader.TokenType is JsonTokenType.True or JsonTokenType.False)
-        {
-            return reader.GetBoolean();
-        }
-
-        if (reader.TokenType is JsonTokenType.String &&
-            reader.GetString() is { } str)
-        {
-            return str is "是" ? true :
-                   str is "否" ? false :
-                   throw new JsonException($"Invalid boolean value: {str}");
-        }
-
-        throw new JsonException($"Unexpected token {reader.TokenType} when parsing boolean value.");
-    }
-
-    public override void Write(Utf8JsonWriter writer, bool value, JsonSerializerOptions options)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-sealed class DateInfo
-{
-    [JsonPropertyName("date")]
-    public string Date { get; set; }
-
-    [JsonConverter(typeof(JsonC))]
-    //[JsonPropertyName("isholiday")]
-    public bool IsHoliday { get; set; }
-
-    public override int GetHashCode()
-    {
-        {
-            return Date?.GetHashCode() ?? 0;
-        }
-    }
-
-    public override bool Equals(object obj)
-    {
-        {
-            return obj is DateInfo di ? GetHashCode() == di.GetHashCode() : false;
-        }
-    }
-}
-
-
-//var p = Path.Combine([Environment.CurrentDirectory, .. Enumerable.Repeat("..", 5), "data", "zipcode.json"]);
-//await using var zipCodeStream = File.OpenRead(p);
-
-//var trie = new TrieDictionary<JsonZipCode>();
-
-//var rangeRules = new HashSet<string>();
-//var map = new Dictionary<string, HashSet<string>>();
-//await foreach (var zipCode in JsonSerializer
-//    .DeserializeAsyncEnumerable<JsonZipCode>(zipCodeStream))
-//{
-//    ////Console.WriteLine(zipCode.Code + " => " + zipCode.Range);
-//    //var r = zipCode.Range;
-//    ////Console.WriteLine(r);
-//    //r = Regex.Replace(r, @"(?<NUMBER>\s*?\d+)", "x");
-//    //rangeRules.Add(r);
-
-//    //if (PostalAddress.TryParse(zipCode.Address, out var pa))
-//    //{
-//    //    trie.TryAdd(pa.Value, zipCode);
-//    //}
-//    //else
-//    //{
-//    //    Console.WriteLine(zipCode.Address);
-//    //}
-
-//    if (!map.TryGetValue(zipCode.County, out var m))
-//    {
-//        m = new HashSet<string> { zipCode.Town };
-//        map.Add(zipCode.County, m);
-//    }
-//    else
-//    {
-//        m.Add(zipCode.Town);
-//    }
-//}
-
-
-//var list = new List<string>();
-//foreach (var counties in map.GroupBy(x => x.Key.Last()))
-//{
-
-//    if (counties.Key is '市')
-//    {
-//        foreach (var city in counties)
-//        {
-//            var region = city.Value.Where(x => x.EndsWith("區")).ToArray();
-//            var islands = city.Value.Where(x => x.EndsWith("島")).ToArray();
-//            var parts = new List<string>();
-
-//            if (region.Any())
-//            {
-//                var s = $"({string.Join("|", region.Select(x => x.TrimEnd('區')))})區";
-
-//                s += "(?<VILLAGE>[\\u4E00-\\u9FFF]{2,3}里)?";
-
-//                parts.Add(s);
-//            }
-
-//            if (islands.Any())
-//            {
-
-//                parts.Add($"({string.Join("|", islands)})");
-//            }
-
-//            list.Add($"((?<COUNTY>{city.Key})(?<TOWN>{string.Join("|", parts)}))");
-//        }
-//    }
-
-//    else
-//    if (counties.Key is '縣')
-//    {
-
-//        foreach (var country in counties)
-//        {
-//            var cities = country.Value.Where(x => x.EndsWith("市")).ToArray();
-//            var towns = country.Value.Where(x => x.EndsWith("鎮")).ToArray();
-//            var townships = country.Value.Where(x => x.EndsWith("鄉")).ToArray();
-//            var parts = new List<string>();
-//            var s = "";
-//            if (cities.Any())
-//            {
-//                s += $"({string.Join("|", cities.Select(x => x.TrimEnd('市')))})市";
-//            }
-//            if (towns.Any())
-//            {
-//                if (s.Any())
-//                {
-//                    s += "|";
-//                }
-//                s += $"({string.Join("|", towns.Select(x => x.TrimEnd('鎮')))})鎮";
-//            }
-
-//            if (s.Any())
-//            {
-//                s += "(?<VILLAGE>[\\u4E00-\\u9FFF]{2,3}里)?";
-//            }
-
-
-//            if (townships.Any())
-//            {
-//                if (s.Any())
-//                {
-//                    s += "|";
-//                }
-
-//                s += $"({string.Join("|", townships.Select(x => x.TrimEnd('鄉')))})鄉";
-
-
-//                s += "(?<VILLAGE>[\\u4E00-\\u9FFF]{2,3}村)?";
-//            }
-
-
-//            list.Add($"((?<COUNTY>{country.Key})(?<TOWN>{s}))");
-//        }
-//    }
-//    else
-//    {
-
-//        foreach (var s in counties.SelectMany(x => x.Value))
-//        {
-
-//            Console.WriteLine("SKIPPED: " + s);
-//        }
-//        continue;
-//    }
-//}
-
-//var result = $"(?<AREA>{string.Join("|", list)})".Replace("臺", "[臺台]");
-//Console.WriteLine(result);
-
-////foreach (var item in map)
-////{
-////    Console.WriteLine($"{item.Key}({string.Join("|", item.Value)})");
-////}
-
-
-////foreach (var item in rangeRules.OrderBy(x => x.Length).ThenBy(x => x))
-////{
-////    Console.WriteLine(item);
-////}
-
-//Console.ReadKey();
-
-//// https://regex101.com/r/3pJ6sw/1
-
-
-//public class JsonZipCode
-//{
-//    /// <summary>
-//    /// 五碼郵遞區號
-//    /// </summary>
-//    [JsonPropertyName("郵遞區號")]
-//    public string? Code { get; set; }
-
-//    /// <summary>
-//    /// 三碼郵遞區號
-//    /// </summary>
-//    [JsonIgnore]
-//    public string ShortCode => Code.AsSpan(0, 3).ToString();
-
-//    [JsonIgnore]
-//    public string Address => string.Concat(County, Town, Road);
-
-//    [JsonPropertyName("縣市名稱")]
-//    public string? County { get; set; }
-
-//    [JsonPropertyName("鄉鎮市區")]
-//    public string? Town { get; set; }
-
-//    [JsonPropertyName("原始路名")]
-//    public string? Road { get; set; }
-
-//    /// <summary>
-//    /// 
-//    /// </summary>
-//    /// <remarks><see href="https://www.post.gov.tw/post/internet/Postal/sz_a_b_ta1.jsp"/></remarks>
-//    [JsonPropertyName("投遞範圍")]
-//    public string? Range { get; set; }
-//}
+ 
