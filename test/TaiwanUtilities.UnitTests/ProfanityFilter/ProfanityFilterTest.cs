@@ -41,7 +41,7 @@ public class ProfanityFilterTest
             """;
 
         // 檢查是否包含髒話
-        Assert.True(TaiwanUtilities.ProfanityFilter.Contains(testArticle)); 
+        Assert.True(ProfanityFilter.Censor(testArticle)); 
     }
 
     [Fact]
@@ -80,9 +80,9 @@ public class ProfanityFilterTest
                 滾遠點啦！看到你就倒胃口，整個就是個活該被淘汰的loser。你這種貨色就該被社會拋棄，別出來丟人現眼了。
             """;
         // 遮蔽髒話
-        var censoredArticle = TaiwanUtilities.ProfanityFilter.Censor(testArticle);
+        var censoredArticle = ProfanityFilter.Mask(testArticle);
         // 檢查遮蔽後的文章是否仍包含髒話
-        Assert.False(TaiwanUtilities.ProfanityFilter.Contains(censoredArticle));
+        Assert.False(ProfanityFilter.Censor(censoredArticle));
 
         
     }
