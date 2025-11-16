@@ -8,10 +8,10 @@ using System.Text.RegularExpressions;
 /// <summary>
 /// 台灣各式識別碼驗證器
 /// </summary>
-public static partial class TaiwanIdValidator
+internal static class ValidatorUtils
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool MatchCore(Regex pattern, string input, bool caseSensitive = false)
+    public static bool MatchCore(Regex pattern, string input, bool caseSensitive = false)
     {
         return
             !string.IsNullOrWhiteSpace(input) &&

@@ -6,12 +6,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 /// <summary>
-/// 髒話過濾
+/// 中文髒話
 /// </summary>
-public static class ProfanityFilter
+public static class ChineseProfanity
 {
-
-
     private static readonly Lazy<Regex> s_pattern1 = new(static () =>
     {
         var aux = "((恁|琳|您|林|你|妳|祢|汝|他|她|它|牠|祂){1,2}(爹|娘|爸|(?<!媽)媽|馬|妹|姊|姐|老母|老師|娘親|親娘|奶奶|全家|祖宗|姑媽|姑奶奶|太祖|開基祖)的?)?";
@@ -40,7 +38,9 @@ public static class ProfanityFilter
             	- 射在?\w+?上
             	- (手|賣|姦){{aux}}淫
                 - (肏|操|草|糙|耖){{aux}}蛋
-
+            
+                - (死|臭|破|賤)?(青|生){{aux}}(番|蕃|歡)
+                - (死|臭|破|賤)?(番|蕃|歡){{aux}}(子|仔)
             	- (死|臭|破|賤)?淫{{aux}}(蕩|婦)
             	- (死|臭|破|賤)?蕩{{aux}}婦
             	- (死|臭|破|賤)?(懶|覽){{aux}}[趴叫]{1,2}
@@ -111,28 +111,40 @@ public static class ProfanityFilter
         matchTimeout: TimeSpan.FromMilliseconds(250)));
 
     /// <summary>
-    /// 檢查文字是否包含髒話
+    /// 審查是否包含髒話
     /// </summary>
     /// <param name="text"></param>
     /// <returns></returns>
     public static bool Censor(string? text)
     {
         return !string.IsNullOrWhiteSpace(text) &&
-            Mask(text, '\ufffe').Contains('\ufffe');
+            Replace(text, '\ufffe').Contains('\ufffe');
     }
 
     /// <summary>
-    /// 將文字中的髒話以指定字元遮蔽
+    /// 將文字中的髒話以 <see cref="ReplacementCharacters.WhiteCircle"/> 替換
     /// </summary>
     /// <param name="text"></param>
-    /// <param name="censorChar"></param>
     /// <returns></returns>
-    public static string? Mask(string? text, char censorChar = '*')
+    public static string? Replace(string? text)
+    {
+        return Replace(text, ReplacementCharacters.WhiteCircle);
+    }
+
+    /// <summary>
+    /// 將文字中的髒話以指定字元替換
+    /// </summary>
+    /// <param name="text"></param>
+    /// <param name="replaceWith">要替換髒話的字元，預設為 <see cref="ReplacementCharacters.WhiteCircle"/></param>
+    /// <returns></returns>
+    public static string? Replace(string? text, char replaceWith = ReplacementCharacters.WhiteCircle)
     {
         if (string.IsNullOrWhiteSpace(text))
         {
             return text;
         }
+
+        // TODO: 檢查 censorChar 是否是髒字
 
         var sb = new StringBuilder(text);
 
@@ -140,17 +152,17 @@ public static class ProfanityFilter
         {
             foreach (Match m in s_pattern2.Value.Matches(text))
             {
-                Populate(sb, m.Groups["PRE"], censorChar);
+                Populate(sb, m.Groups["PRE"], replaceWith);
             }
 
             foreach (Match m in s_pattern1.Value.Matches(text))
             {
-                Populate(sb, m.Groups["PART"], censorChar);
+                Populate(sb, m.Groups["PART"], replaceWith);
             }
 
             foreach (Match m in s_pattern3.Value.Matches(text))
             {
-                Populate(sb, m.Groups["WORD"], censorChar);
+                Populate(sb, m.Groups["WORD"], replaceWith);
             }
         }
         catch (RegexMatchTimeoutException)
@@ -159,8 +171,6 @@ public static class ProfanityFilter
 
         return sb.ToString();
     }
-
-
 
     private static StringBuilder Populate(StringBuilder sb, Group g, char c)
     {
@@ -176,4 +186,3 @@ public static class ProfanityFilter
             .Insert(index, new string(c, len));
     }
 }
-

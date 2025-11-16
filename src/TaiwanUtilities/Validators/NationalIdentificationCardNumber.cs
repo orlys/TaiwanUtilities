@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
-partial class TaiwanIdValidator
+public static partial class NationalIdentificationCardNumber
 {
 
     /// <summary>
@@ -14,19 +14,19 @@ partial class TaiwanIdValidator
     /// </summary>
     /// <param name="input"></param>
     /// <returns></returns>
-    public static bool IsIdentityCardNumber(string input, bool applyOldRules = false)
+    public static bool Validate(string input, bool applyOldRules = false)
     {
-        if (MatchCore(GetNationalIdPattern(), input, true))
+        if (ValidatorUtils.MatchCore(GetNationalIdPattern(), input, true))
         {
             return VerifyTaiwanIdIntermediateString(input);
         }
 
-        if (applyOldRules && MatchCore(GetUiNumberOldFormatPattern(), input, true))
+        if (applyOldRules && ValidatorUtils. MatchCore(GetUiNumberOldFormatPattern(), input, true))
         {
             return VerifyTaiwanIdIntermediateString(input);
         }
 
-        if (MatchCore(GetUiNumberNewFormatPattern(), input, true))
+        if (ValidatorUtils.MatchCore(GetUiNumberNewFormatPattern(), input, true))
         {
             return VerifyTaiwanIdIntermediateString(input);
         } 

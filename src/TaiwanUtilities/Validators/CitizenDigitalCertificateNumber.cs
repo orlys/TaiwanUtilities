@@ -5,14 +5,17 @@ namespace TaiwanUtilities;
 using System;
 using System.Text.RegularExpressions;
 
-partial class TaiwanIdValidator
+/// <summary>
+/// 自然人憑證號碼
+/// </summary>
+public static partial class CitizenDigitalCertificateNumber
 {
     /// <summary>
     /// 驗證是否為有效的自然人憑證號碼
     /// </summary>
     /// <param name="input"></param>
     /// <returns></returns>
-    public static bool IsCitizenDigitalCertificateNumber(string input) => MatchCore(GetCdcNumberPattern(), input);
+    public static bool Validate(string input) => ValidatorUtils.MatchCore(GetCdcNumberPattern(), input);
 
 #if NET7_0_OR_GREATER
 

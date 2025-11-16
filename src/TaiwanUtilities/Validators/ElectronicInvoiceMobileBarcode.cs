@@ -2,10 +2,14 @@
 // license: MIT
 
 namespace TaiwanUtilities;
+
 using System;
 using System.Text.RegularExpressions;
 
-partial class TaiwanIdValidator
+/// <summary>
+/// 電子發票手機條碼
+/// </summary>
+public static partial class ElectronicInvoiceMobileBarCode
 {
 
     /// <summary>
@@ -13,7 +17,7 @@ partial class TaiwanIdValidator
     /// </summary>
     /// <param name="input"></param>
     /// <returns></returns>
-    public static bool IsElectronicInvoiceMobileBarcode(string input) => MatchCore(GetEimBarcodePattern(), input);
+    public static bool Validate(string input) => ValidatorUtils.MatchCore(GetEimBarcodePattern(), input);
 
 #if NET7_0_OR_GREATER
 

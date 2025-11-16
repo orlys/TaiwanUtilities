@@ -5,7 +5,10 @@ namespace TaiwanUtilities;
 using System;
 using System.Text.RegularExpressions;
 
-partial class TaiwanIdValidator
+/// <summary>
+/// 電子發票捐贈碼
+/// </summary>
+public static partial class ElectronicInvoiceDonateCode
 {
 
     /// <summary>
@@ -13,7 +16,7 @@ partial class TaiwanIdValidator
     /// </summary>
     /// <param name="input"></param>
     /// <returns></returns>
-    public static bool IsElectronicInvoiceDonateCode(string input) => MatchCore(GetEidCodePattern(), input);
+    public static bool Validate(string input) => ValidatorUtils.MatchCore(GetEidCodePattern(), input);
 
 #if NET7_0_OR_GREATER
 

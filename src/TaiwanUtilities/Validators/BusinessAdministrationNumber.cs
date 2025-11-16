@@ -6,17 +6,20 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
-partial class TaiwanIdValidator
+/// <summary>
+/// 營利事業統一編號
+/// </summary>
+public static partial class BusinessAdministrationNumber
 {
     /// <summary>
     /// 驗證是否為有效的營利事業統一編號
     /// </summary>
     /// <param name="input"></param>
     /// <returns></returns>
-    public static bool IsBusinessAdministrationNumber(string input, bool applyOldRules = false)
+    public static bool Validate(string input, bool applyOldRules = false)
     {
-        return 
-            MatchCore(GetBaNumberPattern(), input) &&
+        return
+            ValidatorUtils.MatchCore(GetBaNumberPattern(), input) &&
             Validate(input, applyOldRules);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | (MethodImplOptions)512)]
