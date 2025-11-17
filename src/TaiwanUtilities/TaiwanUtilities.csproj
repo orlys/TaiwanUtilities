@@ -35,7 +35,7 @@
     <PackageReadmeFile>readme.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>Taiwan,ChineseNumeric,InternationalNumericFormatter,RocDateTime,Validator,ZipCode</PackageTags>
-    <PackageVersion>1.0.21</PackageVersion>
+    <PackageVersion>1.0.22</PackageVersion>
     <!--<PackageIcon>icon.png</PackageIcon>-->
   </PropertyGroup>
 
