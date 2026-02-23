@@ -32,6 +32,184 @@ partial struct ChineseNumeric
             return false;
         }
 
+        // 尋找小數分隔符（點/又）或小數位量詞（分/釐/毫）的位置
+        var floatPointIndex = -1;
+        var hasDecimalMultiplier = false;
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            if (tokens[i].IsFloatPoint)
+            {
+                floatPointIndex = i;
+                break;
+            }
+            if (tokens[i].IsDecimalMultiplier)
+            {
+                // 往前找，看是否有「又」；如果沒有，分釐毫前面的數字就是小數部分的開頭
+                // 找到第一個 DecimalMultiplier 之前的數字起始位置
+                hasDecimalMultiplier = true;
+                // 找到此量詞前面的數字 token
+                var digitStart = i - 1;
+                if (digitStart >= 0 && tokens[digitStart].IsDigit)
+                {
+                    floatPointIndex = digitStart;
+                }
+                else
+                {
+                    floatPointIndex = i;
+                }
+                break;
+            }
+        }
+
+        if (floatPointIndex >= 0)
+        {
+            // 分割整數部分和小數部分
+            var integerTokens = floatPointIndex > 0 ? tokens.GetRange(0, floatPointIndex) : null;
+            decimal integerPart = 0m;
+
+            if (integerTokens is { Count: > 0 })
+            {
+                if (!ParseIntegerTokens(integerTokens, out var integerResult, throwError))
+                {
+                    return false;
+                }
+                integerPart = (decimal)integerResult;
+            }
+
+            // 解析小數部分
+            var decimalStartIndex = floatPointIndex;
+            var isYouOrDian = tokens[floatPointIndex].IsFloatPoint;
+            if (isYouOrDian)
+            {
+                decimalStartIndex = floatPointIndex + 1; // 跳過「點」或「又」
+            }
+
+            var decimalTokens = tokens.GetRange(decimalStartIndex, tokens.Count - decimalStartIndex);
+
+            if (decimalTokens.Count == 0)
+            {
+                if (throwError)
+                {
+                    throw new FormatException($"Invalid character '{tokens[floatPointIndex].Value}' at index {tokens[floatPointIndex].Index}, reason: Unknown character");
+                }
+                return false;
+            }
+
+            decimal decimalPart;
+            if (hasDecimalMultiplier || decimalTokens.Exists(t => t.IsDecimalMultiplier))
+            {
+                // 「又分釐毫」格式
+                if (!ParseDecimalWithMultipliers(decimalTokens, out decimalPart, throwError))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // 「點」格式：每個數字依位值排列
+                if (!ParseDecimalDigits(decimalTokens, out decimalPart, throwError))
+                {
+                    return false;
+                }
+            }
+
+            result = integerPart + decimalPart;
+            return true;
+        }
+
+        // 沒有小數部分，走原有整數解析邏輯
+        return ParseIntegerTokens(tokens, out result, throwError);
+    }
+
+    private static bool ParseDecimalDigits(List<Token> tokens, out decimal result, bool throwError)
+    {
+        result = 0m;
+        var position = 1;
+        foreach (var token in tokens)
+        {
+            if (!token.IsDigit)
+            {
+                if (throwError)
+                {
+                    throw new FormatException($"Invalid character '{token.Value}' at index {token.Index}, reason: Unknown character");
+                }
+                return false;
+            }
+            // digitValue * 10^(-position)
+            var placeValue = 1m;
+            for (var i = 0; i < position; i++)
+            {
+                placeValue /= 10m;
+            }
+            result += token.Character.Value * placeValue;
+            position++;
+        }
+        return true;
+    }
+
+    private static bool ParseDecimalWithMultipliers(List<Token> tokens, out decimal result, bool throwError)
+    {
+        result = 0m;
+        var lastMultiplierValue = 1m; // 追蹤順序：分(0.1) > 釐(0.01) > 毫(0.001)
+
+        var i = 0;
+        while (i < tokens.Count)
+        {
+            var token = tokens[i];
+
+            if (token.IsDigit)
+            {
+                // 數字後面應該跟著量詞
+                if (i + 1 < tokens.Count && tokens[i + 1].IsDecimalMultiplier)
+                {
+                    var multiplier = tokens[i + 1];
+                    if (multiplier.Character.Value >= lastMultiplierValue)
+                    {
+                        if (throwError)
+                        {
+                            throw new FormatException($"Invalid character '{multiplier.Value}' at index {multiplier.Index}, reason: Invalid unit position");
+                        }
+                        return false;
+                    }
+                    lastMultiplierValue = multiplier.Character.Value;
+                    result += token.Character.Value * multiplier.Character.Value;
+                    i += 2;
+                }
+                else
+                {
+                    if (throwError)
+                    {
+                        throw new FormatException($"Invalid character '{token.Value}' at index {token.Index}, reason: Unknown character");
+                    }
+                    return false;
+                }
+            }
+            else if (token.IsDecimalMultiplier)
+            {
+                // 量詞前面沒有數字，視為錯誤
+                if (throwError)
+                {
+                    throw new FormatException($"Invalid character '{token.Value}' at index {token.Index}, reason: Unknown character");
+                }
+                return false;
+            }
+            else
+            {
+                if (throwError)
+                {
+                    throw new FormatException($"Invalid character '{token.Value}' at index {token.Index}, reason: Unknown character");
+                }
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool ParseIntegerTokens(List<Token> tokens, out ChineseNumeric result, bool throwError)
+    {
+        result = Zero;
+
         var sumRoot = 0m;
         var digitStack = new Stack<decimal>(4);
         var hugeStack = new Stack<decimal>(7);

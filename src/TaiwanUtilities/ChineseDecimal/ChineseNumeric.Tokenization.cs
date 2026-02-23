@@ -143,9 +143,19 @@ partial struct ChineseNumeric
 
         /// <summary>
         /// 判斷是否為萬億兆京垓秭穰。
-        /// </summary> 
+        /// </summary>
         /// <returns></returns>
         public bool IsLargeMultiplier => Character.IsKindOf(CharacterKind.GroupMultipler);
+
+        /// <summary>
+        /// 判斷是否為小數點符號（點/又）。
+        /// </summary>
+        public bool IsFloatPoint => Character.IsKindOf(CharacterKind.FloatPoint);
+
+        /// <summary>
+        /// 判斷是否為小數位量詞（分/釐/毫）。
+        /// </summary>
+        public bool IsDecimalMultiplier => Character.IsKindOf(CharacterKind.DecimalMultiplier);
 
         public override string ToString()
         {
@@ -233,6 +243,14 @@ partial struct ChineseNumeric
             Septillion = new(CharacterKind.GroupMultipler, value: 1_0000_0000_0000_0000_0000_0000m, '秭');
             TenOctillion = new(CharacterKind.GroupMultipler, value: 1_0000_0000_0000_0000_0000_0000_0000m, '穰');
 
+            FloatPointSymbol = new(CharacterKind.FloatPoint, 0m, '點', '点');
+            FractionSeparator = new(CharacterKind.FloatPoint, 0m, '又');
+            Tenth = new(CharacterKind.DecimalMultiplier, 0.1m, '分');
+            Hundredth = new(CharacterKind.DecimalMultiplier, 0.01m, '釐', '厘');
+            Thousandth = new(CharacterKind.DecimalMultiplier, 0.001m, '毫');
+            TenThousandth = new(CharacterKind.DecimalMultiplier, 0.0001m, '絲', '丝');
+            HundredThousandth = new(CharacterKind.DecimalMultiplier, 0.00001m, '忽');
+
 
             Unknown.Previous = Unknown;
             Unknown.Next = Unknown;
@@ -308,6 +326,13 @@ partial struct ChineseNumeric
                 HundredQuintillion,
                 Septillion,
                 TenOctillion,
+                FloatPointSymbol,
+                FractionSeparator,
+                Tenth,
+                Hundredth,
+                Thousandth,
+                TenThousandth,
+                HundredThousandth,
             ];
             var numericTokens = new Dictionary<char, Character>();
             foreach (var token in List)
@@ -420,6 +445,40 @@ partial struct ChineseNumeric
             return s_numericTokens.ContainsKey(character);
         }
 
+        /// <summary>
+        /// 小數分隔符（點/点）
+        /// </summary>
+        public static Character FloatPointSymbol { get; }
+
+        /// <summary>
+        /// 又（小數分隔符）
+        /// </summary>
+        public static Character FractionSeparator { get; }
+
+        /// <summary>
+        /// 分（0.1）
+        /// </summary>
+        public static Character Tenth { get; }
+
+        /// <summary>
+        /// 釐（0.01）
+        /// </summary>
+        public static Character Hundredth{ get; }
+
+        /// <summary>
+        /// 毫（0.001）
+        /// </summary>
+        public static Character Thousandth { get; }
+
+        /// <summary>
+        /// 絲（0.0001）
+        /// </summary>
+        public static Character TenThousandth { get; }
+
+        /// <summary>
+        /// 忽（0.00001）
+        /// </summary>
+        public static Character HundredThousandth { get; }
 
         public static Character Get(char character)
         {
@@ -496,6 +555,12 @@ partial struct ChineseNumeric
 
         /// <summary> 未知 </summary>
         Unknown = 16384,
+
+        /// <summary> 小數點符號 </summary>
+        FloatPoint = 32768,
+
+        /// <summary> 小數位量詞 (分/釐/毫) </summary>
+        DecimalMultiplier = 65536,
     }
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]

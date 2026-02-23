@@ -105,6 +105,7 @@ partial class ChineseNumericTest
     [Theory]
     [InlineData("其他")]
     [InlineData("三點")]
+    [InlineData("三又")]
     [InlineData("一零一百")]
     [InlineData("一一一百")]
     [InlineData("一一一千")]
@@ -112,5 +113,39 @@ partial class ChineseNumericTest
     public static void 解析時發生錯誤(string badFormat)
     {
         Assert.Throws<FormatException>(delegate { ChineseNumeric.Parse(badFormat); });
+    }
+
+    [Theory]
+    [InlineData("一二三四五點五四三二一", "12345.54321")]
+    [InlineData("一二三四五點五四三二一零", "12345.543210")]
+    [InlineData("一萬二千三百四十五點五四三二一", "12345.54321")]
+    [InlineData("五點三二一", "5.321")]
+    public static void 從中文轉換為正確且包含小數之十進位數值(string input, string expectedDecimal)
+    {
+        Assert.Equal<decimal>(
+            expected: decimal.Parse(expectedDecimal),
+            actual: ChineseNumeric.Parse(input));
+    }
+
+    [Theory]
+    [InlineData("五又三分二釐一毫", "5.321")]
+    [InlineData("一百又五分", "100.5")]
+    [InlineData("一萬二千三百四十五又五分四釐三毫二絲一忽", "12345.54321")]
+    [InlineData("三分", "0.3")]
+    [InlineData("二釐", "0.02")]
+    [InlineData("一毫", "0.001")]
+    [InlineData("五又三分", "5.3")]
+    [InlineData("十又一分五釐", "10.15")]
+    [InlineData("三又七釐", "3.07")]
+    [InlineData("二又四毫", "2.004")]
+    [InlineData("三絲", "0.0003")]
+    [InlineData("七忽", "0.00007")]
+    [InlineData("五又三分二釐一毫四絲五忽", "5.32145")]
+    [InlineData("一又一忽", "1.00001")]
+    public static void 從又分釐毫格式轉換為正確十進位數值(string input, string expectedDecimal)
+    {
+        Assert.Equal<decimal>(
+            expected: decimal.Parse(expectedDecimal),
+            actual: ChineseNumeric.Parse(input));
     }
 }
