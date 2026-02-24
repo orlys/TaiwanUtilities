@@ -8,13 +8,13 @@ on:
     paths-ignore:
       - '**.md'
     branches: 
-      - master
-      - release 
+      - main
+      - release
   pull_request:
     paths-ignore:
       - '**.md'
-    branches: 
-      - master
+    branches:
+      - main
 
 jobs:
   build:
