@@ -316,6 +316,25 @@ internal sealed class Trie : ICollection<string>, IReadOnlyCollection<string>
         }
     }
 
+    internal int LongestMatch(ReadOnlySpan<char> text, int startIndex)
+    {
+        var current = _root;
+        var longest = 0;
+
+        for (var i = startIndex; i < text.Length; i++)
+        {
+            current = GetChildNode(current, text[i]);
+
+            if (current is null)
+                break;
+
+            if (current.IsTerminal)
+                longest = i - startIndex + 1;
+        }
+
+        return longest;
+    }
+
     internal CharTrieNode? GetNode(ReadOnlySpan<char> prefix)
     {
         var current = _root;
