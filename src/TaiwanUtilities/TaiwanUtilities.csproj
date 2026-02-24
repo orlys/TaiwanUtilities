@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <Import Project="..\..\sdk\metadata.props" />
-
   <PropertyGroup>
     <TargetFrameworks>net10.0;net8.0;netstandard2.0;net472</TargetFrameworks>
     <Description>與台灣相關的通用邏輯函式庫</Description>
@@ -9,8 +7,6 @@
     <GenerateLibraryLayout>true</GenerateLibraryLayout>
     <RootNamespace>TaiwanUtilities</RootNamespace>
     <Product>TaiwanUtilities</Product>
-
-    <Company></Company>
     <Copyright>Copyright © $([System.DateTime]::UtcNow.ToString(yyyy)) Orlys Ma. All Rights Reserved.</Copyright>
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <RepositoryType>git</RepositoryType>
@@ -20,8 +16,6 @@
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <LangVersion>preview</LangVersion>
-
-
 
     <!-- Source Link Settings-->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
@@ -34,22 +28,14 @@
   <PropertyGroup>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageTags>Taiwan,ChineseNumeric,InternationalNumericFormatter,RocDateTime,Validator,ZipCode</PackageTags>
+    <PackageTags>Taiwan,ChineseNumeric,InternationalNumericFormatter,RocDateTime,Validator</PackageTags>
     <PackageVersion>1.0.22</PackageVersion>
-    <!--<PackageIcon>icon.png</PackageIcon>-->
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="..\..\readme.md" Link="readme.md" Pack="true" PackagePath="\" />
     <None Include="..\..\LICENSE" Link="LICENSE" Pack="true" PackagePath="\" />
   </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="..\..\data\zipcode.json" Link="Postal\zipcode.json" />
-  </ItemGroup>
-
-
-
 
   <ItemGroup Condition=" $(TargetFramework) == 'net472' ">
     <PackageReference Include="Lib.Harmony" Version="2.4.2" />
@@ -65,7 +51,6 @@
     </PackageReference>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="*" PrivateAssets="All" />
   </ItemGroup>
-
 
   <ItemGroup Condition=" $(TargetFramework) == 'netstandard2.0'">
     <PackageReference Include="System.Text.Json" Version="8.*" />
@@ -93,6 +78,20 @@
     </None>
   </ItemGroup>
 
+  <!-- Additional Metadata -->
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadata">
+      <_Parameter1>RootNamespace</_Parameter1>
+      <_Parameter2>$(RootNamespace)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadata">
+      <_Parameter1>Language</_Parameter1>
+      <_Parameter2>$(Language)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
 
 </Project>
 

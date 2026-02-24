@@ -51,14 +51,6 @@ internal static class JavaScriptSerializerPatcher
             return false;
         }
 
-        if(o is PostalAddress pa) 
-        {
-            sb.Append('"');
-            sb.Append(pa.ToString());
-            sb.Append('"');
-            return false;
-        }
-
         return true;
     }
 }
