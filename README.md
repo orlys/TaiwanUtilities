@@ -115,37 +115,8 @@ string cleanText = ChineseProfanity.Replace("幹你娘都是說說的而已，�
 Assert.False(ChineseProfanity.Censor("這串葡萄誰寫的？程式寫這樣乾脆別寫了"));
 ```
 
-## (實驗性) 郵務地址 `PostalAddress`
-- 此功能開發中，不建議在生產環境使用
-- 台灣地址解析
-- 支援區域的各種組合，包含市、縣、區、鎮、鄉、里、村、鄰等
-- 支援地址的各種格式，包含街道、巷弄、路線等
-- 支援地址的門牌號碼、樓層、單元等
-- 詳細請參考 [docs/experimental.md](https://github.com/orlys/TaiwanUtilities/blob/master/docs/experimental.md#postaladdress)
-```csharp
-using TaiwanUtilities;
-var expect = "信義路二段";
-var actual = PostalAddress.Parse("臺北市中正區信義路二段100號").Road;
-// result: pass
-Assert.Equal<string>(expect, actual);
-```
-
-
-## (實驗性) 郵政代碼 `ZipCode`
-- 此功能開發中，不建議在生產環境使用
-- 台灣郵遞區號查詢功能(目前僅支援三碼)
-```csharp
-using TaiwanUtilities;
-
-Assert.Equal<string>("100", ZipCode.Find("臺北市中正區"));
-```
-
 ## 感謝
 - `RocDateTime` 中的 `IsHoliday` 屬性來自 [ruyutai/TaiwanCalendar](https://github.com/ruyut/TaiwanCalendar)
-- `TaiwanIdValidator` 原始版本為 [enylin/taiwan-id-validator](https://github.com/enylin/taiwan-id-validator)，該儲存庫採用 [MIT](https://github.com/enylin/taiwan-id-validator/blob/main/LICENSE) 授權條款  
-<!--
-- `ZipCode` 的點子來自 [recca0120/twzipcode](https://github.com/recca0120/twzipcode) 這個儲存庫，該儲存庫採用 [MIT](https://github.com/recca0120/twzipcode/blob/main/LICENSE) 授權條款  
--->
-
+- `TaiwanIdValidator` 原始版本為 [enylin/taiwan-id-validator](https://github.com/enylin/taiwan-id-validator)，該儲存庫採用 [MIT](https://github.com/enylin/taiwan-id-validator/blob/main/LICENSE) 授權條款
 
 此儲存庫基於「取之於社群，回饋於社群」的愛與信念而存在，感謝以上原作者為開源社群的貢獻
