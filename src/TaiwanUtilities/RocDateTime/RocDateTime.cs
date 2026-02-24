@@ -82,6 +82,17 @@ public readonly partial struct RocDateTime
     /// </summary>
     public TimeSpan TimeOfDay => GetRawValue().TimeOfDay;
 
+    /// <summary>
+    /// 取得該日期的國定假日資訊
+    /// </summary>
+    public RocHoliday Holiday => RocHolidayDataSet.Default.GetHoliday(this);
+
+    /// <summary>
+    /// 判斷是否為法定假日
+    /// </summary>
+    [Obsolete("Use Holiday property instead.")]
+    public bool IsHoliday => Holiday;
+
     #endregion
 
 

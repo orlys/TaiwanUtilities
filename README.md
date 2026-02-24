@@ -116,7 +116,6 @@ Assert.False(ChineseProfanity.Censor("這串葡萄誰寫的？程式寫這樣乾
 ```
 
 ## 感謝
-- `RocDateTime` 中的 `IsHoliday` 屬性來自 [ruyutai/TaiwanCalendar](https://github.com/ruyut/TaiwanCalendar)
 - `TaiwanIdValidator` 原始版本為 [enylin/taiwan-id-validator](https://github.com/enylin/taiwan-id-validator)，該儲存庫採用 [MIT](https://github.com/enylin/taiwan-id-validator/blob/main/LICENSE) 授權條款
 
 此儲存庫基於「取之於社群，回饋於社群」的愛與信念而存在，感謝以上原作者為開源社群的貢獻
