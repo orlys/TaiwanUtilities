@@ -22,22 +22,22 @@ using Microsoft.Data.Sqlite;
 public record PostalDatabaseVersionInfo
 {
     /// <summary>版本號（yyyy-MM-dd 格式）</summary>
-    public string Version { get; set; } = string.Empty;
+    public string Version { get; internal set; } = string.Empty;
 
     /// <summary>建立時間（ISO 8601 格式）</summary>
-    public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; internal set; }
 
     /// <summary>來源檔案名稱</summary>
-    public string SourceFile { get; set; } = string.Empty;
+    public string SourceFile { get; internal set; } = string.Empty;
 
     /// <summary>記錄數量</summary>
-    public int RecordCount { get; set; }
+    public int RecordCount { get; internal set; }
 
     /// <summary>建置工具版本</summary>
-    public string BuilderVersion { get; set; } = string.Empty;
+    public string BuilderVersion { get; internal set; } = string.Empty;
 
     /// <summary>Git commit SHA</summary>
-    public string CommitSha { get; set; } = string.Empty;
+    public string CommitSha { get; internal set; } = string.Empty;
 }
 
 /// <summary>
@@ -244,8 +244,7 @@ public sealed class PostalDatabase : IDisposable
     {
         try
         {
-            using var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("TaiwanUtilities-PostalDatabase-Updater/1.0");
+            var httpClient = Internals.SharedHttpClient.Instance;
 
             var releaseUrl = $"https://api.github.com/repos/{GitHubRepository}/releases/tags/{ReleaseTag}";
             var response = await httpClient.GetAsync(releaseUrl, ct).ConfigureAwait(false);
@@ -296,8 +295,7 @@ public sealed class PostalDatabase : IDisposable
 
         try
         {
-            using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(120) };
-            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("TaiwanUtilities-PostalDatabase-Updater/1.0");
+            var httpClient = Internals.SharedHttpClient.Instance;
 
             var response = await httpClient.GetAsync(updateInfo.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
@@ -551,8 +549,7 @@ public sealed class PostalDatabase : IDisposable
                     }
                     connection.Dispose();
 
-                    // 在某些平台上，明確觸發 GC 有助於釋放檔案鎖定
-                    SqliteConnection.ClearAllPools();
+                    // 不呼叫 ClearAllPools() — 該操作是 process-wide，會影響所有連線
                 }
                 catch
                 {
@@ -578,44 +575,6 @@ public sealed class PostalDatabase : IDisposable
             return string.Empty;
 
         return json.Substring(startIndex, endIndex - startIndex);
-    }
-
-    /// <summary>
-    /// 清理舊的臨時資料庫檔案
-    /// </summary>
-    private static void CleanupOldTempDatabases()
-    {
-        try
-        {
-            var tempDir = Path.Combine(Path.GetTempPath(), "TaiwanUtilities");
-            if (!System.IO.Directory.Exists(tempDir))
-                return;
-
-            // 尋找所有 zipcode_*.db 檔案
-            var dbFiles = System.IO.Directory.GetFiles(tempDir, "zipcode_*.db");
-
-            foreach (var file in dbFiles)
-            {
-                try
-                {
-                    // 檢查檔案是否正在使用（嘗試開啟獨佔模式）
-                    using (var fs = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.None))
-                    {
-                        // 如果能開啟，表示沒有其他程序使用，可以刪除
-                    }
-
-                    File.Delete(file);
-                }
-                catch
-                {
-                    // 檔案正在使用中或無法刪除，跳過
-                }
-            }
-        }
-        catch
-        {
-            // 清理失敗不影響程式運作
-        }
     }
 
     /// <summary>

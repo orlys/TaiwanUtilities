@@ -16,32 +16,32 @@ public record PostalValidationResult
     /// <summary>
     /// 驗證是否通過
     /// </summary>
-    public bool IsValid { get; set; }
+    public bool IsValid { get; internal set; }
 
     /// <summary>
     /// 找到的郵遞區號（如果驗證通過）
     /// </summary>
-    public string ZipCode { get; set; } = string.Empty;
+    public string ZipCode { get; internal set; } = string.Empty;
 
     /// <summary>
     /// 正規化後的地址
     /// </summary>
-    public string NormalizedAddress { get; set; } = string.Empty;
+    public string NormalizedAddress { get; internal set; } = string.Empty;
 
     /// <summary>
     /// 驗證訊息
     /// </summary>
-    public List<string> Messages { get; set; } = new();
+    public List<string> Messages { get; internal set; } = new();
 
     /// <summary>
     /// 驗證失敗的原因
     /// </summary>
-    public PostalValidationFailureReason FailureReason { get; set; } = PostalValidationFailureReason.None;
+    public PostalValidationFailureReason FailureReason { get; internal set; } = PostalValidationFailureReason.None;
 
     /// <summary>
     /// 建議的正確地址（如果有）
     /// </summary>
-    public List<string> Suggestions { get; set; } = new();
+    public List<string> Suggestions { get; internal set; } = new();
 }
 
 /// <summary>

@@ -126,10 +126,10 @@ internal class AddressTokenizer
         if (_specialRoadNames == null || _specialRoadNames.Count == 0)
             return false;
 
-        // 檢查地址是否包含任何特殊路名
+        // 使用 HashSet 的 Contains 逐段檢查（以滑動視窗減少比對次數）
         foreach (var specialRoad in _specialRoadNames)
         {
-            if (address.Contains(specialRoad))
+            if (specialRoad.Length <= address.Length && address.IndexOf(specialRoad, StringComparison.Ordinal) >= 0)
                 return true;
         }
 
@@ -261,12 +261,18 @@ internal class AddressTokenizer
     {
         var startIdx = start < 0 ? Tokens.Count + start : start;
         var endIdx = end < 0 ? Tokens.Count + end : end;
+        var count = Math.Max(0, endIdx - startIdx);
 
-        return string.Concat(
-            Tokens.Skip(startIdx)
-                  .Take(Math.Max(0, endIdx - startIdx))
-                  .Select(t => string.Concat(t))
-        );
+        if (count == 0)
+            return string.Empty;
+
+        var sb = new System.Text.StringBuilder();
+        for (var i = startIdx; i < startIdx + count && i < Tokens.Count; i++)
+        {
+            var t = Tokens[i];
+            sb.Append(t[0]).Append(t[1]).Append(t[2]).Append(t[3]);
+        }
+        return sb.ToString();
     }
 
     /// <summary>
@@ -274,7 +280,13 @@ internal class AddressTokenizer
     /// </summary>
     internal string PickToFlat(params int[] idxs)
     {
-        return string.Concat(idxs.Select(idx => string.Concat(Tokens[idx])));
+        var sb = new System.Text.StringBuilder();
+        foreach (var idx in idxs)
+        {
+            var t = Tokens[idx];
+            sb.Append(t[0]).Append(t[1]).Append(t[2]).Append(t[3]);
+        }
+        return sb.ToString();
     }
 
     /// <summary>

@@ -21,7 +21,7 @@ public static partial class NationalIdentificationCardNumber
             return VerifyTaiwanIdIntermediateString(input);
         }
 
-        if (applyOldRules && ValidatorUtils. MatchCore(GetUiNumberOldFormatPattern(), input, true))
+        if (applyOldRules && ValidatorUtils.MatchCore(GetUiNumberOldFormatPattern(), input, true))
         {
             return VerifyTaiwanIdIntermediateString(input);
         }
@@ -169,14 +169,14 @@ public static partial class NationalIdentificationCardNumber
         }
         else
         {
-            secondDigit = int.Parse(input[1].ToString());
+            secondDigit = input[1] - '0';
         }
 
         var idInDigits = new List<int> { firstDigit, secondDigit };
 
         for (var i = 2; i < input.Length; i++)
         {
-            idInDigits.Add(int.Parse(input[i].ToString()));
+            idInDigits.Add(input[i] - '0');
         }
 
         var sum = 0;

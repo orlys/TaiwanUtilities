@@ -130,7 +130,7 @@ public static class PostalRulesEngine
             return null;
         }
 
-        var key = $"{addr.City}|{addr.District}|{addr.Road}";
+        var key = string.Concat(addr.City, "|", addr.District, "|", addr.Road);
 
         // 查詢記憶體索引
         if (!_rulesIndex.Value.TryGetValue(key, out var compiledRoad))
@@ -184,8 +184,13 @@ public static class PostalRulesEngine
         if (end == 0)
             return 0;
 
+#if NET8_0_OR_GREATER
+        if (int.TryParse(field.AsSpan(0, end), out var value))
+            return value;
+#else
         if (int.TryParse(field.Substring(0, end), out var value))
             return value;
+#endif
 
         return 0;
     }

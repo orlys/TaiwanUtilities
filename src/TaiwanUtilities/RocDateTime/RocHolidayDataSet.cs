@@ -21,17 +21,11 @@ using System.Threading.Tasks;
 /// </remarks>
 public sealed partial class RocHolidayDataSet
 {
-    private readonly object _syncRoot = new();
-    private readonly Dictionary<DateTime, RocHoliday?> _overrides = new();
+    private readonly ConcurrentDictionary<DateTime, RocHoliday?> _overrides = new();
     private readonly ConcurrentDictionary<int, Dictionary<DateTime, RocHoliday>> _cache = new();
     private int _releaseDownloadAttempted;
 
-    private static readonly Lazy<HttpClient> s_httpClient = new(() =>
-    {
-        var client = new HttpClient();
-        client.Timeout = TimeSpan.FromSeconds(30);
-        return client;
-    });
+    private static HttpClient HttpClient => Internals.SharedHttpClient.Instance;
 
     private static readonly Lazy<(int Min, int Max)> s_embeddedYearRange = new(() =>
     {
@@ -63,12 +57,9 @@ public sealed partial class RocHolidayDataSet
         var dt = date.ToDateTime().Date;
 
         // Layer 1: 使用者手動增刪
-        lock (_syncRoot)
+        if (_overrides.TryGetValue(dt, out var overrideValue))
         {
-            if (_overrides.TryGetValue(dt, out var overrideValue))
-            {
-                return overrideValue ?? RocHoliday.None;
-            }
+            return overrideValue ?? RocHoliday.None;
         }
 
         // Layer 2: Runtime 下載快取
@@ -104,10 +95,7 @@ public sealed partial class RocHolidayDataSet
     public void Add(RocDateTime date, RocHoliday holiday)
     {
         var dt = date.ToDateTime().Date;
-        lock (_syncRoot)
-        {
-            _overrides[dt] = holiday;
-        }
+        _overrides[dt] = holiday;
     }
 
     /// <summary>
@@ -117,15 +105,12 @@ public sealed partial class RocHolidayDataSet
     public bool Remove(RocDateTime date)
     {
         var dt = date.ToDateTime().Date;
-        lock (_syncRoot)
-        {
-            var existed = _overrides.ContainsKey(dt) ||
-                          (_cache.TryGetValue(dt.Year, out var yc) && yc.ContainsKey(dt)) ||
-                          s_embedded.ContainsKey(dt);
+        var existed = _overrides.ContainsKey(dt) ||
+                      (_cache.TryGetValue(dt.Year, out var yc) && yc.ContainsKey(dt)) ||
+                      s_embedded.ContainsKey(dt);
 
-            _overrides[dt] = null; // null = 標記刪除
-            return existed;
-        }
+        _overrides[dt] = null; // null = 標記刪除
+        return existed;
     }
 
     /// <summary>
@@ -162,10 +147,7 @@ public sealed partial class RocHolidayDataSet
     /// </summary>
     public Task ReloadAsync(CancellationToken ct = default)
     {
-        lock (_syncRoot)
-        {
-            _overrides.Clear();
-        }
+        _overrides.Clear();
         _cache.Clear();
         Interlocked.Exchange(ref _releaseDownloadAttempted, 0);
         return Task.CompletedTask;
@@ -179,7 +161,7 @@ public sealed partial class RocHolidayDataSet
     {
         try
         {
-            var client = s_httpClient.Value;
+            var client = HttpClient;
 
 #if NET8_0_OR_GREATER
             var response = await client.GetAsync(ReleaseUrl, ct).ConfigureAwait(false);
@@ -242,7 +224,7 @@ public sealed partial class RocHolidayDataSet
             if (csvUrl == null)
                 return result;
 
-            var client = s_httpClient.Value;
+            var client = HttpClient;
 
 #if NET8_0_OR_GREATER
             var response = await client.GetAsync(csvUrl, ct).ConfigureAwait(false);
@@ -273,7 +255,7 @@ public sealed partial class RocHolidayDataSet
     /// </summary>
     private static async Task<string> DiscoverGovCsvUrlAsync(int year, CancellationToken ct)
     {
-        var client = s_httpClient.Value;
+        var client = HttpClient;
         var rocYear = year - 1911;
 
 #if NET8_0_OR_GREATER
