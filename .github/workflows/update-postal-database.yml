@@ -49,6 +49,12 @@ jobs:
             exit 1
           }
 
+      - name: Install T4 Text Template Tool
+        run: dotnet tool install -g dotnet-t4
+
+      - name: Generate holiday data
+        run: t4 ${{ github.workspace }}/src/TaiwanUtilities/RocDateTime/RocDateTime.Holidays.tt
+
       - name: Build SQLite Database
         id: build
         shell: pwsh

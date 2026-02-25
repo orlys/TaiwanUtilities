@@ -4,7 +4,7 @@
 [CmdletBinding()]
 param(
     [string]$DbfPath = "..\temp\rall1.dbf",
-    [string]$OutputPath = "..\src\Peak\zipcode.db",
+    [string]$OutputPath = "..\src\TaiwanUtilities\Postal\zipcode.db",
     [switch]$Validate,
     [switch]$ShowStats
 )
@@ -84,7 +84,7 @@ try {
             Write-Host ""
             Write-Host "下一步：" -ForegroundColor Cyan
             Write-Host "  1. 重新建置 TaiwanUtilities 專案以內嵌新資料庫" -ForegroundColor White
-            Write-Host "  2. cd ..\src\Peak" -ForegroundColor Gray
+            Write-Host "  2. cd ..\src\TaiwanUtilities" -ForegroundColor Gray
             Write-Host "  3. dotnet build" -ForegroundColor Gray
         } else {
             Write-Error "建立失敗：找不到輸出檔案 $OutputPath"
