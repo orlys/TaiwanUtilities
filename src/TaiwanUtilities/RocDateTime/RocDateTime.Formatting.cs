@@ -1,7 +1,6 @@
 ﻿namespace TaiwanUtilities;
 using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Text.RegularExpressions;
 
 [DebuggerDisplay("{ToString(),nc}")]

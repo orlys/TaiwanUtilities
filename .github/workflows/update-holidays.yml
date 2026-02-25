@@ -1,0 +1,167 @@
+name: Update Holiday Data
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # Every day UTC 02:00 (Taiwan 10:00)
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Sync holiday data from DGPA
+        run: |
+          python - << 'PYTHON_SCRIPT'
+          import csv, io, re, sys
+          from datetime import date
+          from pathlib import Path
+          from urllib.request import urlopen, Request
+          import json
+
+          API_URL = "https://data.gov.tw/api/v2/rest/dataset/14718"
+          DATA_DIR = Path("data/holidays")
+          WEEKDAY_NAMES = {5: "週六", 6: "週日"}
+
+          def roc_to_ce(y): return y + 1911
+
+          def parse_year(desc):
+              m = re.search(r"(\d{2,3})年", desc)
+              return roc_to_ce(int(m.group(1))) if m else None
+
+          # Fetch metadata
+          print("Fetching dataset metadata...")
+          with urlopen(Request(API_URL, headers={"User-Agent": "Mozilla/5.0"}), timeout=30) as r:
+              distributions = json.loads(r.read())["result"]["distribution"]
+          print(f"  Found {len(distributions)} resources")
+
+          # Pick best CSV per year
+          candidates = {}
+          for d in distributions:
+              if d.get("resourceFormat", "").upper() != "CSV": continue
+              desc = d.get("resourceDescription", "")
+              if "Google" in desc or "google" in desc: continue
+              y = parse_year(desc)
+              if y: candidates.setdefault(y, []).append(d)
+
+          best = {}
+          for y, cs in candidates.items():
+              corrected = [c for c in cs if "修正" in c.get("resourceDescription", "")]
+              best[y] = corrected[-1] if corrected else cs[-1]
+          print(f"  Selected {len(best)} year(s): {sorted(best.keys())}")
+
+          # Process each year
+          for year in sorted(best.keys()):
+              dist = best[year]
+              url = dist.get("resourceDownloadUrl") or dist.get("downloadUrl", "")
+              desc = dist.get("resourceDescription", "")
+              print(f"\nProcessing {year} ({desc})...")
+
+              with urlopen(Request(url, headers={"User-Agent": "Mozilla/5.0"}), timeout=30) as r:
+                  raw = r.read()
+              content = None
+              for enc in ("utf-8-sig", "utf-8", "big5"):
+                  try:
+                      content = raw.decode(enc)
+                      break
+                  except (UnicodeDecodeError, ValueError):
+                      continue
+              if content is None:
+                  content = raw.decode("utf-8", errors="replace")
+
+              rows = []
+              for row in csv.reader(io.StringIO(content)):
+                  if len(row) < 4: continue
+                  ds = row[0].strip()
+                  if not re.match(r"^\d{8}$", ds): continue
+                  is_holiday = row[2].strip() == "2"
+                  description = row[3].strip()
+                  try:
+                      d = date(int(ds[:4]), int(ds[4:6]), int(ds[6:8]))
+                  except ValueError:
+                      continue
+                  role = "all"
+                  if d.month == 5 and d.day == 1:
+                      role, is_holiday = "labor", True
+                      if not description: description = "勞動節"
+                  elif d.month == 9 and d.day == 3:
+                      role, is_holiday = "soldier", True
+                      if not description or description == "工作日": description = "軍人節"
+                  if not description:
+                      description = WEEKDAY_NAMES.get(d.weekday(), "") if is_holiday else "工作日"
+                  rows.append((ds, is_holiday, role, description))
+
+              if not rows:
+                  print(f"  WARNING: No rows for {year}, skipping")
+                  continue
+              print(f"  Parsed {len(rows)} rows")
+
+              lines = ["date,     is_holiday, role,     description,"]
+              for ds, ih, rl, desc in rows:
+                  lines.append(f"{ds}, {'true ' if ih else 'false'}, {rl.ljust(8)}, {desc},")
+              DATA_DIR.mkdir(parents=True, exist_ok=True)
+              (DATA_DIR / f"{year}.csv").write_text("\n".join(lines) + "\n", encoding="utf-8")
+              print(f"  Written: data/holidays/{year}.csv")
+          PYTHON_SCRIPT
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git add data/holidays/
+          if git diff --staged --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit & Push
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: 更新辦公日曆表資料"
+          git push
+
+      - name: Generate merged holidays.csv
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          python - << 'PYTHON_SCRIPT'
+          import csv, re
+          from pathlib import Path
+
+          all_rows = []
+          for csv_path in sorted(Path("data/holidays").glob("*.csv")):
+              if not csv_path.stem.isdigit(): continue
+              for row in csv.reader(csv_path.read_text(encoding="utf-8").splitlines()):
+                  if len(row) < 4: continue
+                  ds = row[0].strip()
+                  if not re.match(r"^\d{8}$", ds): continue
+                  all_rows.append((ds, row[1].strip(), row[2].strip(), row[3].strip()))
+          all_rows.sort()
+
+          lines = ["date,is_holiday,role,description"]
+          for ds, ih, rl, desc in all_rows:
+              lines.append(f"{ds},{ih},{rl},{desc}")
+          Path("holidays.csv").write_text("\n".join(lines) + "\n", encoding="utf-8")
+          print(f"Generated holidays.csv ({len(all_rows)} rows)")
+          PYTHON_SCRIPT
+
+      - name: Create Release
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v$(date -u +%Y%m%d)"
+          # Delete existing release/tag for today if re-run
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" holidays.csv \
+            --title "辦公日曆表 $TAG" \
+            --notes "自動更新：包含所有已知年份的辦公日曆表合併 CSV" \
+            --latest

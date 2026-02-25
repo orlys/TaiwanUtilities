@@ -1,0 +1,1218 @@
+namespace TaiwanUtilities.Builder;
+
+using System;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Text.Json;
+
+using CsvHelper;
+using CsvHelper.Configuration;
+
+using TaiwanUtilities;
+
+class Program
+{
+    static int Main(string[] args)
+    {
+        // 註冊 Big5 和其他編碼提供者
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+        // 如果沒有參數或第一個參數是命令，執行命令模式
+        if (args.Length > 0)
+        {
+            var command = args[0].ToLower();
+            var verbose = args.Any(a => a == "--verbose" || a == "-v");
+
+            switch (command)
+            {
+                case "inspect":
+                    return InspectCommand(args);
+
+                case "validate":
+                    return ValidateCommand(args, verbose);
+
+                case "stats":
+                    return StatsCommand(args);
+
+                case "analyze-department":
+                case "dept":
+                    return AnalyzeDepartmentCommand(args);
+
+                case "export-all":
+                case "lab":
+                    return ExportAllCommand(args);
+
+                case "analyze-roads":
+                case "roads":
+                    return AnalyzeRoadsCommand(args);
+
+                case "generate":
+                case "gen":
+                    return GenerateAddressesCommand(args);
+
+                case "build":
+                    // 移除 "build" 參數，繼續執行建立資料庫
+                    args = args.Skip(1).ToArray();
+                    break;
+
+                case "help":
+                case "--help":
+                case "-h":
+                    ShowHelp();
+                    return 0;
+
+                default:
+                    // 如果不是命令，當作檔案路徑處理
+                    break;
+            }
+        }
+
+        // 決定輸入檔案路徑：優先使用 /data (本機開發)，否則使用 dataset (GitHub Action)
+        var inputPath = args.Length > 0 ? args[0] : DetermineInputPath();
+        var dbPath = args.Length > 1 ? args[1] : "../../src/TaiwanUtilities/Postal/zipcode.db";
+
+        Console.WriteLine("=== 台灣郵遞區號索引建立工具 ===");
+        Console.WriteLine($"輸入檔案: {inputPath}");
+        Console.WriteLine($"輸出資料庫: {dbPath}");
+        Console.WriteLine();
+
+        if (!File.Exists(inputPath))
+        {
+            Console.WriteLine($"錯誤：找不到輸入檔案 '{inputPath}'");
+            return 1;
+        }
+
+        try
+        {
+            // 刪除舊的資料庫檔案
+            if (File.Exists(dbPath))
+            {
+                Console.WriteLine("刪除舊的資料庫檔案...");
+                File.Delete(dbPath);
+            }
+
+            List<string[]> rows;
+            List<PostalRuleData>? structuredRules = null;
+
+            // 根據副檔名決定讀取方式
+            if (inputPath.EndsWith(".dbf", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.Write("正在讀取 DBF 資料（傳統格式）...");
+                rows = ReadDbfFile(inputPath);
+                Console.WriteLine($" 完成！讀取了 {rows.Count} 筆資料");
+
+                Console.Write("正在讀取 DBF 資料（結構化格式）...");
+                structuredRules = ReadDbfFileStructured(inputPath);
+                Console.WriteLine($" 完成！讀取了 {structuredRules.Count} 筆資料");
+            }
+            else if (inputPath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.Write("正在讀取 JSON 資料...");
+                rows = ReadJsonFile(inputPath);
+                Console.WriteLine($" 完成！讀取了 {rows.Count} 筆資料");
+            }
+            else
+            {
+                Console.Write("正在讀取 CSV 資料...");
+                rows = ReadCsvFile(inputPath);
+                Console.WriteLine($" 完成！讀取了 {rows.Count} 筆資料");
+            }
+
+            Console.Write("正在建立索引...");
+            var startTime = DateTime.Now;
+
+            var directory = new TaiwanUtilities.ZipCodeRepository(dbPath, keepAlive: true);
+
+            // 如果有結構化資料，使用新方法；否則使用舊方法（向後相容）
+            if (structuredRules != null)
+            {
+                directory.LoadFromStructuredData(structuredRules, rows);
+            }
+            else
+            {
+                directory.LoadFromCsv(rows);
+            }
+
+            // 寫入資料庫版本資訊
+            WriteDatabaseInfo(dbPath, rows.Count, inputPath);
+
+            directory.Dispose();
+
+            var elapsed = DateTime.Now - startTime;
+            Console.WriteLine($" 完成！耗時 {elapsed.TotalSeconds:F2} 秒");
+
+            // 顯示資料庫大小
+            var fileInfo = new FileInfo(dbPath);
+            Console.WriteLine($"資料庫大小: {fileInfo.Length / 1024.0 / 1024.0:F2} MB");
+            Console.WriteLine();
+            Console.WriteLine("索引建立完成！");
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"錯誤：{ex.Message}");
+            Console.WriteLine(ex.StackTrace);
+            return 1;
+        }
+    }
+
+    static void ShowHelp()
+    {
+        Console.WriteLine("=== TaiwanUtilities.Builder - 郵遞區號資料庫建立與管理工具 ===\n");
+        Console.WriteLine("用法: dotnet run -- [command] [options]\n");
+        Console.WriteLine("命令:");
+        Console.WriteLine("  build [input] [output]  建立資料庫（預設）");
+        Console.WriteLine("  inspect <dbf>           檢查 .dbf 檔案結構");
+        Console.WriteLine("  validate <json>         驗證 JSON 資料集");
+        Console.WriteLine("  stats <json>            顯示資料集統計");
+        Console.WriteLine("  analyze-department      分析 DEPARTMENT 欄位（別名: dept）");
+        Console.WriteLine("  export-all [input] [output]  匯出所有欄位到 SQLite（別名: lab）");
+        Console.WriteLine("  generate [count]        從資料庫隨機生成測試地址（別名: gen）");
+        Console.WriteLine("  help                    顯示此說明\n");
+        Console.WriteLine("選項:");
+        Console.WriteLine("  --verbose, -v           顯示詳細資訊\n");
+        Console.WriteLine("範例:");
+        Console.WriteLine("  dotnet run                                    # 建立資料庫（預設）");
+        Console.WriteLine("  dotnet run -- build ../../dataset/rall1.dbf   # 指定輸入檔");
+        Console.WriteLine("  dotnet run -- inspect ../../dataset/rall1.dbf # 檢查 DBF");
+        Console.WriteLine("  dotnet run -- validate ../../dataset/zipcode.json");
+        Console.WriteLine("  dotnet run -- stats ../../dataset/zipcode.json");
+        Console.WriteLine("  dotnet run -- analyze-department              # 分析 DEPARTMENT");
+    }
+
+    /// <summary>
+    /// 決定輸入檔案路徑：優先使用 /data (本機開發)，否則使用 dataset (GitHub Action)
+    /// </summary>
+    static string DetermineInputPath()
+    {
+        // 優先順序：
+        // 1. data/rall1.dbf (本機開發)
+        // 2. ../../dataset/rall1.dbf (GitHub Action 或傳統路徑)
+
+        var localDataPath = "../../data/rall1.dbf";
+        var ciDataPath = "../../dataset/rall1.dbf";
+
+        if (File.Exists(localDataPath))
+        {
+            Console.WriteLine($"[本機開發] 使用 data/ 目錄的資料");
+            return localDataPath;
+        }
+        else if (File.Exists(ciDataPath))
+        {
+            Console.WriteLine($"[CI/CD] 使用 dataset/ 目錄的資料");
+            return ciDataPath;
+        }
+        else
+        {
+            Console.WriteLine($"[警告] 找不到資料檔案，使用預設路徑");
+            return ciDataPath; // 返回預設路徑，讓後續錯誤處理接手
+        }
+    }
+
+    static int InspectCommand(string[] args)
+    {
+        if (args.Length < 2)
+        {
+            Console.WriteLine("❌ 錯誤: 請指定要檢查的 .dbf 檔案");
+            Console.WriteLine("用法: dotnet run -- inspect <file.dbf>");
+            return 1;
+        }
+
+        var filePath = args[1];
+
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine($"❌ 錯誤: 檔案不存在: {filePath}");
+            return 1;
+        }
+
+        DbfInspector.Inspect(filePath);
+        return 0;
+    }
+
+    static int ValidateCommand(string[] args, bool verbose)
+    {
+        if (args.Length < 2)
+        {
+            Console.WriteLine("❌ 錯誤: 請指定要驗證的檔案");
+            Console.WriteLine("用法: dotnet run -- validate <file>");
+            return 1;
+        }
+
+        var filePath = args[1];
+
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine($"❌ 錯誤: 檔案不存在: {filePath}");
+            return 1;
+        }
+
+        Console.WriteLine($"驗證檔案: {filePath}\n");
+
+        var validator = new DatasetValidator();
+        var result = validator.Validate(filePath);
+
+        DatasetValidator.PrintReport(result, verbose);
+
+        return result.IsValid ? 0 : 1;
+    }
+
+    static int StatsCommand(string[] args)
+    {
+        if (args.Length < 2)
+        {
+            Console.WriteLine("❌ 錯誤: 請指定要分析的檔案");
+            Console.WriteLine("用法: dotnet run -- stats <file>");
+            return 1;
+        }
+
+        var filePath = args[1];
+
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine($"❌ 錯誤: 檔案不存在: {filePath}");
+            return 1;
+        }
+
+        Console.WriteLine($"分析檔案: {filePath}\n");
+
+        var validator = new DatasetValidator();
+        var result = validator.Validate(filePath);
+
+        Console.WriteLine("=== 資料集統計資訊 ===\n");
+
+        foreach (var kvp in result.Statistics.OrderBy(kv => kv.Key))
+        {
+            Console.WriteLine($"{kvp.Key}: {kvp.Value}");
+        }
+
+        return 0;
+    }
+
+    static int AnalyzeDepartmentCommand(string[] args)
+    {
+        var filePath = args.Length > 1 ? args[1] : DetermineInputPath();
+
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine($"❌ 錯誤: 檔案不存在: {filePath}");
+            return 1;
+        }
+
+        Console.WriteLine($"=== 分析 DEPARTMENT 欄位 ===");
+        Console.WriteLine($"檔案: {filePath}\n");
+
+        try
+        {
+            using var stream = File.OpenRead(filePath);
+            using var reader = new DbfDataReader.DbfDataReader(stream, new DbfDataReader.DbfDataReaderOptions
+            {
+                Encoding = Encoding.GetEncoding("big5")
+            });
+
+            var deptIdx = reader.GetOrdinal("DEPARTMENT");
+            var cityIdx = reader.GetOrdinal("CITY");
+            var areaIdx = reader.GetOrdinal("AREA");
+            var roadIdx = reader.GetOrdinal("ROAD");
+            var zipcodeIdx = reader.GetOrdinal("ZIPCODE");
+            var scopeIdx = reader.GetOrdinal("SCOOP");
+
+            int total = 0;
+            int withDept = 0;
+            var deptExamples = new List<string>();
+            var deptStats = new Dictionary<string, int>();
+
+            while (reader.Read())
+            {
+                total++;
+                var dept = reader.GetString(deptIdx)?.Trim() ?? "";
+
+                if (!string.IsNullOrEmpty(dept))
+                {
+                    withDept++;
+
+                    // 統計各 department 出現次數
+                    if (deptStats.ContainsKey(dept))
+                        deptStats[dept]++;
+                    else
+                        deptStats[dept] = 1;
+
+                    if (deptExamples.Count < 30)
+                    {
+                        var city = reader.GetString(cityIdx)?.Trim() ?? "";
+                        var area = reader.GetString(areaIdx)?.Trim() ?? "";
+                        var road = reader.GetString(roadIdx)?.Trim() ?? "";
+                        var zipcode = reader.GetString(zipcodeIdx)?.Trim() ?? "";
+                        var scope = reader.GetString(scopeIdx)?.Trim() ?? "";
+
+                        deptExamples.Add($"{zipcode} {city}{area}{road} {scope} → [{dept}]");
+                    }
+                }
+            }
+
+            Console.WriteLine($"總記錄數: {total:N0}");
+            Console.WriteLine($"有 DEPARTMENT 的記錄: {withDept:N0} ({(double)withDept / total * 100:F2}%)");
+            Console.WriteLine($"不同的 DEPARTMENT 值: {deptStats.Count:N0}");
+            Console.WriteLine();
+
+            if (deptStats.Count > 0)
+            {
+                Console.WriteLine("DEPARTMENT 統計（依出現次數排序）:");
+                foreach (var kvp in deptStats.OrderByDescending(kv => kv.Value).Take(20))
+                {
+                    Console.WriteLine($"  [{kvp.Key}] → {kvp.Value:N0} 筆");
+                }
+                Console.WriteLine();
+            }
+
+            if (deptExamples.Count > 0)
+            {
+                Console.WriteLine("DEPARTMENT 範例（前 30 筆）:");
+                foreach (var example in deptExamples)
+                {
+                    Console.WriteLine($"  {example}");
+                }
+            }
+            else
+            {
+                Console.WriteLine("⚠ 沒有找到包含 DEPARTMENT 資料的記錄");
+            }
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ 錯誤: {ex.Message}");
+            return 1;
+        }
+    }
+
+    static int AnalyzeRoadsCommand(string[] args)
+    {
+        try
+        {
+            var inputPath = DetermineInputPath();
+
+            if (!File.Exists(inputPath))
+            {
+                Console.WriteLine($"❌ 找不到資料檔案: {inputPath}");
+                return 1;
+            }
+
+            Console.WriteLine("=== 分析路名 ===");
+            Console.WriteLine($"資料來源: {inputPath}");
+            Console.WriteLine();
+
+            var roads = new Dictionary<string, HashSet<string>>(); // road -> set of full addresses
+            var normalRoadSuffixes = new[] { "路", "街", "道", "大道", "boulevard" };
+            var abnormalRoads = new Dictionary<string, HashSet<string>>();
+
+            using var stream = File.OpenRead(inputPath);
+            using (var reader = new DbfDataReader.DbfDataReader(stream, new DbfDataReader.DbfDataReaderOptions
+            {
+                Encoding = Encoding.GetEncoding("big5")
+            }))
+            {
+                var roadIdx = reader.GetOrdinal("ROAD");
+                var cityIdx = reader.GetOrdinal("CITY");
+                var areaIdx = reader.GetOrdinal("AREA");
+
+                while (reader.Read())
+                {
+                    var road = reader.GetString(roadIdx)?.Trim() ?? "";
+                    if (string.IsNullOrEmpty(road))
+                        continue;
+
+                    var city = reader.GetString(cityIdx)?.Trim() ?? "";
+                    var area = reader.GetString(areaIdx)?.Trim() ?? "";
+                    var fullAddr = $"{city}{area}{road}";
+
+                    // 檢查是否為正常路名（以路、街、道等結尾）
+                    bool isNormal = normalRoadSuffixes.Any(suffix => road.EndsWith(suffix));
+
+                    if (!isNormal)
+                    {
+                        if (!abnormalRoads.ContainsKey(road))
+                            abnormalRoads[road] = new HashSet<string>();
+                        abnormalRoads[road].Add(fullAddr);
+                    }
+                    else
+                    {
+                        if (!roads.ContainsKey(road))
+                            roads[road] = new HashSet<string>();
+                        roads[road].Add(fullAddr);
+                    }
+                }
+            }
+
+            Console.WriteLine($"✓ 正常路名數量: {roads.Count:N0}");
+            Console.WriteLine($"⚠ 非正常路名數量: {abnormalRoads.Count:N0}");
+            Console.WriteLine();
+
+            if (abnormalRoads.Count > 0)
+            {
+                Console.WriteLine("=== 非正常路名清單 ===");
+                Console.WriteLine();
+
+                var sorted = abnormalRoads.OrderBy(kv => kv.Key).ToList();
+
+                foreach (var kvp in sorted)
+                {
+                    var road = kvp.Key;
+                    var addresses = kvp.Value.OrderBy(a => a).ToList();
+
+                    Console.WriteLine($"路名: {road}");
+                    Console.WriteLine($"  出現次數: {addresses.Count}");
+                    Console.WriteLine($"  完整地址範例:");
+
+                    foreach (var addr in addresses.Take(5))
+                    {
+                        Console.WriteLine($"    - {addr}");
+                    }
+
+                    if (addresses.Count > 5)
+                    {
+                        Console.WriteLine($"    ... 還有 {addresses.Count - 5} 筆");
+                    }
+
+                    Console.WriteLine();
+                }
+
+                // 輸出到檔案
+                var outputPath = "abnormal_roads.txt";
+                using (var writer = new StreamWriter(outputPath, false, Encoding.UTF8))
+                {
+                    writer.WriteLine("=== 非正常路名清單 ===");
+                    writer.WriteLine($"生成時間: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                    writer.WriteLine($"總數: {abnormalRoads.Count}");
+                    writer.WriteLine();
+
+                    foreach (var kvp in sorted)
+                    {
+                        writer.WriteLine($"路名: {kvp.Key}");
+                        writer.WriteLine($"  出現次數: {kvp.Value.Count}");
+                        writer.WriteLine($"  完整地址:");
+
+                        foreach (var addr in kvp.Value.OrderBy(a => a))
+                        {
+                            writer.WriteLine($"    - {addr}");
+                        }
+
+                        writer.WriteLine();
+                    }
+                }
+
+                Console.WriteLine($"✓ 已輸出到檔案: {outputPath}");
+            }
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ 錯誤: {ex.Message}");
+            Console.WriteLine(ex.StackTrace);
+            return 1;
+        }
+    }
+
+    static int ExportAllCommand(string[] args)
+    {
+        var inputPath = args.Length > 1 ? args[1] : DetermineInputPath();
+        var outputPath = args.Length > 2 ? args[2] : "lab.db";
+
+        if (!File.Exists(inputPath))
+        {
+            Console.WriteLine($"❌ 錯誤: 檔案不存在: {inputPath}");
+            return 1;
+        }
+
+        Console.WriteLine("=== 匯出所有 DBF 欄位到 SQLite ===");
+        Console.WriteLine($"輸入: {inputPath}");
+        Console.WriteLine($"輸出: {outputPath}\n");
+
+        try
+        {
+            // 刪除舊的資料庫，如果失敗則使用新檔名
+            if (File.Exists(outputPath))
+            {
+                try
+                {
+                    Console.WriteLine("刪除舊的資料庫...");
+                    File.Delete(outputPath);
+                }
+                catch (IOException)
+                {
+                    // 檔案被占用，使用新檔名
+                    var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                    outputPath = $"lab_{timestamp}.db";
+                    Console.WriteLine($"⚠ 原檔案被占用，改用新檔名: {outputPath}");
+                }
+            }
+
+            using var dbfStream = File.OpenRead(inputPath);
+            using var dbfReader = new DbfDataReader.DbfDataReader(dbfStream, new DbfDataReader.DbfDataReaderOptions
+            {
+                Encoding = Encoding.GetEncoding("big5")
+            });
+
+            using var sqliteConn = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={outputPath}");
+            sqliteConn.Open();
+
+            // 建立資料表（包含所有 37 個欄位）
+            using (var cmd = sqliteConn.CreateCommand())
+            {
+                cmd.CommandText = @"
+                    CREATE TABLE postal_data (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        OFFICE TEXT,
+                        ZIP3A TEXT,
+                        ZIPCODE TEXT,
+                        CITY TEXT,
+                        AREA TEXT,
+                        AREA1 TEXT,
+                        ROAD TEXT,
+                        SCOOP TEXT,
+                        EVEN INTEGER,
+                        CMP_LABLE TEXT,
+                        LANE INTEGER,
+                        LANE1 INTEGER,
+                        ALLEY INTEGER,
+                        ALLEY1 INTEGER,
+                        NO_BGN INTEGER,
+                        NO_BGN1 INTEGER,
+                        NO_END INTEGER,
+                        NO_END1 INTEGER,
+                        FLOOR INTEGER,
+                        FLOOR1 INTEGER,
+                        LANE11 INTEGER,
+                        LANE22 INTEGER,
+                        ALLEY11 INTEGER,
+                        ALLEY22 INTEGER,
+                        ROAD_NO TEXT,
+                        ROAD1 TEXT,
+                        EROAD TEXT,
+                        RMK TEXT,
+                        RMK1 TEXT,
+                        ZIP3RMK INTEGER,
+                        ECITY TEXT,
+                        EAREA TEXT,
+                        UWORD TEXT,
+                        ISN INTEGER,
+                        ISS INTEGER,
+                        DEPARTMENT TEXT,
+                        BN1 TEXT
+                    )";
+                cmd.ExecuteNonQuery();
+            }
+
+            // 建立索引
+            using (var cmd = sqliteConn.CreateCommand())
+            {
+                cmd.CommandText = "CREATE INDEX idx_zipcode ON postal_data(ZIPCODE)";
+                cmd.ExecuteNonQuery();
+                cmd.CommandText = "CREATE INDEX idx_city_area ON postal_data(CITY, AREA)";
+                cmd.ExecuteNonQuery();
+                cmd.CommandText = "CREATE INDEX idx_department ON postal_data(DEPARTMENT)";
+                cmd.ExecuteNonQuery();
+            }
+
+            Console.Write("正在匯出資料...");
+
+            int count = 0;
+            using var transaction = sqliteConn.BeginTransaction();
+            using var insertCmd = sqliteConn.CreateCommand();
+
+            insertCmd.CommandText = @"
+                INSERT INTO postal_data (
+                    OFFICE, ZIP3A, ZIPCODE, CITY, AREA, AREA1, ROAD, SCOOP, EVEN, CMP_LABLE,
+                    LANE, LANE1, ALLEY, ALLEY1, NO_BGN, NO_BGN1, NO_END, NO_END1,
+                    FLOOR, FLOOR1, LANE11, LANE22, ALLEY11, ALLEY22, ROAD_NO, ROAD1,
+                    EROAD, RMK, RMK1, ZIP3RMK, ECITY, EAREA, UWORD, ISN, ISS, DEPARTMENT, BN1
+                ) VALUES (
+                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+                    $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+                    $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+                    $31, $32, $33, $34, $35, $36, $37
+                )";
+
+            while (dbfReader.Read())
+            {
+                insertCmd.Parameters.Clear();
+
+                // 讀取所有欄位
+                insertCmd.Parameters.AddWithValue("$1", dbfReader.GetString(dbfReader.GetOrdinal("OFFICE"))?.Trim() ?? "");
+                insertCmd.Parameters.AddWithValue("$2", dbfReader.GetString(dbfReader.GetOrdinal("ZIP3A"))?.Trim() ?? "");
+                insertCmd.Parameters.AddWithValue("$3", dbfReader.GetString(dbfReader.GetOrdinal("ZIPCODE"))?.Trim() ?? "");
+                insertCmd.Parameters.AddWithValue("$4", dbfReader.GetString(dbfReader.GetOrdinal("CITY"))?.Trim() ?? "");
+                insertCmd.Parameters.AddWithValue("$5", dbfReader.GetString(dbfReader.GetOrdinal("AREA"))?.Trim() ?? "");
+                insertCmd.Parameters.AddWithValue("$6", dbfReader.GetString(dbfReader.GetOrdinal("AREA1"))?.Trim() ?? "");
+                insertCmd.Parameters.AddWithValue("$7", dbfReader.GetString(dbfReader.GetOrdinal("ROAD"))?.Trim() ?? "");
+                insertCmd.Parameters.AddWithValue("$8", dbfReader.GetString(dbfReader.GetOrdinal("SCOOP"))?.Trim() ?? "");
+                insertCmd.Parameters.AddWithValue("$9", GetIntValue(dbfReader, "EVEN"));
+                insertCmd.Parameters.AddWithValue("$10", dbfReader.GetString(dbfReader.GetOrdinal("CMP_LABLE"))?.Trim() ?? "");
+
+                insertCmd.Parameters.AddWithValue("$11", GetIntValue(dbfReader, "LANE"));
+                insertCmd.Parameters.AddWithValue("$12", GetIntValue(dbfReader, "LANE1"));
+                insertCmd.Parameters.AddWithValue("$13", GetIntValue(dbfReader, "ALLEY"));
+                insertCmd.Parameters.AddWithValue("$14", GetIntValue(dbfReader, "ALLEY1"));
+                insertCmd.Parameters.AddWithValue("$15", GetIntValue(dbfReader, "NO_BGN"));
+                insertCmd.Parameters.AddWithValue("$16", GetIntValue(dbfReader, "NO_BGN1"));
+                insertCmd.Parameters.AddWithValue("$17", GetIntValue(dbfReader, "NO_END"));
+                insertCmd.Parameters.AddWithValue("$18", GetIntValue(dbfReader, "NO_END1"));
+                insertCmd.Parameters.AddWithValue("$19", GetIntValue(dbfReader, "FLOOR"));
+                insertCmd.Parameters.AddWithValue("$20", GetIntValue(dbfReader, "FLOOR1"));
+
+                insertCmd.Parameters.AddWithValue("$21", GetIntValue(dbfReader, "LANE11"));
+                insertCmd.Parameters.AddWithValue("$22", GetIntValue(dbfReader, "LANE22"));
+                insertCmd.Parameters.AddWithValue("$23", GetIntValue(dbfReader, "ALLEY11"));
+                insertCmd.Parameters.AddWithValue("$24", GetIntValue(dbfReader, "ALLEY22"));
+                insertCmd.Parameters.AddWithValue("$25", dbfReader.GetString(dbfReader.GetOrdinal("ROAD_NO"))?.Trim() ?? "");
+                insertCmd.Parameters.AddWithValue("$26", dbfReader.GetString(dbfReader.GetOrdinal("ROAD1"))?.Trim() ?? "");
+                insertCmd.Parameters.AddWithValue("$27", dbfReader.GetString(dbfReader.GetOrdinal("EROAD"))?.Trim() ?? "");
+                insertCmd.Parameters.AddWithValue("$28", dbfReader.GetString(dbfReader.GetOrdinal("RMK"))?.Trim() ?? "");
+                insertCmd.Parameters.AddWithValue("$29", dbfReader.GetString(dbfReader.GetOrdinal("RMK1"))?.Trim() ?? "");
+                insertCmd.Parameters.AddWithValue("$30", GetBoolValue(dbfReader, "ZIP3RMK"));
+
+                insertCmd.Parameters.AddWithValue("$31", dbfReader.GetString(dbfReader.GetOrdinal("ECITY"))?.Trim() ?? "");
+                insertCmd.Parameters.AddWithValue("$32", dbfReader.GetString(dbfReader.GetOrdinal("EAREA"))?.Trim() ?? "");
+                insertCmd.Parameters.AddWithValue("$33", dbfReader.GetString(dbfReader.GetOrdinal("UWORD"))?.Trim() ?? "");
+                insertCmd.Parameters.AddWithValue("$34", GetBoolValue(dbfReader, "ISN"));
+                insertCmd.Parameters.AddWithValue("$35", GetBoolValue(dbfReader, "ISS"));
+                insertCmd.Parameters.AddWithValue("$36", dbfReader.GetString(dbfReader.GetOrdinal("DEPARTMENT"))?.Trim() ?? "");
+                insertCmd.Parameters.AddWithValue("$37", dbfReader.GetString(dbfReader.GetOrdinal("BN1"))?.Trim() ?? "");
+
+                insertCmd.ExecuteNonQuery();
+
+                count++;
+                if (count % 10000 == 0)
+                {
+                    Console.Write($"\r正在匯出資料... {count:N0} 筆");
+                }
+            }
+
+            transaction.Commit();
+
+            Console.WriteLine($"\r正在匯出資料... {count:N0} 筆 完成！");
+            Console.WriteLine();
+
+            // 顯示資料庫資訊
+            var fileInfo = new FileInfo(outputPath);
+            Console.WriteLine($"✓ 匯出完成！");
+            Console.WriteLine($"  資料庫: {outputPath}");
+            Console.WriteLine($"  大小: {fileInfo.Length / 1024.0 / 1024.0:F2} MB");
+            Console.WriteLine($"  記錄數: {count:N0}");
+            Console.WriteLine();
+            Console.WriteLine("可以使用以下工具查看：");
+            Console.WriteLine("  - DB Browser for SQLite");
+            Console.WriteLine("  - sqlite3 lab.db");
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"\n❌ 錯誤: {ex.Message}");
+            Console.WriteLine(ex.StackTrace);
+            return 1;
+        }
+    }
+
+    static int GetIntValue(DbfDataReader.DbfDataReader reader, string columnName)
+    {
+        try
+        {
+            var idx = reader.GetOrdinal(columnName);
+            return reader.IsDBNull(idx) ? 0 : reader.GetInt32(idx);
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    static int GetBoolValue(DbfDataReader.DbfDataReader reader, string columnName)
+    {
+        try
+        {
+            var idx = reader.GetOrdinal(columnName);
+            return reader.IsDBNull(idx) ? 0 : (reader.GetBoolean(idx) ? 1 : 0);
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    static int GenerateAddressesCommand(string[] args)
+    {
+        try
+        {
+            var count = args.Length > 1 && int.TryParse(args[1], out var c) ? c : 20;
+            var dbPath = args.Length > 2 ? args[2] : "../../src/TaiwanUtilities/Postal/zipcode.db";
+
+            if (!File.Exists(dbPath))
+            {
+                Console.WriteLine($"❌ 錯誤: 資料庫檔案不存在: {dbPath}");
+                Console.WriteLine("請先執行 'dotnet run -- build' 建立資料庫");
+                return 1;
+            }
+
+            Console.WriteLine("=== 從資料庫隨機生成測試地址 ===");
+            Console.WriteLine($"資料庫: {dbPath}");
+            Console.WriteLine($"生成數量: {count}");
+            Console.WriteLine();
+
+            // 重要：在任何查詢之前設置資料庫路徑
+            Database.UseExternalDatabase(dbPath);
+
+            var generator = new AddressGenerator(dbPath);
+
+            // 顯示資料庫統計資訊
+            Console.WriteLine("資料庫統計：");
+            var stats = generator.GetDatabaseStatistics();
+            Console.WriteLine($"  總規則數: {stats.TotalRules:N0}");
+            Console.WriteLine($"  有巷號規則: {stats.RulesWithLane:N0} ({Percentage(stats.RulesWithLane, stats.TotalRules)})");
+            Console.WriteLine($"  有弄號規則: {stats.RulesWithAlley:N0} ({Percentage(stats.RulesWithAlley, stats.TotalRules)})");
+            Console.WriteLine($"  有單雙號規則: {stats.RulesWithEvenOdd:N0} ({Percentage(stats.RulesWithEvenOdd, stats.TotalRules)})");
+            Console.WriteLine($"    - 單號規則: {stats.RulesOddOnly:N0}");
+            Console.WriteLine($"    - 雙號規則: {stats.RulesEvenOnly:N0}");
+            Console.WriteLine($"  有附號規則: {stats.RulesWithSubNumber:N0} ({Percentage(stats.RulesWithSubNumber, stats.TotalRules)})");
+            Console.WriteLine($"  不同路名數: {stats.UniqueRoads:N0}");
+            Console.WriteLine($"  特殊路名數: {stats.SpecialRoadNames:N0}");
+            Console.WriteLine();
+
+            // 生成地址
+            Console.WriteLine("正在生成地址...");
+            var addresses = generator.GenerateRandomAddresses(count);
+
+            if (addresses.Count == 0)
+            {
+                Console.WriteLine("⚠ 無法生成地址，資料庫可能為空或沒有 postal_rules 資料表");
+                return 1;
+            }
+
+            Console.WriteLine($"\n生成了 {addresses.Count} 個測試地址：\n");
+
+            // 顯示生成的地址
+            for (int i = 0; i < addresses.Count; i++)
+            {
+                var addr = addresses[i];
+                Console.WriteLine($"[{i + 1:D2}] {addr.FullAddress}");
+                Console.WriteLine($"     郵遞區號: {addr.ExpectedZipCode}");
+                Console.WriteLine($"     規則範圍: {addr.RuleScope}");
+                Console.WriteLine($"     資料來源: {addr.Source}");
+
+                // 驗證生成的地址
+                var result = ZipCode.Find(addr.FullAddress);
+
+                if (result.ZipCode == addr.ExpectedZipCode)
+                {
+                    Console.WriteLine($"     ✓ 驗證通過（查詢結果: {result.ZipCode}）");
+                }
+                else
+                {
+                    Console.WriteLine($"     ✗ 驗證失敗（預期: {addr.ExpectedZipCode}, 實際: {result.ZipCode}）");
+                }
+
+                // 如果是結構化資料，測試驗證功能
+                if (addr.Source == "postal_rules")
+                {
+                    var postalAddr = PostalAddress.Parse(addr.FullAddress);
+                    var validation = PostalAddress.Validate(postalAddr);
+
+                    if (validation.IsValid)
+                    {
+                        Console.WriteLine($"     ✓ 結構化驗證通過");
+                        if (validation.MatchedRule != null)
+                        {
+                            Console.WriteLine($"       匹配規則 ID: {validation.MatchedRule.Id}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"     ✗ 結構化驗證失敗: {string.Join(", ", validation.Messages)}");
+                    }
+                }
+
+                Console.WriteLine();
+            }
+
+            // 統計資訊
+            var sourceGroups = addresses.GroupBy(a => a.Source);
+            Console.WriteLine("來源統計:");
+            foreach (var group in sourceGroups)
+            {
+                Console.WriteLine($"  {group.Key}: {group.Count()} 筆");
+            }
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ 錯誤: {ex.Message}");
+            Console.WriteLine(ex.StackTrace);
+            return 1;
+        }
+    }
+
+    static string Percentage(int value, int total)
+    {
+        if (total == 0) return "0%";
+        return $"{(double)value / total * 100:F1}%";
+    }
+
+    static List<string[]> ReadDbfFile(string dbfPath)
+    {
+        var rows = new List<string[]>();
+
+        using var stream = File.OpenRead(dbfPath);
+        using var reader = new DbfDataReader.DbfDataReader(stream, new DbfDataReader.DbfDataReaderOptions
+        {
+            Encoding = Encoding.GetEncoding("big5")
+        });
+
+        // 取得欄位索引（向後相容：7 個基本欄位）
+        var cityIdx = reader.GetOrdinal("CITY");
+        var areaIdx = reader.GetOrdinal("AREA");
+        var roadIdx = reader.GetOrdinal("ROAD");
+        var zipcodeIdx = reader.GetOrdinal("ZIPCODE");
+        var scopeIdx = reader.GetOrdinal("SCOOP");
+        var deptIdx = reader.GetOrdinal("DEPARTMENT");
+        var officeIdx = reader.GetOrdinal("OFFICE");
+
+        int count = 0;
+        while (reader.Read())
+        {
+            try
+            {
+                var city = reader.GetString(cityIdx)?.Trim() ?? "";
+                var area = reader.GetString(areaIdx)?.Trim() ?? "";
+                var road = reader.GetString(roadIdx)?.Trim() ?? "";
+                var zipcode = reader.GetString(zipcodeIdx)?.Trim() ?? "";
+                var scope = reader.GetString(scopeIdx)?.Trim() ?? "";
+                var department = reader.GetString(deptIdx)?.Trim() ?? "";
+                var office = reader.GetString(officeIdx)?.Trim() ?? "";
+
+                // 過濾無效資料
+                if (string.IsNullOrEmpty(city) || string.IsNullOrEmpty(area) || string.IsNullOrEmpty(zipcode))
+                    continue;
+
+                // 格式：郵遞區號,縣市,區域,路名,範圍,部門/大樓,郵局
+                var row = new[] { zipcode, city, area, road, scope, department, office };
+                rows.Add(row);
+
+                count++;
+                if (count % 10000 == 0)
+                {
+                    Console.Write($"\r正在讀取 DBF 資料... {count} 筆");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\n警告: 讀取第 {count + 1} 筆記錄失敗: {ex.Message}");
+            }
+        }
+
+        return rows;
+    }
+
+    /// <summary>
+    /// 讀取 DBF 並插入所有結構化欄位到 postal_rules 資料表
+    /// </summary>
+    static List<PostalRuleData> ReadDbfFileStructured(string dbfPath)
+    {
+        var rules = new List<PostalRuleData>();
+
+        using var stream = File.OpenRead(dbfPath);
+        using var reader = new DbfDataReader.DbfDataReader(stream, new DbfDataReader.DbfDataReaderOptions
+        {
+            Encoding = Encoding.GetEncoding("big5")
+        });
+
+        int count = 0;
+        while (reader.Read())
+        {
+            try
+            {
+                var city = reader.GetString(reader.GetOrdinal("CITY"))?.Trim() ?? "";
+                var area = reader.GetString(reader.GetOrdinal("AREA"))?.Trim() ?? "";
+                var zipcode = reader.GetString(reader.GetOrdinal("ZIPCODE"))?.Trim() ?? "";
+
+                // 過濾無效資料
+                if (string.IsNullOrEmpty(city) || string.IsNullOrEmpty(area) || string.IsNullOrEmpty(zipcode))
+                    continue;
+
+                var rule = new PostalRuleData
+                {
+                    ZipCode = zipcode,
+                    City = city,
+                    Area = area,
+                    Road = reader.GetString(reader.GetOrdinal("ROAD"))?.Trim() ?? "",
+
+                    LaneStart = GetNullableInt(reader, "LANE"),
+                    LaneEnd = GetNullableInt(reader, "LANE1"),
+                    AlleyStart = GetNullableInt(reader, "ALLEY"),
+                    AlleyEnd = GetNullableInt(reader, "ALLEY1"),
+
+                    NumberStart = GetNullableInt(reader, "NO_BGN"),
+                    NumberStartSub = GetNullableInt(reader, "NO_BGN1"),
+                    NumberEnd = GetNullableInt(reader, "NO_END"),
+                    NumberEndSub = GetNullableInt(reader, "NO_END1"),
+
+                    EvenOdd = GetNullableInt(reader, "EVEN"),
+                    FloorStart = GetNullableInt(reader, "FLOOR"),
+                    FloorEnd = GetNullableInt(reader, "FLOOR1"),
+
+                    Scope = reader.GetString(reader.GetOrdinal("SCOOP"))?.Trim(),
+                    Department = reader.GetString(reader.GetOrdinal("DEPARTMENT"))?.Trim(),
+                    Office = reader.GetString(reader.GetOrdinal("OFFICE"))?.Trim(),
+                    Remark = reader.GetString(reader.GetOrdinal("RMK"))?.Trim(),
+
+                    RoadNo = reader.GetString(reader.GetOrdinal("ROAD_NO"))?.Trim(),
+                    Road1 = reader.GetString(reader.GetOrdinal("ROAD1"))?.Trim(),
+                    Lane11 = GetNullableInt(reader, "LANE11"),
+                    Lane22 = GetNullableInt(reader, "LANE22"),
+                    Alley11 = GetNullableInt(reader, "ALLEY11"),
+                    Alley22 = GetNullableInt(reader, "ALLEY22")
+                };
+
+                rules.Add(rule);
+
+                count++;
+                if (count % 10000 == 0)
+                {
+                    Console.Write($"\r正在讀取結構化資料... {count} 筆");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\n警告: 讀取第 {count + 1} 筆記錄失敗: {ex.Message}");
+            }
+        }
+
+        Console.WriteLine($"\r正在讀取結構化資料... {count} 筆 完成");
+        return rules;
+    }
+
+    /// <summary>
+    /// 輔助方法：從 DBF 讀取 nullable int
+    /// </summary>
+    static int? GetNullableInt(DbfDataReader.DbfDataReader reader, string columnName)
+    {
+        try
+        {
+            var idx = reader.GetOrdinal(columnName);
+            if (reader.IsDBNull(idx))
+                return null;
+
+            var value = reader.GetInt32(idx);
+            return value == 0 ? null : value; // 將 0 視為 NULL
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    static List<string[]> ReadJsonFile(string jsonPath)
+    {
+        var rows = new List<string[]>();
+
+        var json = File.ReadAllText(jsonPath, Encoding.UTF8);
+        using var doc = JsonDocument.Parse(json);
+
+        // 遍歷所有縣市
+        foreach (var cityProp in doc.RootElement.EnumerateObject())
+        {
+            var cityName = cityProp.Name;
+
+            if (!cityProp.Value.TryGetProperty("areas", out var areas))
+                continue;
+
+            // 遍歷所有區域
+            foreach (var areaProp in areas.EnumerateObject())
+            {
+                var areaName = areaProp.Name;
+
+                if (!areaProp.Value.TryGetProperty("roads", out var roads))
+                    continue;
+
+                // 遍歷所有路名
+                foreach (var roadProp in roads.EnumerateObject())
+                {
+                    var roadName = roadProp.Name;
+
+                    if (!roadProp.Value.TryGetProperty("scopes", out var scopes))
+                        continue;
+
+                    // 遍歷所有範圍規則
+                    foreach (var scope in scopes.EnumerateArray())
+                    {
+                        if (!scope.TryGetProperty("scope", out var scopeValue) ||
+                            !scope.TryGetProperty("zipcode", out var zipcodeValue))
+                            continue;
+
+                        var scopeStr = scopeValue.GetString() ?? "";
+                        var zipcode = zipcodeValue.GetInt32().ToString();
+
+                        // 格式：郵遞區號,縣市,區域,路名,範圍
+                        var row = new[] {
+                            zipcode,
+                            cityName,
+                            areaName,
+                            roadName,
+                            scopeStr
+                        };
+                        rows.Add(row);
+                    }
+                }
+            }
+        }
+
+        return rows;
+    }
+
+    static List<string[]> ReadCsvFile(string csvPath)
+    {
+        var rows = new List<string[]>();
+        var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HasHeaderRecord = true,
+            TrimOptions = TrimOptions.Trim,
+            BadDataFound = null
+        };
+
+        // 嘗試不同的編碼
+        Encoding[] encodings = { Encoding.UTF8, Encoding.GetEncoding("Big5") };
+
+        foreach (var encoding in encodings)
+        {
+            try
+            {
+                using var reader = new StreamReader(csvPath, encoding);
+                using var csv = new CsvReader(reader, config);
+
+                // 跳過標題行
+                csv.Read();
+                csv.ReadHeader();
+
+                while (csv.Read())
+                {
+                    // 根據 BIG5_ACJ370zip33.csv 格式調整
+                    // 欄位: office, zip3a, zipcode, city, area, area1, road, scope, ...
+                    var fullZipcode = csv.GetField<string>(2)?.Trim(); // zipcode (5碼)
+                    var city = csv.GetField<string>(3)?.Trim();        // city
+                    var area = csv.GetField<string>(4)?.Trim();        // area
+                    var road = csv.GetField<string>(6)?.Trim();        // road
+                    var scope = csv.GetField<string>(7)?.Trim();       // scope
+
+                    // 過濾無效資料
+                    if (string.IsNullOrWhiteSpace(fullZipcode) ||
+                        string.IsNullOrWhiteSpace(city) ||
+                        string.IsNullOrWhiteSpace(area))
+                        continue;
+
+                    // 格式：郵遞區號,縣市,區域,路名,範圍
+                    var row = new[] {
+                        fullZipcode,
+                        city,
+                        area,
+                        road ?? "",
+                        scope ?? ""
+                    };
+                    rows.Add(row);
+                }
+
+                break; // 成功讀取，跳出迴圈
+            }
+            catch
+            {
+                rows.Clear();
+                continue;
+            }
+        }
+
+        return rows;
+    }
+
+    static string GetGitCommitSha()
+    {
+        try
+        {
+            // 從 AssemblyInformationalVersion 解析 Git Commit SHA
+            // 格式範例: "1.0.0+df4139bcbc86c5f118bc2e1086723df4300a4a81"
+            var assembly = typeof(Program).Assembly;
+            var versionAttr = assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+                .Cast<System.Reflection.AssemblyInformationalVersionAttribute>()
+                .FirstOrDefault();
+
+            if (versionAttr?.InformationalVersion != null)
+            {
+                var parts = versionAttr.InformationalVersion.Split('+');
+                if (parts.Length > 1 && !string.IsNullOrWhiteSpace(parts[1]))
+                {
+                    return parts[1];
+                }
+            }
+
+            return "unknown";
+        }
+        catch
+        {
+            return "unknown";
+        }
+    }
+
+    static void WriteDatabaseInfo(string dbPath, int recordCount, string sourceFile)
+    {
+        using var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={dbPath}");
+        connection.Open();
+
+        // 建立版本資訊表
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = @"
+                CREATE TABLE IF NOT EXISTS database_info (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                )";
+            cmd.ExecuteNonQuery();
+        }
+
+        // 寫入版本資訊
+        var now = DateTime.UtcNow;
+        var version = now.ToString("yyyy-MM-dd");
+        var createdAt = now.ToString("o"); // ISO 8601 格式
+        var sourceName = Path.GetFileName(sourceFile);
+        var commitSha = GetGitCommitSha();
+
+        var info = new Dictionary<string, string>
+        {
+            { "version", version },
+            { "created_at", createdAt },
+            { "source_file", sourceName },
+            { "record_count", recordCount.ToString() },
+            { "builder_version", "1.0.0" },
+            { "commit_sha", commitSha }
+        };
+
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = "INSERT OR REPLACE INTO database_info (key, value) VALUES (@key, @value)";
+
+            foreach (var (key, value) in info)
+            {
+                cmd.Parameters.Clear();
+                cmd.Parameters.AddWithValue("@key", key);
+                cmd.Parameters.AddWithValue("@value", value);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        Console.WriteLine($"✓ 寫入資料庫版本資訊: {version} ({createdAt})");
+        if (commitSha != "unknown")
+            Console.WriteLine($"  Commit SHA: {commitSha}");
+    }
+}

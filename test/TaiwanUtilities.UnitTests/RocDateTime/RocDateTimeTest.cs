@@ -21,6 +21,7 @@ public partial class RocDateTimeTest
         Assert.IsType<RocDateTime>(new RocDateTime(115, 1, 1));
     }
 
+    #pragma warning disable CS0618 // IsHoliday is obsolete
     [Fact]
     public static void 國定假日判斷()
     {
@@ -32,6 +33,153 @@ public partial class RocDateTimeTest
     public static void 國定假日超出範圍判斷()
     {
         Assert.False(RocDateTime.Parse("999/12/31").IsHoliday);
+    }
+    #pragma warning restore CS0618
+
+    [Fact]
+    public static void Holiday屬性_國定假日()
+    {
+        // 2025/1/1 開國紀念日
+        var date = new RocDateTime(114, 1, 1);
+        var holiday = date.Holiday;
+
+        Assert.True(holiday.IsHoliday);
+        Assert.True(holiday); // implicit bool
+        Assert.Equal(HolidayRole.All, holiday.Role);
+        Assert.Equal("開國紀念日", holiday.Description);
+    }
+
+    [Fact]
+    public static void Holiday屬性_工作日()
+    {
+        // 2025/1/2 工作日
+        var date = new RocDateTime(114, 1, 2);
+        var holiday = date.Holiday;
+
+        Assert.False(holiday.IsHoliday);
+        Assert.False(holiday); // implicit bool
+    }
+
+    [Fact]
+    public static void Holiday屬性_勞動節()
+    {
+        // 2025/5/1 勞動節
+        var date = new RocDateTime(114, 5, 1);
+        var holiday = date.Holiday;
+
+        Assert.True(holiday);
+        Assert.Equal(HolidayRole.Labor, holiday.Role);
+        Assert.Equal("勞動節", holiday.Description);
+    }
+
+    [Fact]
+    public static void Holiday屬性_歷史日期_1998()
+    {
+        // 1998/1/1 元旦 (民國87年)
+        var date = new RocDateTime(87, 1, 1);
+        var holiday = date.Holiday;
+
+        Assert.True(holiday);
+        Assert.Equal("元旦", holiday.Description);
+    }
+
+    [Fact]
+    public static void Holiday屬性_超出嵌入範圍()
+    {
+        // 民國999年不在嵌入範圍內
+        var date = RocDateTime.Parse("999/12/31");
+        var holiday = date.Holiday;
+
+        Assert.False(holiday);
+        Assert.Equal(RocHoliday.None, holiday);
+    }
+
+    [Fact]
+    public static void RocHoliday隱含布林轉換()
+    {
+        var holiday = new RocHoliday(true, HolidayRole.All, "測試");
+        var nonHoliday = new RocHoliday(false, HolidayRole.All, "工作日");
+
+        Assert.True(holiday);
+        Assert.False(nonHoliday);
+        Assert.False(RocHoliday.None);
+    }
+
+    [Fact]
+    public static void HolidayRole_Flags語意()
+    {
+        // All 包含 Labor 和 Soldier
+        Assert.True(HolidayRole.All.HasFlag(HolidayRole.Labor));
+        Assert.True(HolidayRole.All.HasFlag(HolidayRole.Soldier));
+
+        // Labor 不包含 Soldier
+        Assert.False(HolidayRole.Labor.HasFlag(HolidayRole.Soldier));
+
+        // None 是 default
+        Assert.Equal(HolidayRole.None, default(HolidayRole));
+        Assert.Equal(HolidayRole.None, RocHoliday.None.Role);
+
+        // 國定假日（全民）的 Role 可用 HasFlag 判斷
+        var newYear = new RocDateTime(114, 1, 1).Holiday;
+        Assert.True(newYear.Role.HasFlag(HolidayRole.Labor));
+
+        // 勞動節只適用勞工
+        var laborDay = new RocDateTime(114, 5, 1).Holiday;
+        Assert.True(laborDay.Role.HasFlag(HolidayRole.Labor));
+        Assert.False(laborDay.Role.HasFlag(HolidayRole.Soldier));
+    }
+
+    [Fact]
+    public static async System.Threading.Tasks.Task RocHolidayDataSet_手動增刪()
+    {
+        var dataSet = RocHolidayDataSet.Default;
+
+        // 新增自訂假日
+        var testDate = new RocDateTime(114, 6, 15);
+        var customHoliday = new RocHoliday(true, HolidayRole.All, "自訂假日");
+        dataSet.Add(testDate, customHoliday);
+
+        Assert.Equal(customHoliday, testDate.Holiday);
+
+        // 移除
+        Assert.True(dataSet.Remove(testDate));
+        Assert.False(testDate.Holiday);
+
+        // 清除 overrides
+        await dataSet.ReloadAsync();
+    }
+
+    [Fact]
+    public static void RocHolidayDataSet_嵌入年份範圍()
+    {
+        var dataSet = RocHolidayDataSet.Default;
+
+        Assert.Equal(1998, dataSet.EmbeddedMinYear);
+        Assert.Equal(2026, dataSet.EmbeddedMaxYear);
+    }
+
+    [Fact]
+    public static void RocHolidayDataSet_ContainsYear()
+    {
+        var dataSet = RocHolidayDataSet.Default;
+
+        Assert.True(dataSet.ContainsYear(1998));
+        Assert.True(dataSet.ContainsYear(2025));
+        Assert.True(dataSet.ContainsYear(2026));
+        Assert.False(dataSet.ContainsYear(1997));
+        Assert.False(dataSet.ContainsYear(2027));
+    }
+
+    [Fact]
+    public static void Holiday屬性_軍人節()
+    {
+        // 2025/9/3 軍人節
+        var date = new RocDateTime(114, 9, 3);
+        var holiday = date.Holiday;
+
+        Assert.True(holiday);
+        Assert.Equal(HolidayRole.Soldier, holiday.Role);
+        Assert.Equal("軍人節", holiday.Description);
     }
 
     [Fact]
