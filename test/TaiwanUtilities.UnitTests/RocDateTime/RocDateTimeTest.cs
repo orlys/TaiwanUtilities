@@ -258,10 +258,10 @@ public partial class RocDateTimeTest
     [Fact]
     public static void 確保轉換為台北時間_2()
     {
-        var localNow = DateTime.Now;
+        var taipeiNow = DateTimeOffset.UtcNow.ToOffset(RocDateTime.TimeZoneOffset);
 
         var now = RocDateTime.Now;
-         
-        Assert.InRange(now.TimeOfDay, localNow.TimeOfDay, localNow.TimeOfDay.Add(TimeSpan.FromSeconds(1)));
+
+        Assert.InRange(now.TimeOfDay, taipeiNow.TimeOfDay, taipeiNow.TimeOfDay.Add(TimeSpan.FromSeconds(1)));
     }
 }

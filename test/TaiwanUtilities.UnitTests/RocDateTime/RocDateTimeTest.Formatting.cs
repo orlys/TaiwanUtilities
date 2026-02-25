@@ -70,8 +70,7 @@ partial class RocDateTimeTest
 
 
         expected = "114年12月1日";
-        // Date: new RocDateTime(114, 12, 1, 0, 0, 0);
-        actual = value.Date.ToString("G");
+        actual = new RocDateTime(114, 12, 1).ToString("G");
         Assert.Equal(expected, actual);
     }
 }
