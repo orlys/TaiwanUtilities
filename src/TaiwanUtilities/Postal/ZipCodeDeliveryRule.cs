@@ -13,5 +13,5 @@ namespace TaiwanUtilities;
 /// <param name="Rule">投遞規則</param>
 public record ZipCodeDeliveryRule(
     string ZipCode,
-    DeliveryRule Rule
+    PostalDeliveryRule Rule
 );

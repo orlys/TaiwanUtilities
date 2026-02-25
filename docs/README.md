@@ -11,7 +11,7 @@
 ## 技術文件
 
 - [內嵌資源說明](EMBEDDED_RESOURCE.md) — 資料庫嵌入技術細節
-- [Expression Tree 決策樹](EXPRESSION_TREE_IMPLEMENTATION.md) — PreloadedRulesEngine 編譯機制
+- [Expression Tree 決策樹](EXPRESSION_TREE_IMPLEMENTATION.md) — PostalRulesEngine 編譯機制
 - [授權詳細說明](LICENSING.md) — 雙授權模式（MIT + OGDL-Taiwan-1.0）
 
 ## 開發指引

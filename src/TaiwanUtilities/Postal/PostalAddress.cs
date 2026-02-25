@@ -699,7 +699,7 @@ public class PostalAddress
         try
         {
             // 查詢匹配的 postal_rules
-            var rules = Database.QueryPostalRules(address.City!, address.District!, address.Road!);
+            var rules = PostalDatabase.QueryPostalRules(address.City!, address.District!, address.Road!);
 
             if (rules == null || rules.Count == 0)
             {

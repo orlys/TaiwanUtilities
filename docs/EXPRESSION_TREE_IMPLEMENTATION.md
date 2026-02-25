@@ -2,7 +2,7 @@
 
 ## 架構概述
 
-PreloadedRulesEngine 使用 .NET Expression Tree 為每條路（city|district|road）的規則集合
+PostalRulesEngine 使用 .NET Expression Tree 為每條路（city|district|road）的規則集合
 編譯出一個原生 `Func<int, int, int, int, int>` 決策樹 delegate，
 把資料驅動的規則「烘焙」成原生程式碼，消除 `foreach` 遍歷。
 
@@ -47,7 +47,7 @@ PostalRule[]  ──→  按特異性排序  ──→  Expression 條件鏈  �
 ```
 ZipCode.Find("臺北市大安區和平東路96巷17弄1號")
   → PostalAddress.Parse()  → { City="臺北市", District="大安區", Road="和平東路", Lane="96巷", Alley="17弄", Number=1 }
-  → PreloadedRulesEngine.Find(addr)
+  → PostalRulesEngine.Find(addr)
     → key = "臺北市|大安區|和平東路"
     → ParseNumericPrefix("96巷") → 96
     → ParseNumericPrefix("17弄") → 17
@@ -67,5 +67,5 @@ ZipCode.Find("臺北市大安區和平東路96巷17弄1號")
 | 檔案 | 說明 |
 |------|------|
 | `src/TaiwanUtilities/Postal/Internals/CompiledRule.cs` | 編譯器核心（RoadRuleCompiler + CompiledRoad + RuleMetadata） |
-| `src/TaiwanUtilities/Postal/PreloadedRulesEngine.cs` | 引擎整合（LoadAllRules 編譯 + Find 呼叫 delegate） |
-| `test/TaiwanUtilities.UnitTests/Postal/PreloadedRulesEngineTests.cs` | 測試（含巷弄/附號/單雙號案例） |
+| `src/TaiwanUtilities/Postal/PostalRulesEngine.cs` | 引擎整合（LoadAllRules 編譯 + Find 呼叫 delegate） |
+| `test/TaiwanUtilities.UnitTests/Postal/PostalRulesEngineTests.cs` | 測試（含巷弄/附號/單雙號案例） |

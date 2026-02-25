@@ -8,12 +8,12 @@
 
 1. [ZipCode](#zipcode-類別) — 郵遞區號查詢
 2. [PostalAddress](#postaladdress-類別) — 地址解析
-3. [AddressUtils](#addressutils-類別) — 地址正規化
+3. [PostalAddressUtils](#addressutils-類別) — 地址正規化
 4. [ZipCodeResult](#zipcoderesult-類別) — 查詢結果
-5. [AddressValidationResult](#addressvalidationresult-類別) — 驗證結果
-6. [DeliveryRule](#deliveryrule-類別) — 投遞規則
+5. [PostalValidationResult](#addressvalidationresult-類別) — 驗證結果
+6. [PostalDeliveryRule](#deliveryrule-類別) — 投遞規則
 7. [PostalAddressSuggestion](#postaladdresssuggestion-類別) — 地址候選
-8. [Database](#database-類別) — 資料庫管理
+8. [PostalDatabase](#database-類別) — 資料庫管理
 
 ---
 
@@ -42,7 +42,7 @@ ZipCodeResult result = ZipCode.Find("臺北市信義區市府路1號");
 ### ValidateAddress
 
 ```csharp
-public static AddressValidationResult ValidateAddress(string address)
+public static PostalValidationResult ValidateAddress(string address)
 ```
 
 驗證地址是否合法，包含門牌號碼範圍檢查。
@@ -184,10 +184,10 @@ public record PostalAddressValidation
 
 ---
 
-## AddressUtils 類別
+## PostalAddressUtils 類別
 
 ```csharp
-public static class AddressUtils
+public static class PostalAddressUtils
 ```
 
 ### Normalize
@@ -199,7 +199,7 @@ public static string Normalize(string address)
 正規化地址：統一「台」→「臺」、全形→半形、移除標點、中文數字轉阿拉伯數字。
 
 ```csharp
-AddressUtils.Normalize("台北市，信義區，市府路１號");
+PostalAddressUtils.Normalize("台北市，信義區，市府路１號");
 // "臺北市信義區市府路1號"
 ```
 
@@ -222,7 +222,7 @@ public record ZipCodeResult
 | `OriginalAddress` | `string` | 原始地址 |
 | `NormalizedAddress` | `string` | 正規化地址 |
 | `Address` | `PostalAddress?` | 解析的地址組件 |
-| `MatchedRule` | `DeliveryRule?` | 匹配的投遞規則 |
+| `MatchedRule` | `PostalDeliveryRule?` | 匹配的投遞規則 |
 | `MatchedScope` | `string?` | 匹配的範圍 |
 | `Department` | `string?` | 投遞局 |
 | `Office` | `string?` | 投遞處 |
@@ -233,10 +233,10 @@ public record ZipCodeResult
 
 ---
 
-## AddressValidationResult 類別
+## PostalValidationResult 類別
 
 ```csharp
-public record AddressValidationResult
+public record PostalValidationResult
 ```
 
 | 屬性 | 型別 | 說明 |
@@ -245,10 +245,10 @@ public record AddressValidationResult
 | `ZipCode` | `string` | 郵遞區號 |
 | `NormalizedAddress` | `string` | 正規化地址 |
 | `Messages` | `List<string>` | 驗證訊息 |
-| `FailureReason` | `ValidationFailureReason` | 失敗原因 |
+| `FailureReason` | `PostalValidationFailureReason` | 失敗原因 |
 | `Suggestions` | `List<string>` | 建議地址 |
 
-### ValidationFailureReason 列舉
+### PostalValidationFailureReason 列舉
 
 | 值 | 說明 |
 |----|------|
@@ -262,19 +262,19 @@ public record AddressValidationResult
 
 ---
 
-## DeliveryRule 類別
+## PostalDeliveryRule 類別
 
 投遞規則。
 
 ```csharp
-public class DeliveryRule
+public class PostalDeliveryRule
 ```
 
 ### 屬性
 
 | 屬性 | 型別 | 說明 |
 |------|------|------|
-| `Type` | `RuleType` | 規則類型 |
+| `Type` | `PostalRuleType` | 規則類型 |
 | `StartNumber` | `int?` | 起始號碼 |
 | `EndNumber` | `int?` | 結束號碼 |
 | `SpecificNumber` | `int?` | 指定號碼 |
@@ -284,13 +284,13 @@ public class DeliveryRule
 ### 方法
 
 ```csharp
-public static DeliveryRule Parse(string fullRuleString)
+public static PostalDeliveryRule Parse(string fullRuleString)
 public bool Matches(PostalAddress components)
 public string GetDescription()
 ```
 
 ```csharp
-var rule = DeliveryRule.Parse("臺北市中正區三元街單147號以下");
+var rule = PostalDeliveryRule.Parse("臺北市中正區三元街單147號以下");
 Console.WriteLine(rule.Type);             // LessOrEqual
 Console.WriteLine(rule.GetDescription()); // "單號，147號以下"
 
@@ -298,7 +298,7 @@ var addr = PostalAddress.Parse("臺北市中正區三元街145號");
 Console.WriteLine(rule.Matches(addr));    // true
 ```
 
-### RuleType 列舉
+### PostalRuleType 列舉
 
 | 值 | 說明 |
 |----|------|
@@ -324,26 +324,26 @@ public record PostalAddressSuggestion(string AddressText, string ZipCode, Postal
 
 ---
 
-## Database 類別
+## PostalDatabase 類別
 
 資料庫管理（進階用法）。
 
 ```csharp
-public sealed class Database
+public sealed class PostalDatabase
 ```
 
 ### 靜態屬性
 
 | 屬性 | 型別 | 說明 |
 |------|------|------|
-| `CurrentVersion` | `DatabaseVersionInfo?` | 目前資料庫版本 |
+| `CurrentVersion` | `PostalDatabaseVersionInfo?` | 目前資料庫版本 |
 
 ### 靜態方法
 
 #### CheckForUpdatesAsync
 
 ```csharp
-public static Task<DatabaseUpdateInfo?> CheckForUpdatesAsync(CancellationToken ct = default)
+public static Task<PostalDatabaseUpdateInfo?> CheckForUpdatesAsync(CancellationToken ct = default)
 ```
 
 檢查 GitHub Release 是否有新版本資料庫。
@@ -373,10 +373,10 @@ public static void Reload()
 
 強制重新載入資料庫（清除所有快取）。
 
-### DatabaseVersionInfo
+### PostalDatabaseVersionInfo
 
 ```csharp
-public record DatabaseVersionInfo
+public record PostalDatabaseVersionInfo
 ```
 
 | 屬性 | 型別 |
@@ -388,12 +388,12 @@ public record DatabaseVersionInfo
 | `BuilderVersion` | `string` |
 | `CommitSha` | `string` |
 
-### DatabaseUpdateInfo
+### PostalDatabaseUpdateInfo
 
 ```csharp
-public record DatabaseUpdateInfo(
-    DatabaseVersionInfo RemoteVersion,
-    DatabaseVersionInfo? LocalVersion,
+public record PostalDatabaseUpdateInfo(
+    PostalDatabaseVersionInfo RemoteVersion,
+    PostalDatabaseVersionInfo? LocalVersion,
     bool HasUpdate,
     string DownloadUrl)
 ```
@@ -403,9 +403,9 @@ public record DatabaseUpdateInfo(
 ## 執行緒安全性
 
 - `ZipCode` — 所有方法執行緒安全
-- `Database` — 單例模式，執行緒安全
-- `PostalAddress`、`DeliveryRule` — 不可變物件，可安全共享
-- `ZipCodeResult`、`AddressValidationResult` — record 型別，不可變
+- `PostalDatabase` — 單例模式，執行緒安全
+- `PostalAddress`、`PostalDeliveryRule` — 不可變物件，可安全共享
+- `ZipCodeResult`、`PostalValidationResult` — record 型別，不可變
 
 ---
 

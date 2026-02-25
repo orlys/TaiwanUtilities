@@ -222,21 +222,21 @@ public class DirectoryInternalTests
     }
 
     [Fact]
-    public void GetRoadType_WithNonExistentAddress_ReturnsNull()
+    public void GetPostalRoadType_WithNonExistentAddress_ReturnsNull()
     {
         // Arrange
         var dbPath = GetDatabasePath();
         using var directory = new ZipCodeRepository(dbPath);
 
         // Act
-        var roadType = directory.GetRoadType("不存在的地址");
+        var roadType = directory.GetPostalRoadType("不存在的地址");
 
         // Assert
         Assert.Null(roadType);
     }
 
     [Fact]
-    public void GetRoadType_DatabaseHasRoadTypeColumn()
+    public void GetPostalRoadType_DatabaseHasPostalRoadTypeColumn()
     {
         // Arrange
         var dbPath = GetDatabasePath();

@@ -31,7 +31,7 @@ using TaiwanUtilities.Internals;
 /// 使用 Lazy&lt;T&gt; 實現延遲初始化，首次查詢時才載入規則。
 /// </para>
 /// </remarks>
-public static class PreloadedRulesEngine
+public static class PostalRulesEngine
 {
     /// <summary>
     /// 規則索引（按 city|district|road 分組，每組為編譯後的決策樹）
@@ -52,7 +52,7 @@ public static class PreloadedRulesEngine
     /// <example>
     /// <code>
     /// // 應用程式啟動時
-    /// Task.Run(() => PreloadedRulesEngine.Warmup());
+    /// Task.Run(() => PostalRulesEngine.Warmup());
     /// </code>
     /// </example>
     public static void Warmup()
@@ -70,8 +70,8 @@ public static class PreloadedRulesEngine
     /// <example>
     /// <code>
     /// // 資料庫更新後
-    /// await Database.UpdateAsync();
-    /// PreloadedRulesEngine.Reload();
+    /// await PostalDatabase.UpdateAsync();
+    /// PostalRulesEngine.Reload();
     /// </code>
     /// </example>
     public static void Reload()
@@ -110,7 +110,7 @@ public static class PreloadedRulesEngine
     /// <example>
     /// <code>
     /// var addr = PostalAddress.Parse("臺北市信義區市府路1號");
-    /// var result = PreloadedRulesEngine.Find(addr);
+    /// var result = PostalRulesEngine.Find(addr);
     ///
     /// if (result != null)
     /// {
@@ -220,7 +220,7 @@ public static class PreloadedRulesEngine
     {
         var index = new Dictionary<string, CompiledRoad>(5000, StringComparer.Ordinal);
 
-        Database.ExecuteQuery(repo =>
+        PostalDatabase.ExecuteQuery(repo =>
         {
             var allRules = repo.LoadAllPostalRules();
 
@@ -261,7 +261,7 @@ public static class PreloadedRulesEngine
     /// </returns>
     /// <example>
     /// <code>
-    /// var (keys, rules, bytes) = PreloadedRulesEngine.GetStats();
+    /// var (keys, rules, bytes) = PostalRulesEngine.GetStats();
     /// Console.WriteLine($"索引鍵: {keys}, 規則數: {rules}, 記憶體: {bytes / 1024 / 1024} MB");
     /// </code>
     /// </example>

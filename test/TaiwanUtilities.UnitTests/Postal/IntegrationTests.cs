@@ -19,16 +19,16 @@ public class IntegrationTests
         // 嘗試找到資料庫檔案
         _dbPath = FindDatabasePath();
 
-        // 設定外部資料庫路徑給 Database 單例使用
+        // 設定外部資料庫路徑給 PostalDatabase 單例使用
         if (IsDatabaseAvailable())
         {
             try
             {
-                Database.UseExternalDatabase(_dbPath);
+                PostalDatabase.UseExternalDatabase(_dbPath);
             }
             catch (InvalidOperationException)
             {
-                // Database 單例已經初始化，忽略錯誤
+                // PostalDatabase 單例已經初始化，忽略錯誤
             }
         }
     }
@@ -116,7 +116,7 @@ public class IntegrationTests
 
         
         // 測試中文數字
-        var normalized = AddressUtils.Normalize("信義路一段");
+        var normalized = PostalAddressUtils.Normalize("信義路一段");
         Assert.Equal("信義路1段", normalized);
 
         // 測試查詢

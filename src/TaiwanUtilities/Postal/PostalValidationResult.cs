@@ -11,7 +11,7 @@ using System.Collections.Generic;
 /// <summary>
 /// 地址驗證結果
 /// </summary>
-public record AddressValidationResult
+public record PostalValidationResult
 {
     /// <summary>
     /// 驗證是否通過
@@ -36,7 +36,7 @@ public record AddressValidationResult
     /// <summary>
     /// 驗證失敗的原因
     /// </summary>
-    public ValidationFailureReason FailureReason { get; set; } = ValidationFailureReason.None;
+    public PostalValidationFailureReason FailureReason { get; set; } = PostalValidationFailureReason.None;
 
     /// <summary>
     /// 建議的正確地址（如果有）
@@ -47,7 +47,7 @@ public record AddressValidationResult
 /// <summary>
 /// 驗證失敗原因
 /// </summary>
-public enum ValidationFailureReason
+public enum PostalValidationFailureReason
 {
     /// <summary>
     /// 無（驗證通過）

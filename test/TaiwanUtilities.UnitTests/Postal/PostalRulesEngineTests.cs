@@ -10,10 +10,10 @@ using System.Threading.Tasks;
 using Xunit;
 
 /// <summary>
-/// PreloadedRulesEngine 單元測試
+/// PostalRulesEngine 單元測試
 /// </summary>
 [Collection("DatabaseSingleton")]
-public class PreloadedRulesEngineTests
+public class PostalRulesEngineTests
 {
     [Fact]
     public void TestPreloadedEngine_BasicQuery()
@@ -22,7 +22,7 @@ public class PreloadedRulesEngineTests
         var addr = PostalAddress.Parse("臺北市信義區市府路1號");
 
         // Act
-        var result = PreloadedRulesEngine.Find(addr);
+        var result = PostalRulesEngine.Find(addr);
 
         // Assert
         Assert.NotNull(result);
@@ -37,7 +37,7 @@ public class PreloadedRulesEngineTests
         var addr = PostalAddress.Parse("臺北市信義區市府路");
 
         // Act
-        var result = PreloadedRulesEngine.Find(addr);
+        var result = PostalRulesEngine.Find(addr);
 
         // Assert - 應該返回 null（需要 SQLite 漸進式查詢）
         Assert.Null(result);
@@ -50,7 +50,7 @@ public class PreloadedRulesEngineTests
         var addr = PostalAddress.Parse("臺北市信義區不存在路1號");
 
         // Act
-        var result = PreloadedRulesEngine.Find(addr);
+        var result = PostalRulesEngine.Find(addr);
 
         // Assert
         Assert.Null(result);
@@ -64,7 +64,7 @@ public class PreloadedRulesEngineTests
         var addr = PostalAddress.Parse("臺北市中正區三元街145號");
 
         // Act
-        var result = PreloadedRulesEngine.Find(addr);
+        var result = PostalRulesEngine.Find(addr);
 
         // Assert
         Assert.NotNull(result);
@@ -78,7 +78,7 @@ public class PreloadedRulesEngineTests
         var addr = PostalAddress.Parse("臺北市中正區三元街146號");
 
         // Act
-        var result = PreloadedRulesEngine.Find(addr);
+        var result = PostalRulesEngine.Find(addr);
 
         // Assert
         Assert.NotNull(result);
@@ -93,7 +93,7 @@ public class PreloadedRulesEngineTests
         var addr = PostalAddress.Parse("臺北市大安區新生南路一段1號");
 
         // Act
-        var result = PreloadedRulesEngine.Find(addr);
+        var result = PostalRulesEngine.Find(addr);
 
         // Assert
         if (result != null)
@@ -116,7 +116,7 @@ public class PreloadedRulesEngineTests
         var addr = PostalAddress.Parse("臺北市信義區市府路1號");
 
         // Act
-        var result = PreloadedRulesEngine.Find(addr);
+        var result = PostalRulesEngine.Find(addr);
 
         // Assert
         Assert.NotNull(result);
@@ -135,7 +135,7 @@ public class PreloadedRulesEngineTests
             .Select(i => Task.Run(() =>
             {
                 var addr = PostalAddress.Parse(testAddress);
-                var result = PreloadedRulesEngine.Find(addr);
+                var result = PostalRulesEngine.Find(addr);
                 Assert.NotNull(result);
                 Assert.Equal("110204", result.ZipCode);
             }))
@@ -150,8 +150,8 @@ public class PreloadedRulesEngineTests
     public void TestPreloadedEngine_Stats()
     {
         // Arrange & Act
-        PreloadedRulesEngine.Warmup(); // 確保已初始化
-        var (keys, rules, bytes) = PreloadedRulesEngine.GetStats();
+        PostalRulesEngine.Warmup(); // 確保已初始化
+        var (keys, rules, bytes) = PostalRulesEngine.GetStats();
 
         // Assert
         Assert.True(keys > 0, "索引鍵數量應大於 0");
@@ -164,22 +164,22 @@ public class PreloadedRulesEngineTests
     public void TestPreloadedEngine_Warmup()
     {
         // Act
-        PreloadedRulesEngine.Warmup();
+        PostalRulesEngine.Warmup();
 
         // Assert
-        Assert.True(PreloadedRulesEngine.IsInitialized);
+        Assert.True(PostalRulesEngine.IsInitialized);
     }
 
     [Fact]
     public void TestPreloadedEngine_Reload()
     {
         // Arrange
-        PreloadedRulesEngine.Warmup();
-        var (_, rulesBefore, _) = PreloadedRulesEngine.GetStats();
+        PostalRulesEngine.Warmup();
+        var (_, rulesBefore, _) = PostalRulesEngine.GetStats();
 
         // Act
-        PreloadedRulesEngine.Reload();
-        var (_, rulesAfter, _) = PreloadedRulesEngine.GetStats();
+        PostalRulesEngine.Reload();
+        var (_, rulesAfter, _) = PostalRulesEngine.GetStats();
 
         // Assert
         Assert.Equal(rulesBefore, rulesAfter); // 重新載入後規則數應相同
@@ -230,7 +230,7 @@ public class PreloadedRulesEngineTests
         {
             // Act
             var addr = PostalAddress.Parse(address);
-            var result = PreloadedRulesEngine.Find(addr);
+            var result = PostalRulesEngine.Find(addr);
 
             // Assert - 如果預載入引擎找不到，使用 ZipCode.Find 驗證地址有效性
             if (result == null)
@@ -256,7 +256,7 @@ public class PreloadedRulesEngineTests
         var addr = PostalAddress.Parse(address);
 
         // Act
-        var result = PreloadedRulesEngine.Find(addr);
+        var result = PostalRulesEngine.Find(addr);
 
         // Assert - 如果預載入引擎匹配到，驗證結果；否則驗證 ZipCode.Find 能找到
         if (result != null)
@@ -280,7 +280,7 @@ public class PreloadedRulesEngineTests
         var addr = PostalAddress.Parse("臺北市信義區市府路1之2號");
 
         // Act
-        var result = PreloadedRulesEngine.Find(addr);
+        var result = PostalRulesEngine.Find(addr);
 
         // Assert
         if (result != null)
@@ -298,8 +298,8 @@ public class PreloadedRulesEngineTests
         var addrWithLane = PostalAddress.Parse("臺北市中正區三元街10巷1號");
 
         // Act
-        var resultNoLane = PreloadedRulesEngine.Find(addrNoLane);
-        var resultWithLane = PreloadedRulesEngine.Find(addrWithLane);
+        var resultNoLane = PostalRulesEngine.Find(addrNoLane);
+        var resultWithLane = PostalRulesEngine.Find(addrWithLane);
 
         // Assert - 至少無巷的地址應能匹配
         if (resultNoLane != null)
@@ -323,7 +323,7 @@ public class PreloadedRulesEngineTests
         foreach (var address in addresses)
         {
             var addr = PostalAddress.Parse(address);
-            var result = PreloadedRulesEngine.Find(addr);
+            var result = PostalRulesEngine.Find(addr);
 
             // 至少其中一個應該能被匹配（這條路有規則）
             if (result != null)
@@ -349,7 +349,7 @@ public class PreloadedRulesEngineTests
         };
 
         // Act
-        var result = PreloadedRulesEngine.Find(addr);
+        var result = PostalRulesEngine.Find(addr);
 
         // Assert - 超出範圍的巷號應該不匹配（或匹配到全部規則）
         // 結果取決於資料庫中的規則定義
@@ -359,18 +359,18 @@ public class PreloadedRulesEngineTests
     public void TestPreloadedEngine_ParseNumericPrefix()
     {
         // 測試 ParseNumericPrefix 內部方法
-        Assert.Equal(243, PreloadedRulesEngine.ParseNumericPrefix("243巷"));
-        Assert.Equal(53, PreloadedRulesEngine.ParseNumericPrefix("53弄"));
-        Assert.Equal(0, PreloadedRulesEngine.ParseNumericPrefix(null));
-        Assert.Equal(0, PreloadedRulesEngine.ParseNumericPrefix(""));
-        Assert.Equal(0, PreloadedRulesEngine.ParseNumericPrefix("巷"));
-        Assert.Equal(17, PreloadedRulesEngine.ParseNumericPrefix("17"));
+        Assert.Equal(243, PostalRulesEngine.ParseNumericPrefix("243巷"));
+        Assert.Equal(53, PostalRulesEngine.ParseNumericPrefix("53弄"));
+        Assert.Equal(0, PostalRulesEngine.ParseNumericPrefix(null));
+        Assert.Equal(0, PostalRulesEngine.ParseNumericPrefix(""));
+        Assert.Equal(0, PostalRulesEngine.ParseNumericPrefix("巷"));
+        Assert.Equal(17, PostalRulesEngine.ParseNumericPrefix("17"));
     }
 
     [Fact]
     public void TestPreloadedEngine_ConsistentWithZipCodeFind()
     {
-        // Arrange - 驗證 PreloadedRulesEngine 和 ZipCode.Find 的結果一致
+        // Arrange - 驗證 PostalRulesEngine 和 ZipCode.Find 的結果一致
         var testAddresses = new[]
         {
             "臺北市信義區市府路1號",
@@ -381,7 +381,7 @@ public class PreloadedRulesEngineTests
         foreach (var address in testAddresses)
         {
             var addr = PostalAddress.Parse(address);
-            var preloadedResult = PreloadedRulesEngine.Find(addr);
+            var preloadedResult = PostalRulesEngine.Find(addr);
             var zipCodeResult = ZipCode.Find(address);
 
             if (preloadedResult != null && zipCodeResult.IsExactMatch)

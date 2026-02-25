@@ -43,7 +43,7 @@ public class PostalAddressGenerator
         try
         {
             // 查詢所有規則（不限制數量），然後重複使用它們
-            var rules = Database.ExecuteQuery(repo => repo.QueryRandomPostalRules(100_000));
+            var rules = PostalDatabase.ExecuteQuery(repo => repo.QueryRandomPostalRules(100_000));
 
             if (rules.Count > 0)
             {
@@ -55,7 +55,7 @@ public class PostalAddressGenerator
             // postal_rules 不存在或查詢失敗，使用後備方案
         }
 
-        // 如果還需要更多地址，從 Database 查詢補充
+        // 如果還需要更多地址，從 PostalDatabase 查詢補充
         if (addresses.Count < count)
         {
             var remaining = count - addresses.Count;
@@ -194,7 +194,7 @@ public class PostalAddressGenerator
                 FullAddress = fullAddress,
                 ZipCode = rule.ZipCode,
                 Rule = rule,
-                Source = GenerationSource.PostalRules
+                Source = PostalGenerationSource.PostalRules
             };
         }
         catch
@@ -244,8 +244,8 @@ public class PostalAddressGenerator
                             if (deliveryRule.Rule.StartNumber.HasValue && deliveryRule.Rule.EndNumber.HasValue)
                             {
                                 // 如果有範圍，從範圍中隨機選擇
-                                var evenOdd = deliveryRule.Rule.Type == RuleType.Odd ? 1 :
-                                            deliveryRule.Rule.Type == RuleType.Even ? 2 : 0;
+                                var evenOdd = deliveryRule.Rule.Type == PostalRuleType.Odd ? 1 :
+                                            deliveryRule.Rule.Type == PostalRuleType.Even ? 2 : 0;
                                 number = GenerateNumberInRange(deliveryRule.Rule.StartNumber,
                                                              deliveryRule.Rule.EndNumber, evenOdd);
                             }
@@ -272,7 +272,7 @@ public class PostalAddressGenerator
                                 FullAddress = fullAddress,
                                 ZipCode = deliveryRule.ZipCode,
                                 Rule = null,
-                                Source = GenerationSource.Database
+                                Source = PostalGenerationSource.Database
                             });
 
                             // 每 10,000 筆輸出一次進度
@@ -438,7 +438,7 @@ public class PostalAddressGenerator
 /// <summary>
 /// 地址生成來源
 /// </summary>
-public enum GenerationSource
+public enum PostalGenerationSource
 {
     /// <summary>
     /// 從 postal_rules 資料表生成（結構化規則）
@@ -479,7 +479,7 @@ public class GeneratedPostalAddress
     /// <summary>
     /// 生成來源
     /// </summary>
-    public GenerationSource Source { get; set; }
+    public PostalGenerationSource Source { get; set; }
 
     /// <summary>
     /// 驗證地址是否正確（使用 ZipCode.Find 查詢並比對）

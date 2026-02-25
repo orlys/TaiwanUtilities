@@ -61,7 +61,7 @@ public class GeneratedPostalAddress
 | `FullAddress` | `string` | 完整地址字串 |
 | `ZipCode` | `string` | 郵遞區號 |
 | `Rule` | `PostalRule?` | 匹配的投遞規則 |
-| `Source` | `GenerationSource` | 生成來源 |
+| `Source` | `PostalGenerationSource` | 生成來源 |
 
 ### 方法
 
@@ -83,12 +83,12 @@ public PostalAddressValidation GetValidation()
 
 ---
 
-## GenerationSource 列舉
+## PostalGenerationSource 列舉
 
 | 值 | 說明 |
 |----|------|
 | `PostalRules` | 從投遞規則生成 |
-| `Database` | 從漸進式索引生成 |
+| `PostalDatabase` | 從漸進式索引生成 |
 
 ---
 
@@ -121,4 +121,4 @@ var addresses = generator.Generate(10000, (current, total) =>
 
 - [PostalAddress](API.md#postaladdress-類別)
 - [ZipCode.Find()](API.md#find)
-- [DeliveryRule](API.md#deliveryrule-類別)
+- [PostalDeliveryRule](API.md#deliveryrule-類別)

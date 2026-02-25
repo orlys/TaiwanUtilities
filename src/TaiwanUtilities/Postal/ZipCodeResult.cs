@@ -91,7 +91,7 @@ public record ZipCodeResult
     /// <summary>
     /// 匹配的投遞規則
     /// </summary>
-    public DeliveryRule? MatchedRule { get; set; }
+    public PostalDeliveryRule? MatchedRule { get; set; }
 
     /// <summary>
     /// 匹配的地址範圍
@@ -179,11 +179,11 @@ public record ZipCodeResult
     {
         var addr = new AddressTokenizer(address);
         var components = PostalAddress.Parse(address);
-        DeliveryRule? rule = null;
+        PostalDeliveryRule? rule = null;
 
         try
         {
-            rule = DeliveryRule.Parse(ruleStr);
+            rule = PostalDeliveryRule.Parse(ruleStr);
         }
         catch
         {

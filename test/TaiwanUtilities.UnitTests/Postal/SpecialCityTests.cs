@@ -117,7 +117,7 @@ public class SpecialCityTests
     public void TestSpecialCityPostalRules()
     {
         // Act - 從資料庫查詢所有南海諸島和釣魚臺的投遞規則
-        var allRules = Database.ExecuteQuery(repo => repo.QueryRandomPostalRules(100_000));
+        var allRules = PostalDatabase.ExecuteQuery(repo => repo.QueryRandomPostalRules(100_000));
 
         var specialRules = allRules
             .Where(r => r.City.Contains("南海諸") || r.City.Contains("釣魚臺"))

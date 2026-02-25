@@ -209,8 +209,8 @@ internal class ZipCodeRepository : IDisposable
 
         // 分類路名類型
         var roadType = string.IsNullOrEmpty(roadName)
-            ? RoadType.Unknown.ToString()
-            : RoadClassifier.Classify(roadName).ToString();
+            ? PostalRoadType.Unknown.ToString()
+            : PostalRoadClassifier.Classify(roadName).ToString();
 
         // 插入精確匹配
         PutPrecise(conn, addr.Flat(), headAddrStr + tailRuleStr, zipcode, roadType, department, office, ruleId);
@@ -445,11 +445,11 @@ internal class ZipCodeRepository : IDisposable
     }
 
     /// <summary>
-    /// 載入所有投遞規則（用於 PreloadedRulesEngine）
+    /// 載入所有投遞規則（用於 PostalRulesEngine）
     /// </summary>
     /// <remarks>
     /// 此方法會載入資料庫中的所有 postal_rules 記錄，
-    /// 用於 PreloadedRulesEngine 的規則預載入。
+    /// 用於 PostalRulesEngine 的規則預載入。
     /// 載入時間約 50-100ms（取決於資料庫大小）。
     /// </remarks>
     internal List<PostalRule> LoadAllPostalRules()
@@ -673,7 +673,7 @@ internal class ZipCodeRepository : IDisposable
     /// <summary>
     /// 查詢地址的路名類型
     /// </summary>
-    internal RoadType? GetRoadType(string addrStr)
+    internal PostalRoadType? GetPostalRoadType(string addrStr)
     {
         return WithinTransaction(conn =>
         {
@@ -682,9 +682,9 @@ internal class ZipCodeRepository : IDisposable
             cmd.Parameters.AddWithValue("$addr_str", addrStr);
 
             var result = cmd.ExecuteScalar();
-            if (result != null && Enum.TryParse<RoadType>(result.ToString(), out var roadType))
+            if (result != null && Enum.TryParse<PostalRoadType>(result.ToString(), out var roadType))
             {
-                return (RoadType?)roadType;
+                return (PostalRoadType?)roadType;
             }
             return null;
         });
@@ -825,16 +825,16 @@ internal class ZipCodeRepository : IDisposable
     /// </summary>
     /// <param name="addrStr">完整地址字串</param>
     /// <returns>驗證結果</returns>
-    internal AddressValidationResult ValidateAddress(string addrStr)
+    internal PostalValidationResult ValidateAddress(string addrStr)
     {
-        var result = new AddressValidationResult
+        var result = new PostalValidationResult
         {
             IsValid = false
         };
 
         if (string.IsNullOrWhiteSpace(addrStr))
         {
-            result.FailureReason = ValidationFailureReason.InvalidFormat;
+            result.FailureReason = PostalValidationFailureReason.InvalidFormat;
             result.Messages.Add("地址不能為空");
             return result;
         }
@@ -847,7 +847,7 @@ internal class ZipCodeRepository : IDisposable
 
             if (lenAddrTokens == 0)
             {
-                result.FailureReason = ValidationFailureReason.InvalidFormat;
+                result.FailureReason = PostalValidationFailureReason.InvalidFormat;
                 result.Messages.Add("地址格式無效");
                 return result;
             }
@@ -919,7 +919,7 @@ internal class ZipCodeRepository : IDisposable
                     // 找到規則但不匹配
                     if (ruleMatched && !result.IsValid)
                     {
-                        result.FailureReason = ValidationFailureReason.NumberRuleMismatch;
+                        result.FailureReason = PostalValidationFailureReason.NumberRuleMismatch;
                         result.Messages.Add($"門牌號碼不符合規則");
 
                         // 提供部分地址的郵遞區號作為參考
@@ -945,14 +945,14 @@ internal class ZipCodeRepository : IDisposable
             // 只找到部分匹配（沒有完整門牌號規則）
             if (foundAnyMatch && !string.IsNullOrEmpty(partialZipcode))
             {
-                result.FailureReason = ValidationFailureReason.NumberOutOfRange;
+                result.FailureReason = PostalValidationFailureReason.NumberOutOfRange;
                 result.Messages.Add("找不到完整的門牌號碼規則");
                 result.Messages.Add($"部分地址的郵遞區號：{partialZipcode}");
                 return result;
             }
 
             // 完全找不到匹配
-            result.FailureReason = ValidationFailureReason.AddressNotFound;
+            result.FailureReason = PostalValidationFailureReason.AddressNotFound;
             result.Messages.Add("找不到此地址");
 
             // 嘗試提供建議
@@ -1024,7 +1024,7 @@ internal class ZipCodeRepository : IDisposable
             {
                 try
                 {
-                    var rule = DeliveryRule.Parse(ruleStr);
+                    var rule = PostalDeliveryRule.Parse(ruleStr);
                     results.Add(new ZipCodeDeliveryRule(zipcode, rule));
                 }
                 catch

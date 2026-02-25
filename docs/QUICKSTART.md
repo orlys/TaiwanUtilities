@@ -42,21 +42,21 @@ Console.WriteLine(addr.GetFullNumber());  // 1之2號
 
 ```csharp
 // 自動處理繁簡、全半形、標點
-string n1 = AddressUtils.Normalize("台北市，信義區，市府路１號");
+string n1 = PostalAddressUtils.Normalize("台北市，信義區，市府路１號");
 // "臺北市信義區市府路1號"
 
-string n2 = AddressUtils.Normalize("信義路一段");
+string n2 = PostalAddressUtils.Normalize("信義路一段");
 // "信義路1段"
 ```
 
 ## 地址驗證
 
 ```csharp
-AddressValidationResult v = ZipCode.ValidateAddress("臺北市信義區市府路1號");
+PostalValidationResult v = ZipCode.ValidateAddress("臺北市信義區市府路1號");
 Console.WriteLine(v.IsValid);   // true
 Console.WriteLine(v.ZipCode);   // 110204
 
-AddressValidationResult v2 = ZipCode.ValidateAddress("臺北市信義區市府路99999號");
+PostalValidationResult v2 = ZipCode.ValidateAddress("臺北市信義區市府路99999號");
 Console.WriteLine(v2.IsValid);        // false
 Console.WriteLine(v2.FailureReason);  // NumberOutOfRange
 ```

@@ -18,7 +18,7 @@ public class ValidationTests
 
         Assert.True(result.IsValid);
         Assert.NotEmpty(result.ZipCode);
-        Assert.Equal(ValidationFailureReason.None, result.FailureReason);
+        Assert.Equal(PostalValidationFailureReason.None, result.FailureReason);
         Assert.Equal("臺北市信義區市府路1號", result.NormalizedAddress);
     }
 
@@ -39,7 +39,7 @@ public class ValidationTests
                 var result = ZipCode.ValidateAddress("");
 
         Assert.False(result.IsValid);
-        Assert.Equal(ValidationFailureReason.InvalidFormat, result.FailureReason);
+        Assert.Equal(PostalValidationFailureReason.InvalidFormat, result.FailureReason);
         Assert.Contains("不能為空", result.Messages[0]);
     }
 
@@ -49,7 +49,7 @@ public class ValidationTests
         var result = ZipCode.ValidateAddress((string)null!);
 
         Assert.False(result.IsValid);
-        Assert.Equal(ValidationFailureReason.InvalidFormat, result.FailureReason);
+        Assert.Equal(PostalValidationFailureReason.InvalidFormat, result.FailureReason);
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public class ValidationTests
                 var result = ZipCode.ValidateAddress("   ");
 
         Assert.False(result.IsValid);
-        Assert.Equal(ValidationFailureReason.InvalidFormat, result.FailureReason);
+        Assert.Equal(PostalValidationFailureReason.InvalidFormat, result.FailureReason);
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public class ValidationTests
                 var result = ZipCode.ValidateAddress("臺北市信義區市府路");
 
         Assert.False(result.IsValid);
-        Assert.Equal(ValidationFailureReason.NumberRuleMismatch, result.FailureReason);
+        Assert.Equal(PostalValidationFailureReason.NumberRuleMismatch, result.FailureReason);
     }
 
     [Fact]
@@ -78,8 +78,8 @@ public class ValidationTests
         Assert.False(result.IsValid);
         // 可能是 NumberOutOfRange 或 AddressNotFound
         Assert.True(
-            result.FailureReason == ValidationFailureReason.NumberOutOfRange ||
-            result.FailureReason == ValidationFailureReason.AddressNotFound
+            result.FailureReason == PostalValidationFailureReason.NumberOutOfRange ||
+            result.FailureReason == PostalValidationFailureReason.AddressNotFound
         );
     }
 
@@ -140,7 +140,7 @@ public class ValidationTests
     {
                 var result = ZipCode.ValidateAddress("");
 
-        Assert.Equal(ValidationFailureReason.InvalidFormat, result.FailureReason);
+        Assert.Equal(PostalValidationFailureReason.InvalidFormat, result.FailureReason);
         Assert.Empty(result.ZipCode);
     }
 }

@@ -6,7 +6,7 @@ TaiwanUtilities 將郵遞區號資料庫（`zipcode.db`）嵌入 DLL 中，部�
 
 ## 運作方式
 
-1. **建置時**：`Database.targets` 自動從 GitHub Release 下載 `zipcode.db`（若不存在）
+1. **建置時**：`PostalDatabase.targets` 自動從 GitHub Release 下載 `zipcode.db`（若不存在）
 2. **執行時**：首次存取時自動從嵌入資源提取到臨時目錄
 3. **快取**：後續啟動直接重用臨時檔案（比對大小）
 
@@ -56,11 +56,11 @@ dotnet publish -c Release -p:PublishSingleFile=true
 
 ```csharp
 // 檢查更新
-var info = await Database.CheckForUpdatesAsync();
+var info = await PostalDatabase.CheckForUpdatesAsync();
 if (info?.HasUpdate == true)
 {
-    await Database.UpdateAsync();
-    Database.Reload();
+    await PostalDatabase.UpdateAsync();
+    PostalDatabase.Reload();
 }
 ```
 

@@ -102,7 +102,7 @@ internal class AddressTokenizer
 
             try
             {
-                _specialRoadNames = Database.LoadSpecialRoadNames();
+                _specialRoadNames = PostalDatabase.LoadSpecialRoadNames();
                 _specialRoadNamesInitialized = true;
             }
             catch

@@ -30,7 +30,7 @@ public class PerformanceBenchmark
         var testAddress = "臺北市信義區市府路1號";
 
         // 預熱
-        PreloadedRulesEngine.Warmup();
+        PostalRulesEngine.Warmup();
         ZipCode.Find(testAddress);
 
         // 測試預載入引擎
@@ -38,7 +38,7 @@ public class PerformanceBenchmark
         for (int i = 0; i < 1000; i++)
         {
             var addr = PostalAddress.Parse(testAddress);
-            var result = PreloadedRulesEngine.Find(addr);
+            var result = PostalRulesEngine.Find(addr);
         }
         sw1.Stop();
 
@@ -69,14 +69,14 @@ public class PerformanceBenchmark
         var testAddress = "臺北市信義區市府路1號";
 
         // 預熱
-        PreloadedRulesEngine.Warmup();
+        PostalRulesEngine.Warmup();
 
         // 100 個並發查詢 - 預載入引擎
         var sw1 = Stopwatch.StartNew();
         Parallel.For(0, 100, _ =>
         {
             var addr = PostalAddress.Parse(testAddress);
-            var result = PreloadedRulesEngine.Find(addr);
+            var result = PostalRulesEngine.Find(addr);
         });
         sw1.Stop();
 
@@ -105,9 +105,9 @@ public class PerformanceBenchmark
     public void Benchmark_MemoryUsage()
     {
         // 預熱
-        PreloadedRulesEngine.Warmup();
+        PostalRulesEngine.Warmup();
 
-        var (keys, rules, bytes) = PreloadedRulesEngine.GetStats();
+        var (keys, rules, bytes) = PostalRulesEngine.GetStats();
         var mb = bytes / 1024.0 / 1024.0;
 
         _output.WriteLine($"索引鍵數量：{keys:N0}");

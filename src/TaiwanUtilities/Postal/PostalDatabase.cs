@@ -19,7 +19,7 @@ using Microsoft.Data.Sqlite;
 /// <summary>
 /// 資料庫版本資訊
 /// </summary>
-public record DatabaseVersionInfo
+public record PostalDatabaseVersionInfo
 {
     /// <summary>版本號（yyyy-MM-dd 格式）</summary>
     public string Version { get; set; } = string.Empty;
@@ -47,9 +47,9 @@ public record DatabaseVersionInfo
 /// <param name="LocalVersion">本地版本資訊</param>
 /// <param name="HasUpdate">是否有可用更新</param>
 /// <param name="DownloadUrl">下載 URL</param>
-public record DatabaseUpdateInfo(
-    DatabaseVersionInfo RemoteVersion,
-    DatabaseVersionInfo? LocalVersion,
+public record PostalDatabaseUpdateInfo(
+    PostalDatabaseVersionInfo RemoteVersion,
+    PostalDatabaseVersionInfo? LocalVersion,
     bool HasUpdate,
     string DownloadUrl
 );
@@ -66,16 +66,16 @@ public record DatabaseUpdateInfo(
 ///
 /// 使用 ThreadLocal 儲存每個執行緒的 Directory 實例，實現無鎖並發查詢。
 /// </remarks>
-public sealed class Database : IDisposable
+public sealed class PostalDatabase : IDisposable
 {
     private static string? _externalDatabasePath = null;
-    private static readonly Lazy<Database> _instance = new(() => new Database());
-    private static Database Instance => _instance.Value;
+    private static readonly Lazy<PostalDatabase> _instance = new(() => new PostalDatabase());
+    private static PostalDatabase Instance => _instance.Value;
 
     private readonly ThreadLocal<DirectoryHolder> _threadLocalDirectory;
     private string _currentDatabasePath;
     private int _databaseVersion = 0;
-    private DatabaseVersionInfo? _currentVersion;
+    private PostalDatabaseVersionInfo? _currentVersion;
     private readonly object _updateLock = new object();
 
     private const string GitHubRepository = "orlys/TaiwanUtilities";
@@ -99,7 +99,7 @@ public sealed class Database : IDisposable
     /// <summary>
     /// 私有建構子（單例模式）
     /// </summary>
-    private Database()
+    private PostalDatabase()
     {
         // 初始化資料庫路徑（優先使用外部路徑，其次是內嵌資源）
         if (!string.IsNullOrEmpty(_externalDatabasePath) && File.Exists(_externalDatabasePath))
@@ -132,7 +132,7 @@ public sealed class Database : IDisposable
         {
             try
             {
-                PreloadedRulesEngine.Warmup();
+                PostalRulesEngine.Warmup();
             }
             catch (Exception ex)
             {
@@ -145,14 +145,14 @@ public sealed class Database : IDisposable
     /// <summary>
     /// 取得當前資料庫版本資訊
     /// </summary>
-    public static DatabaseVersionInfo? CurrentVersion => Instance._currentVersion;
+    public static PostalDatabaseVersionInfo? CurrentVersion => Instance._currentVersion;
 
     /// <summary>
     /// 使用外部資料庫路徑（用於測試）
     /// </summary>
     /// <param name="dbPath">外部資料庫檔案路徑</param>
     /// <remarks>
-    /// 此方法必須在首次使用 Database 單例之前呼叫。
+    /// 此方法必須在首次使用 PostalDatabase 單例之前呼叫。
     /// 如果單例已經初始化，此方法將無效果。
     /// 僅供測試專案使用（透過 InternalsVisibleTo 暴露）。
     /// </remarks>
@@ -162,7 +162,7 @@ public sealed class Database : IDisposable
         if (_instance.IsValueCreated)
         {
             throw new InvalidOperationException(
-                "Database 單例已經初始化，無法變更資料庫路徑。請在使用任何查詢方法之前呼叫此方法。");
+                "PostalDatabase 單例已經初始化，無法變更資料庫路徑。請在使用任何查詢方法之前呼叫此方法。");
         }
 
         _externalDatabasePath = dbPath;
@@ -173,7 +173,7 @@ public sealed class Database : IDisposable
     /// </summary>
     /// <param name="ct">取消權杖</param>
     /// <returns>更新資訊，如果無法連線或檢查失敗則返回 null</returns>
-    public static Task<DatabaseUpdateInfo?> CheckForUpdatesAsync(CancellationToken ct = default)
+    public static Task<PostalDatabaseUpdateInfo?> CheckForUpdatesAsync(CancellationToken ct = default)
         => Instance.CheckForUpdatesInternalAsync(ct);
 
     /// <summary>
@@ -235,12 +235,12 @@ public sealed class Database : IDisposable
     /// <summary>
     /// 內部實作：檢查更新
     /// </summary>
-    private async Task<DatabaseUpdateInfo?> CheckForUpdatesInternalAsync(CancellationToken ct)
+    private async Task<PostalDatabaseUpdateInfo?> CheckForUpdatesInternalAsync(CancellationToken ct)
     {
         try
         {
             using var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("TaiwanUtilities-Database-Updater/1.0");
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("TaiwanUtilities-PostalDatabase-Updater/1.0");
 
             var releaseUrl = $"https://api.github.com/repos/{GitHubRepository}/releases/tags/{ReleaseTag}";
             var response = await httpClient.GetAsync(releaseUrl, ct).ConfigureAwait(false);
@@ -257,13 +257,13 @@ public sealed class Database : IDisposable
             if (string.IsNullOrEmpty(publishedAt) || string.IsNullOrEmpty(downloadUrl))
                 return null;
 
-            var remoteVersion = new DatabaseVersionInfo
+            var remoteVersion = new PostalDatabaseVersionInfo
             {
                 Version = publishedAt.Substring(0, 10), // yyyy-MM-dd
                 CreatedAt = DateTime.Parse(publishedAt)
             };
 
-            var updateInfo = new DatabaseUpdateInfo(
+            var updateInfo = new PostalDatabaseUpdateInfo(
                 RemoteVersion: remoteVersion,
                 LocalVersion: _currentVersion,
                 HasUpdate: _currentVersion == null ||
@@ -291,7 +291,7 @@ public sealed class Database : IDisposable
         try
         {
             using var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("TaiwanUtilities-Database-Updater/1.0");
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("TaiwanUtilities-PostalDatabase-Updater/1.0");
 
             var response = await httpClient.GetAsync(updateInfo.DownloadUrl, ct).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
@@ -421,7 +421,7 @@ public sealed class Database : IDisposable
     /// <summary>
     /// 從資料庫載入版本資訊
     /// </summary>
-    private static DatabaseVersionInfo? LoadVersionInfo(string dbPath)
+    private static PostalDatabaseVersionInfo? LoadVersionInfo(string dbPath)
     {
         SqliteConnection? connection = null;
         try
@@ -445,7 +445,7 @@ public sealed class Database : IDisposable
                 if (tableExists == null)
                 {
                     // 表不存在，返回預設版本資訊
-                    return new DatabaseVersionInfo
+                    return new PostalDatabaseVersionInfo
                     {
                         Version = "unknown",
                         CreatedAt = DateTime.MinValue,
@@ -459,7 +459,7 @@ public sealed class Database : IDisposable
             using var cmd = connection.CreateCommand();
             cmd.CommandText = "SELECT key, value FROM database_info";
 
-            var info = new DatabaseVersionInfo();
+            var info = new PostalDatabaseVersionInfo();
             using var reader = cmd.ExecuteReader();
 
             while (reader.Read())

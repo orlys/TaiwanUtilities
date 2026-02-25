@@ -765,7 +765,7 @@ class Program
             Console.WriteLine();
 
             // 重要：在任何查詢之前設置資料庫路徑
-            Database.UseExternalDatabase(dbPath);
+            PostalDatabase.UseExternalDatabase(dbPath);
 
             var generator = new AddressGenerator(dbPath);
 

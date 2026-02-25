@@ -13,11 +13,11 @@ using Xunit;
 using Xunit.Abstractions;
 
 /// <summary>
-/// Database 類別的非同步單元測試
+/// PostalDatabase 類別的非同步單元測試
 /// </summary>
 /// <remarks>
-/// 此測試類別會修改 Database singleton 狀態（UpdateFromAsync、Reload），
-/// 使用 [Collection] 避免與其他使用 Database singleton 的測試並行執行。
+/// 此測試類別會修改 PostalDatabase singleton 狀態（UpdateFromAsync、Reload），
+/// 使用 [Collection] 避免與其他使用 PostalDatabase singleton 的測試並行執行。
 /// </remarks>
 [Collection("DatabaseSingleton")]
 public class DatabaseTests
@@ -60,8 +60,8 @@ public class DatabaseTests
     {
         if (!IsDatabaseAvailable()) return;
 
-        // Database 類別會自動使用內嵌資源
-        var version = Database.CurrentVersion;
+        // PostalDatabase 類別會自動使用內嵌資源
+        var version = PostalDatabase.CurrentVersion;
 
         Assert.NotNull(version);
         Assert.NotEmpty(version.Version);
@@ -79,8 +79,8 @@ public class DatabaseTests
     {
         if (!IsDatabaseAvailable()) return;
 
-        // 透過 Database.ExecuteQuery 執行查詢
-        var result = Database.ExecuteQuery(dir =>
+        // 透過 PostalDatabase.ExecuteQuery 執行查詢
+        var result = PostalDatabase.ExecuteQuery(dir =>
             dir.FindDetailed("臺北市信義區市府路1號")
         );
 
@@ -110,7 +110,7 @@ public class DatabaseTests
             {
                 for (int j = 0; j < queriesPerThread; j++)
                 {
-                    var zipcode = Database.ExecuteQuery(dir =>
+                    var zipcode = PostalDatabase.ExecuteQuery(dir =>
                         dir.FindDetailed("臺北市信義區市府路1號").ZipCode
                     );
                     results.Add(zipcode);
@@ -145,7 +145,7 @@ public class DatabaseTests
         for (int i = 0; i < taskCount; i++)
         {
             tasks.Add(Task.Run(() =>
-                Database.ExecuteQuery(dir =>
+                PostalDatabase.ExecuteQuery(dir =>
                     dir.FindDetailed("臺北市信義區市府路1號").ZipCode
                 )
             ));
@@ -184,7 +184,7 @@ public class DatabaseTests
                 var addr = address; // 避免閉包問題
                 var thread = new Thread(() =>
                 {
-                    var zipcode = Database.ExecuteQuery(dir =>
+                    var zipcode = PostalDatabase.ExecuteQuery(dir =>
                         dir.FindDetailed(addr).ZipCode
                     );
                     results[addr] = zipcode;
@@ -220,16 +220,16 @@ public class DatabaseTests
 
         try
         {
-            var originalVersion = Database.CurrentVersion;
+            var originalVersion = PostalDatabase.CurrentVersion;
 
             // 從臨時資料庫更新
-            var result = await Database.UpdateFromAsync(tempDb);
+            var result = await PostalDatabase.UpdateFromAsync(tempDb);
 
             // 應該成功（即使版本相同）
             Assert.True(result);
 
             // 版本資訊應該被更新
-            var newVersion = Database.CurrentVersion;
+            var newVersion = PostalDatabase.CurrentVersion;
             Assert.NotNull(newVersion);
         }
         finally
@@ -245,7 +245,7 @@ public class DatabaseTests
     {
         if (!IsDatabaseAvailable()) return;
 
-        var result = await Database.UpdateFromAsync("/path/does/not/exist.db");
+        var result = await PostalDatabase.UpdateFromAsync("/path/does/not/exist.db");
 
         Assert.False(result);
     }
@@ -257,7 +257,7 @@ public class DatabaseTests
 
         // 使用 FileShare.ReadWrite 允許其他處理程序同時存取檔案
         using var stream = new FileStream(_dbPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        var result = await Database.UpdateFromStreamAsync(stream, "zipcode.db");
+        var result = await PostalDatabase.UpdateFromStreamAsync(stream, "zipcode.db");
 
         Assert.True(result);
     }
@@ -274,7 +274,7 @@ public class DatabaseTests
         try
         {
             using var stream = new FileStream(invalidDb, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            var result = await Database.UpdateFromStreamAsync(stream, "zipcode.db");
+            var result = await PostalDatabase.UpdateFromStreamAsync(stream, "zipcode.db");
 
             // 應該失敗
             Assert.False(result);
@@ -296,7 +296,7 @@ public class DatabaseTests
         if (!IsDatabaseAvailable()) return;
 
         // 執行初始查詢
-        var initialResult = Database.ExecuteQuery(dir =>
+        var initialResult = PostalDatabase.ExecuteQuery(dir =>
             dir.FindDetailed("臺北市信義區市府路1號").ZipCode
         );
         Assert.NotEmpty(initialResult);
@@ -307,10 +307,10 @@ public class DatabaseTests
 
         try
         {
-            await Database.UpdateFromAsync(tempDb);
+            await PostalDatabase.UpdateFromAsync(tempDb);
 
             // 更新後查詢應該仍然有效
-            var afterUpdateResult = Database.ExecuteQuery(dir =>
+            var afterUpdateResult = PostalDatabase.ExecuteQuery(dir =>
                 dir.FindDetailed("臺北市信義區市府路1號").ZipCode
             );
             Assert.NotEmpty(afterUpdateResult);
@@ -334,7 +334,7 @@ public class DatabaseTests
             // 持續查詢直到取消
             while (!cts.Token.IsCancellationRequested)
             {
-                var result = Database.ExecuteQuery(dir =>
+                var result = PostalDatabase.ExecuteQuery(dir =>
                     dir.FindDetailed("臺北市信義區市府路1號").ZipCode
                 );
                 Assert.NotEmpty(result);
@@ -348,7 +348,7 @@ public class DatabaseTests
 
         try
         {
-            await Database.UpdateFromAsync(tempDb);
+            await PostalDatabase.UpdateFromAsync(tempDb);
             await Task.Delay(100); // 讓查詢繼續進行一段時間
 
             cts.Cancel();
@@ -370,7 +370,7 @@ public class DatabaseTests
         var thread1Result = string.Empty;
         var thread1 = new Thread(() =>
         {
-            thread1Result = Database.ExecuteQuery(dir =>
+            thread1Result = PostalDatabase.ExecuteQuery(dir =>
                 dir.FindDetailed("臺北市信義區市府路1號").ZipCode
             );
         });
@@ -380,13 +380,13 @@ public class DatabaseTests
         Assert.NotEmpty(thread1Result);
 
         // 呼叫 Reload
-        Database.Reload();
+        PostalDatabase.Reload();
 
         // 在執行緒 2 中查詢（應該使用新的 Directory 實例）
         var thread2Result = string.Empty;
         var thread2 = new Thread(() =>
         {
-            thread2Result = Database.ExecuteQuery(dir =>
+            thread2Result = PostalDatabase.ExecuteQuery(dir =>
                 dir.FindDetailed("臺北市信義區市府路1號").ZipCode
             );
         });
@@ -417,7 +417,7 @@ public class DatabaseTests
                 threadIds.Add(Thread.CurrentThread.ManagedThreadId);
 
                 // 執行查詢
-                var result = Database.ExecuteQuery(dir =>
+                var result = PostalDatabase.ExecuteQuery(dir =>
                     dir.FindDetailed("臺北市信義區市府路1號").ZipCode
                 );
                 Assert.NotEmpty(result);
@@ -445,7 +445,7 @@ public class DatabaseTests
         // 在同一個執行緒中多次查詢
         for (int i = 0; i < 10; i++)
         {
-            var result = Database.ExecuteQuery(dir =>
+            var result = PostalDatabase.ExecuteQuery(dir =>
                 dir.FindDetailed("臺北市信義區市府路1號").ZipCode
             );
             results.Add(result);
@@ -470,7 +470,7 @@ public class DatabaseTests
 
         try
         {
-            var updateInfo = await Database.CheckForUpdatesAsync(cts.Token);
+            var updateInfo = await PostalDatabase.CheckForUpdatesAsync(cts.Token);
 
             // 可能成功也可能失敗（取決於網路狀況）
             // 只驗證方法能正常執行不拋出異常
@@ -491,7 +491,7 @@ public class DatabaseTests
         using var cts = new CancellationTokenSource();
         cts.Cancel(); // 立即取消
 
-        var updateInfo = await Database.CheckForUpdatesAsync(cts.Token);
+        var updateInfo = await PostalDatabase.CheckForUpdatesAsync(cts.Token);
 
         // 應該返回 null（因為被取消）
         Assert.Null(updateInfo);
@@ -508,7 +508,7 @@ public class DatabaseTests
 
         Assert.Throws<Exception>(() =>
         {
-            Database.ExecuteQuery<string>(dir =>
+            PostalDatabase.ExecuteQuery<string>(dir =>
             {
                 throw new Exception("Test exception");
             });
@@ -522,7 +522,7 @@ public class DatabaseTests
 
         Assert.Throws<ArgumentNullException>(() =>
         {
-            Database.ExecuteQuery<string>(null!);
+            PostalDatabase.ExecuteQuery<string>(null!);
         });
     }
 
@@ -540,7 +540,7 @@ public class DatabaseTests
 
         for (int i = 0; i < queryCount; i++)
         {
-            var result = Database.ExecuteQuery(dir =>
+            var result = PostalDatabase.ExecuteQuery(dir =>
                 dir.FindDetailed("臺北市信義區市府路1號").ZipCode
             );
             Assert.NotEmpty(result);
@@ -566,7 +566,7 @@ public class DatabaseTests
 
         var tasks = Enumerable.Range(0, taskCount).Select(_ =>
             Task.Run(() =>
-                Database.ExecuteQuery(dir =>
+                PostalDatabase.ExecuteQuery(dir =>
                     dir.FindDetailed("臺北市信義區市府路1號").ZipCode
                 )
             )

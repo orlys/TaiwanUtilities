@@ -14,7 +14,7 @@ using System.Collections.Generic;
 /// </summary>
 /// <remarks>
 /// 此類別提供台灣郵遞區號的查詢、驗證、解析等功能。
-/// 內部使用單例的 Database 類別，無需手動管理資料庫連接。
+/// 內部使用單例的 PostalDatabase 類別，無需手動管理資料庫連接。
 /// </remarks>
 public static class ZipCode
 {
@@ -57,14 +57,14 @@ public static class ZipCode
         {
             // 優先使用預載入引擎（純記憶體，無 SQLite I/O）
             var addr = PostalAddress.Parse(address);
-            var preloadedResult = PreloadedRulesEngine.Find(addr);
+            var preloadedResult = PostalRulesEngine.Find(addr);
 
             if (preloadedResult != null)
                 return preloadedResult;
         }
 
         // 降級到 SQLite 查詢（支援漸進式匹配和其他複雜場景）
-        return Database.ExecuteQuery(dir => dir.FindDetailed(address));
+        return PostalDatabase.ExecuteQuery(dir => dir.FindDetailed(address));
     }
 
     /// <summary>
@@ -87,9 +87,9 @@ public static class ZipCode
     /// // result3.IsValid = false, result3.FailureReason = AddressNotFound
     /// </code>
     /// </example>
-    public static AddressValidationResult ValidateAddress(string address)
+    public static PostalValidationResult ValidateAddress(string address)
     {
-        return Database.ExecuteQuery(dir => dir.ValidateAddress(address));
+        return PostalDatabase.ExecuteQuery(dir => dir.ValidateAddress(address));
     }
 
     /// <summary>
@@ -111,7 +111,7 @@ public static class ZipCode
     /// </example>
     public static List<ZipCodeDeliveryRule> GetDeliveryRules(string address)
     {
-        return Database.ExecuteQuery(dir => dir.GetDeliveryRules(address));
+        return PostalDatabase.ExecuteQuery(dir => dir.GetDeliveryRules(address));
     }
 
     /// <summary>
@@ -134,6 +134,6 @@ public static class ZipCode
     /// </example>
     public static List<PostalAddressSuggestion> GetSuggestions(string partialAddress, int maxResults = 10)
     {
-        return Database.ExecuteQuery(dir => dir.GetSuggestionsDetailed(partialAddress, maxResults));
+        return PostalDatabase.ExecuteQuery(dir => dir.GetSuggestionsDetailed(partialAddress, maxResults));
     }
 }

@@ -26,7 +26,7 @@ public class StructuredValidationIntegrationTests
         try
         {
             // 嘗試查詢 postal_rules（即使沒有資料也不應該拋出異常）
-            var rules = Database.QueryPostalRules("臺北市", "中正區", "測試路");
+            var rules = PostalDatabase.QueryPostalRules("臺北市", "中正區", "測試路");
             Assert.NotNull(rules);
         }
         catch (Exception ex)
@@ -42,7 +42,7 @@ public class StructuredValidationIntegrationTests
         // 驗證特殊路名快取可以被載入
         try
         {
-            var specialRoads = Database.LoadSpecialRoadNames();
+            var specialRoads = PostalDatabase.LoadSpecialRoadNames();
             Assert.NotNull(specialRoads);
             // 如果資料庫已經建立，應該至少有一些特殊路名
             // （如果資料庫為空，這個測試可能會失敗，這是正常的）
@@ -80,7 +80,7 @@ public class StructuredValidationIntegrationTests
 
         for (int i = 0; i < 100; i++)
         {
-            var rules = Database.QueryPostalRules("臺北市", "中正區", "測試路");
+            var rules = PostalDatabase.QueryPostalRules("臺北市", "中正區", "測試路");
         }
 
         stopwatch.Stop();
@@ -100,7 +100,7 @@ public class StructuredValidationIntegrationTests
     public void TestPostalRuleQuery_ReturnsValidData(string city, string area, string road)
     {
         // 測試查詢真實的地址資料（如果資料庫已建立）
-        var rules = Database.QueryPostalRules(city, area, road);
+        var rules = PostalDatabase.QueryPostalRules(city, area, road);
 
         Assert.NotNull(rules);
         // 如果資料庫有資料，規則應該包含正確的城市、區域和路名
@@ -184,7 +184,7 @@ public class StructuredValidationIntegrationTests
             {
                 for (int j = 0; j < 10; j++)
                 {
-                    var rules = Database.QueryPostalRules("臺北市", "中正區", "測試路");
+                    var rules = PostalDatabase.QueryPostalRules("臺北市", "中正區", "測試路");
                     Assert.NotNull(rules);
                 }
             });
@@ -194,10 +194,10 @@ public class StructuredValidationIntegrationTests
     }
 
     [Fact]
-    public void TestDatabaseVersionInfo_HasPostalRulesMetadata()
+    public void TestPostalDatabaseVersionInfo_HasPostalRulesMetadata()
     {
         // 測試資料庫版本資訊是否包含新的元數據
-        var versionInfo = Database.CurrentVersion;
+        var versionInfo = PostalDatabase.CurrentVersion;
 
         if (versionInfo != null)
         {
