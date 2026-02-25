@@ -16,7 +16,6 @@
 
 ## 開發指引
 
-- [發布流程](../. github/RELEASE.md) - CI/CD 與版本管理
 - [工具腳本](../tools/README.md) - PowerShell 工具與 Peak.Builder
 - [GitHub Workflows](../.github/workflows/README.md) - 自動化工作流程
 

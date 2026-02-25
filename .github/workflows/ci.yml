@@ -4,9 +4,12 @@ on:
   push:
     paths-ignore:
       - '**.md'
+      - 'data/holidays/**'
     branches:
       - master
-      - release
+      - dev
+    tags:
+      - 'v*'
   pull_request:
     paths-ignore:
       - '**.md'
@@ -67,7 +70,7 @@ jobs:
           --no-build \
           --verbosity normal \
           --logger "trx;LogFileName=test-results.trx" \
-          --filter "FullyQualifiedName!~Generate_2000000Addresses_ValidateAll&FullyQualifiedName!~Generate_10000Addresses"
+          --filter "FullyQualifiedName!~Generate_10000Addresses"
 
     - name: Upload test results
       uses: actions/upload-artifact@v4
@@ -80,10 +83,24 @@ jobs:
     name: Pack and Publish
     runs-on: ubuntu-latest
     needs: build-and-test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Download postal database from GitHub Release
+      shell: bash
+      run: |
+        echo "Downloading zipcode.db from GitHub Release..."
+        mkdir -p src/TaiwanUtilities/Postal
+
+        gh release download database-latest \
+          --pattern "zipcode.db" \
+          --dir src/TaiwanUtilities/Postal \
+          --repo ${{ github.repository }} \
+          --clobber || echo "::warning::Failed to download database from Release. Build will attempt alternative download methods."
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -104,5 +121,3 @@ jobs:
 
     - name: Publish NuGet package
       run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-      env:
-        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
