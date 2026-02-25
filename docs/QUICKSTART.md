@@ -2,126 +2,143 @@
 
 ## 安裝
 
-透過 NuGet 安裝：
-
 ```bash
 dotnet add package TaiwanUtilities
 ```
 
-## 使用範例
+支援 .NET 10 / .NET 8 / .NET Standard 2.0 / .NET Framework 4.7.2
 
-### 基本查詢
+---
+
+## 郵遞區號查詢
 
 ```csharp
 using TaiwanUtilities;
 
 // 查詢郵遞區號
 ZipCodeResult result = ZipCode.Find("臺北市信義區市府路1號");
-Console.WriteLine(result.ZipCode);  // 輸出: 110204
+Console.WriteLine(result.ZipCode);      // 110204
+Console.WriteLine(result.ResultType);   // ExactMatch
 
-// 解析地址組件
-PostalAddress address = PostalAddress.Parse("臺北市信義區市府路1號");
-Console.WriteLine(address.City);      // 輸出: 臺北市
-Console.WriteLine(address.District);  // 輸出: 信義區
+// 漸進式查詢（地址不完整也能查）
+ZipCodeResult r1 = ZipCode.Find("臺北市");           // ZipCode: "1"
+ZipCodeResult r2 = ZipCode.Find("臺北市信義區");      // ZipCode: "110"
+ZipCodeResult r3 = ZipCode.Find("臺北市信義區市府路"); // ZipCode: "110204"
 ```
 
-### 漸進式查詢
-
-即使地址不完整也能查詢：
+## 地址解析
 
 ```csharp
-ZipCodeResult result1 = ZipCode.Find("臺北市");
-Console.WriteLine(result1.ZipCode);  // 1
-
-ZipCodeResult result2 = ZipCode.Find("臺北市信義區");
-Console.WriteLine(result2.ZipCode);  // 110
-
-ZipCodeResult result3 = ZipCode.Find("臺北市信義區市府路");
-Console.WriteLine(result3.ZipCode);  // 110204
-
-ZipCodeResult result4 = ZipCode.Find("臺北市信義區市府路1號");
-Console.WriteLine(result4.ZipCode);  // 110204
+PostalAddress addr = PostalAddress.Parse("臺北市信義區市府路1之2號3樓");
+Console.WriteLine(addr.City);       // 臺北市
+Console.WriteLine(addr.District);   // 信義區
+Console.WriteLine(addr.Road);       // 市府路
+Console.WriteLine(addr.Number);     // 1
+Console.WriteLine(addr.Floor);      // 3
+Console.WriteLine(addr.GetFullNumber());  // 1之2號
 ```
 
-### 地址正規化
+## 地址正規化
 
 ```csharp
-// 自動處理各種格式
-string normalized = AddressUtils.Normalize("台北市，信義區，市府路１號");
-// 返回: "臺北市信義區市府路1號"
+// 自動處理繁簡、全半形、標點
+string n1 = AddressUtils.Normalize("台北市，信義區，市府路１號");
+// "臺北市信義區市府路1號"
 
-// 中文數字轉換
-string normalized2 = AddressUtils.Normalize("臺北市中正區信義路一段");
-// 返回: "臺北市中正區信義路1段"
+string n2 = AddressUtils.Normalize("信義路一段");
+// "信義路1段"
 ```
 
-### 地址解析和組件提取
+## 地址驗證
 
 ```csharp
-PostalAddress address = PostalAddress.Parse("臺北市信義區市府路1之2號3樓");
-Console.WriteLine(address.City);           // 臺北市
-Console.WriteLine(address.District);       // 信義區
-Console.WriteLine(address.Road);           // 市府路
-Console.WriteLine(address.Number);         // 1
-Console.WriteLine(address.SubNumbers[0]);  // 2
-Console.WriteLine(address.Floor);          // 3樓
-Console.WriteLine(address.GetFullNumber()); // 1之2號
+AddressValidationResult v = ZipCode.ValidateAddress("臺北市信義區市府路1號");
+Console.WriteLine(v.IsValid);   // true
+Console.WriteLine(v.ZipCode);   // 110204
+
+AddressValidationResult v2 = ZipCode.ValidateAddress("臺北市信義區市府路99999號");
+Console.WriteLine(v2.IsValid);        // false
+Console.WriteLine(v2.FailureReason);  // NumberOutOfRange
 ```
 
-### 支援的格式
+---
 
-此套件可以處理各種地址格式：
-
-- **繁簡轉換**：台 ↔ 臺
-- **數字格式**：
-  - 全形數字：１２３ → 123
-  - 中文數字：三十八號 → 38號（路名中的數字不轉換，如「八德路」）
-- **分隔符**：自動移除逗號、空格、全形空格
-- **附號格式**：1-1號、1之1號 都支援
-
-## 其他模組
-
-### 中文數字
+## 中文數字
 
 ```csharp
-// 中文數字解析
-long value = ChineseNumeric.Parse("壹仟零伍拾");  // 1050
+using TaiwanUtilities;
 
-// 格式化為大寫中文數字
-string text = ChineseNumeric.Format(1050);  // "壹仟零伍拾"
+// 解析（中文 → decimal）
+ChineseNumeric cn = ChineseNumeric.Parse("貳千參佰陸拾玖");
+decimal value = cn;  // 2369
+
+// 格式化（decimal → 中文）
+ChineseNumeric num = 2369m;
+Console.WriteLine(num.ToString("TW"));  // 貳仟參佰陸拾玖
+Console.WriteLine(num.ToString("tw"));  // 二千三百六十九
+Console.WriteLine(num.ToString("FW"));  // ２３６９
 ```
 
-### 民國曆
+---
+
+## 民國日期
 
 ```csharp
-// 取得今天的民國日期
-RocDateTime today = RocDateTime.Now;
-Console.WriteLine(today);  // 115/02/25
+using TaiwanUtilities;
 
-// 查詢是否為假日
-bool isHoliday = RocDateTime.IsHoliday(DateTime.Today);
+// 隱含轉換
+RocDateTime roc = new DateTime(2025, 10, 24);  // 114年10月24日
+
+// 格式化
+Console.WriteLine(roc.ToString("d"));   // 114/10/24
+Console.WriteLine(roc.ToString("D"));   // 114年10月24日
+Console.WriteLine(roc.ToString("年月日"));  // 一百一十四年十月二十四日
+
+// 國定假日
+RocHoliday holiday = roc.Holiday;
+Console.WriteLine(holiday.IsHoliday);    // true
+Console.WriteLine(holiday.Description);  // 光復節補假
+
+// 下載最新行事曆
+await RocHolidayDataSet.Default.DownloadAsync(115);
 ```
 
-### 身分證驗證
+---
+
+## 證號驗證
 
 ```csharp
-bool isValid = TaiwanId.IsValid("A123456789");
+using TaiwanUtilities;
+
+NationalIdentificationCardNumber.Validate("Y190290172");          // 身分證
+BusinessAdministrationNumber.Validate("12345675");                // 統編
+CitizenDigitalCertificateNumber.Validate("AB12345678901234");     // 自然人憑證
+ElectronicInvoiceMobileBarCode.Validate("/ABC1234");              // 手機條碼
+ElectronicInvoiceDonateCode.Validate("2134567");                  // 捐贈碼
 ```
 
-## 效能
+---
 
-- **資料庫大小**：約 50 MB
-- **查詢速度**：毫秒級
-- **並行查詢**：執行緒安全，支援高併發
+## 中文髒話過濾
 
-## 執行測試
+```csharp
+using TaiwanUtilities;
 
-```bash
-dotnet test test/TaiwanUtilities.UnitTests/
+// 偵測
+ChineseProfanity.Censor("幹你娘都是說說的而已");  // true
+
+// 取代
+ChineseProfanity.Replace("幹你娘都是說說的而已", '*');
+// "***都是說說的而已"
+
+// 不誤判
+ChineseProfanity.Censor("程式寫這樣乾脆別寫了");  // false
 ```
+
+---
 
 ## 更多資訊
 
-- [完整 API 文件](API.md)
+- [Postal API 文件](API.md)
 - [內嵌資源說明](EMBEDDED_RESOURCE.md)
 - [授權說明](LICENSING.md)
