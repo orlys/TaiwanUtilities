@@ -6,7 +6,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 
-using TaiwanUtilities.Internal;
+using TaiwanUtilities.Internals;
 
 [DebuggerDisplay("{ToString(),nc}")]
 partial struct ChineseNumeric : IFormattable

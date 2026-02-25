@@ -1,21 +1,34 @@
-# TaiwanUtilities
+# 🇹🇼 TaiwanUtilities
 
-[![.NET](https://github.com/Orlys/TaiwanUtilities/actions/workflows/ci.yml/badge.svg)](https://github.com/Orlys/TaiwanUtilities/actions/workflows/ci.yml) [![NuGet Version](https://img.shields.io/nuget/v/TaiwanUtilities)](https://www.nuget.org/packages/TaiwanUtilities)
+[![CI/CD](https://github.com/Orlys/TaiwanUtilities/actions/workflows/ci.yml/badge.svg)](https://github.com/Orlys/TaiwanUtilities/actions/workflows/ci.yml) [![NuGet Version](https://img.shields.io/nuget/v/TaiwanUtilities)](https://www.nuget.org/packages/TaiwanUtilities) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-台灣專用 .NET 工具庫，涵蓋郵遞區號查詢、中文數字、民國日期、證號驗證與中文髒話過濾。
+台灣專用 .NET 工具庫，涵蓋郵遞區號查詢、中文數字轉換、民國日期、證號驗證與中文髒話過濾。
 
-```
+```bash
 dotnet add package TaiwanUtilities
 ```
 
-支援 .NET 10 / .NET 8 / .NET Standard 2.0 / .NET Framework 4.7.2
+### ✨ 核心功能
+
+- 🏠 **郵遞區號查詢** — 內嵌全台 80,000+ 筆投遞規則，支援 3+2 碼精確查詢與地址解析
+- 🔢 **中文數字轉換** — 中文大小寫數字與 `decimal` 之間的解析與格式化
+- 📅 **民國日期** — 支援中文日期時間解析、國定假日查詢，可隱含轉換為 `DateTime`
+- ✅ **證號驗證** — 身分證、統編、自然人憑證、手機條碼、捐贈碼
+- 🤬 **中文髒話過濾** — 三層語言學架構，支援閩南語與國語，低誤判率
+
+### 🎯 相容性
+
+| 框架 | 版本 |
+|------|------|
+| .NET | 10 / 8 |
+| .NET Standard | 2.0 |
+| .NET Framework | 4.7.2 |
 
 ---
 
-## 郵遞區號 `ZipCode`
+## 🏠 郵遞區號 `ZipCode`
 
-內嵌中華郵政全台 80,000+ 筆投遞規則，支援 3+2 碼精確查詢、地址解析與自動完成。
-查詢引擎採用記憶體內預載 + SQLite 雙層架構，首次查詢自動預熱，後續查詢在微秒級完成。
+內嵌中華郵政全台 80,000+ 筆投遞規則，查詢引擎採用記憶體內預載 + SQLite 雙層架構，首次查詢自動預熱，後續查詢在微秒級完成。
 
 ```csharp
 using TaiwanUtilities;
@@ -45,10 +58,9 @@ var validation = ZipCode.ValidateAddress("台北市信義區市府路1號");
 var rules = ZipCode.GetDeliveryRules("台北市信義區市府路");
 ```
 
-## 中文數字 `ChineseDecimal`
+## 🔢 中文數字 `ChineseDecimal`
 
-中文大小寫數字與 `decimal` 之間的解析與格式化。
-可補足 [`InternationalNumericFormatter`](https://www.microsoft.com/zh-tw/download/details.aspx?id=18970) 無法處理的部分。
+中文大小寫數字與 `decimal` 之間的解析與格式化，涵蓋繁體/簡體大小寫及全形/半形數字。
 
 ```csharp
 using TaiwanUtilities;
@@ -63,7 +75,7 @@ string upper = value.ToString("TW"); // 貳仟參佰陸拾玖
 string lower = value.ToString("tw"); // 二千三百六十九
 ```
 
-## 民國日期 `RocDateTime`
+## 📅 民國日期 `RocDateTime`
 
 支援中文日期時間解析，可隱含轉換為 `DateTime` / `DateTimeOffset`，支援民國前紀年。
 內嵌行政院公告之國定假日資料（民國 87 年至今），支援執行時自動下載最新行事曆。
@@ -78,7 +90,6 @@ RocDateTime b = new DateTime(1908, 6, 9);    // 民前4年6月9日
 RocHoliday holiday = a.Holiday;
 // holiday.IsHoliday: true
 // holiday.Description: "光復節補假"
-// holiday.Role: HolidayRole.All
 
 // 格式化
 string s1 = a.ToString("年月日 時分秒");  // 一百一十四年十月二十四日 〇時〇分〇秒
@@ -121,7 +132,7 @@ await RocHolidayDataSet.Default.DownloadAsync(115);
 
 </details>
 
-## 格式驗證
+## ✅ 格式驗證
 
 支援多種台灣常用證號的格式驗證。
 
@@ -144,7 +155,7 @@ ElectronicInvoiceMobileBarCode.Validate("2134567"); // true
 ElectronicInvoiceDonateCode.Validate("2134567"); // true
 ```
 
-## 中文髒話 `ChineseProfanity`
+## 🤬 中文髒話 `ChineseProfanity`
 
 台味滿滿的中文髒話過濾器，基於三層語言學架構（罵人、性器官、排泄物）實作。
 支援閩南語、國語及常見變體，低誤判率。
@@ -165,14 +176,42 @@ ChineseProfanity.Censor("這串葡萄誰寫的？程式寫這樣乾脆別寫了"
 
 ---
 
-## 授權
+## 📁 專案結構
+
+```
+TaiwanUtilities/
+├── src/TaiwanUtilities/          # 主要程式庫
+│   ├── ChineseDecimal/           # 中文數字模組
+│   ├── ChineseProfanity/         # 中文髒話過濾模組
+│   ├── Postal/                   # 郵遞區號模組
+│   ├── RocDateTime/              # 民國日期模組
+│   └── Validators/               # 證號驗證模組
+├── test/TaiwanUtilities.UnitTests/
+├── tools/Postal.Builder/         # 郵遞區號資料庫建立工具
+└── docs/                         # 技術文件
+```
+
+## 🛠️ 開發
+
+```bash
+# 建置
+dotnet build src/TaiwanUtilities/
+
+# 測試（951 個測試案例）
+dotnet test test/TaiwanUtilities.UnitTests/
+
+# 發布新版本
+git tag v1.2.0 && git push origin v1.2.0
+```
+
+## 📄 授權
 
 [MIT License](LICENSE)
 
-## 感謝
+## 🙏 感謝
 
 - 郵遞區號資料來源：[中華郵政](https://www.post.gov.tw/)，採用[政府資料開放授權條款](https://data.gov.tw/license)
 - 國定假日資料來源：[行政院](https://data.gov.tw/dataset/14718)，採用政府資料開放授權條款
 - 身分證驗證原始版本：[enylin/taiwan-id-validator](https://github.com/enylin/taiwan-id-validator)（MIT 授權）
 
-此儲存庫基於「取之於社群，回饋於社群」的愛與信念而存在
+此儲存庫基於「取之於社群，回饋於社群」的愛與信念而存在 ❤️

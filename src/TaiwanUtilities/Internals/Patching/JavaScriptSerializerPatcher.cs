@@ -1,4 +1,4 @@
-﻿namespace TaiwanUtilities.Internal;
+﻿namespace TaiwanUtilities.Internals;
 
 // 這是用來處理 JavaScriptSerializer 在序列化時的補丁
 // JavaScriptSerializer 在當時的設計(尤其是序列化時)不夠周全

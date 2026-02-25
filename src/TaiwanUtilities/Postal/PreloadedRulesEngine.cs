@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2024-2026 Orlys
 //
-// Peak - Taiwan Postal Code Query Library
+// TaiwanUtilities - Taiwan Postal Code Query Library
 // Postal code data from Chunghwa Post under OGDL-Taiwan-1.0
 
 namespace TaiwanUtilities;

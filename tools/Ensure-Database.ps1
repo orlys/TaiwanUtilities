@@ -3,7 +3,7 @@
 
 [CmdletBinding()]
 param(
-    [string]$DatabasePath = "src\Peak\zipcode.db",
+    [string]$DatabasePath = "src\TaiwanUtilities\Postal\zipcode.db",
     [string]$Repository = "orlys/TaiwanUtilities",
     [string]$WorkflowName = "update-postal-database.yml"
 )

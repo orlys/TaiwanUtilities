@@ -16,11 +16,11 @@ Write-Host ""
 
 # 取得腳本所在目錄
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$BuilderDir = Join-Path $ScriptDir "Peak.Builder"
+$BuilderDir = Join-Path $ScriptDir "Postal.Builder"
 
-# 檢查 Peak.Builder 專案是否存在
-if (-not (Test-Path (Join-Path $BuilderDir "Peak.Builder.csproj"))) {
-    Write-Error "找不到 Peak.Builder 專案於 $BuilderDir"
+# 檢查 Postal.Builder 專案是否存在
+if (-not (Test-Path (Join-Path $BuilderDir "Postal.Builder.csproj"))) {
+    Write-Error "找不到 Postal.Builder 專案於 $BuilderDir"
     exit 1
 }
 

@@ -16,7 +16,7 @@
 
 ## 開發指引
 
-- [工具腳本](../tools/README.md) - PowerShell 工具與 Peak.Builder
+- [工具腳本](../tools/README.md) - PowerShell 工具與 Postal.Builder
 - [GitHub Workflows](../.github/workflows/README.md) - 自動化工作流程
 
 ## 測試

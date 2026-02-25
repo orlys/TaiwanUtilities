@@ -43,7 +43,7 @@
 
 ### 執行步驟
 1. 下載中華郵政最新 rall1.dbf 資料
-2. 使用 Peak.Builder 建立 SQLite 資料庫
+2. 使用 Postal.Builder 建立 SQLite 資料庫
 3. 執行測試驗證資料庫完整性
 4. 建立 Pull Request 包含更新
 
@@ -75,6 +75,5 @@
 ## 相關資源
 
 - [工具腳本文件](../../tools/README.md)
-- [Peak.Builder 文件](../../tools/Peak.Builder/README.md)
-- [發布流程](../RELEASE.md)
+- [Postal.Builder 文件](../../tools/Postal.Builder/README.md)
 - [專案 README](../../README.md)

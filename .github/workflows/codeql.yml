@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    - cron: '0 6 * * 1'  # 每週一 UTC 06:00
+    - cron: '0 6 * * 1'
 
 jobs:
   analyze:
@@ -15,19 +15,39 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download postal database from GitHub Release
+        shell: bash
+        run: |
+          mkdir -p src/TaiwanUtilities/Postal
+          gh release download database-latest \
+            --pattern "zipcode.db" \
+            --dir src/TaiwanUtilities/Postal \
+            --repo ${{ github.repository }} \
+            --clobber || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: csharp
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.x
+
       - name: Install T4 Text Template Tool
         run: dotnet tool install -g dotnet-t4
+
       - name: Generate holiday data
         run: t4 ${{ github.workspace }}/src/TaiwanUtilities/RocDateTime/RocHolidays.tt
+
       - name: Build
         run: dotnet build --configuration Release
+
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3

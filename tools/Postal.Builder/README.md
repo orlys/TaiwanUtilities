@@ -1,4 +1,4 @@
-# Peak.Builder - 郵遞區號資料庫建立與管理工具
+# Postal.Builder - 郵遞區號資料庫建立與管理工具
 
 一站式工具，用於建立、檢查和驗證台灣郵遞區號資料集。
 
@@ -140,7 +140,7 @@ zipcode,city,area,road,scope
 1. 取得最新的 `rall1.dbf`，放置於 `data/` 目錄
 2. 建立資料庫：
    ```bash
-   cd tools/Peak.Builder
+   cd tools/Postal.Builder
    dotnet run
    ```
 3. 重新建置 TaiwanUtilities 專案以內嵌新資料庫：

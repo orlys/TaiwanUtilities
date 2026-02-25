@@ -78,11 +78,11 @@
 dotnet build src\TaiwanUtilities\
 ```
 
-## Peak.Builder
+## Postal.Builder
 
 .NET 工具專案，實際執行 DBF 到 SQLite 的轉換。
 
-詳細說明請參閱：[Peak.Builder/README.md](Peak.Builder/README.md)
+詳細說明請參閱：[Postal.Builder/README.md](Postal.Builder/README.md)
 
 ## 授權
 

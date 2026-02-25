@@ -28,7 +28,7 @@
   <PropertyGroup>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageTags>Taiwan,ChineseNumeric,InternationalNumericFormatter,RocDateTime,Validator,ZipCode,PostalCode</PackageTags>
+    <PackageTags>Taiwan,ROC,ChineseNumeric,ChineseProfanity,RocDateTime,PostalAddress,ZipCode,Validator</PackageTags>
     <MinVerTagPrefix>v</MinVerTagPrefix>
   </PropertyGroup>
 
@@ -101,7 +101,7 @@
       <_Parameter1>TaiwanUtilities.UnitTests</_Parameter1>
     </AssemblyAttribute>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-      <_Parameter1>Peak.Builder</_Parameter1>
+      <_Parameter1>Postal.Builder</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
 
