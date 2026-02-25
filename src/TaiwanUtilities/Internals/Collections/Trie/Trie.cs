@@ -627,7 +627,12 @@ internal sealed class TrieDictionary<TValue>(IEqualityComparer<char>? comparer =
     {
         Guard.ThrowIfNullOrEmpty(key);
 
-        var node = _trie.GetNode(key.AsSpan());
+        return TryGetValue(key.AsSpan(), out value);
+    }
+
+    public bool TryGetValue(ReadOnlySpan<char> key, [MaybeNullWhen(false)] out TValue value)
+    {
+        var node = _trie.GetNode(key);
 
         if (node is not null && node.IsTerminal)
         {

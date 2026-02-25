@@ -62,7 +62,7 @@ partial struct RocDateTime : IFormattable
         return new (
             pattern: @"(?<FORMAT>(民國日期|date|DATE|time|TIME|full|FULL|民國年|yyy|MM|dd|HH|mm|ss|日期|時間|[年月日時分秒]|[GgTtFfMmDd]))",
             options: RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Compiled ,
-            matchTimeout: TimeSpan.FromMinutes(1000));
+            matchTimeout: TimeSpan.FromMilliseconds(1000));
     }
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private static readonly Lazy<Regex> s_patternCache = new (BuildPattern);

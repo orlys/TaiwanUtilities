@@ -104,11 +104,10 @@ internal static class ProfanityLexicon
         WordCategory bestCategory = WordCategory.None;
         int bestLength = 0;
 
-        // 從當前位置開始，逐漸增加長度嘗試匹配
+        // 從當前位置開始，逐漸增加長度嘗試匹配（使用 Span 避免字串分配）
         for (int len = 1; len <= Math.Min(text.Length - index, 6); len++)
         {
-            var sub = text.Slice(index, len).ToString();
-            if (trie.TryGetValue(sub, out var cat))
+            if (trie.TryGetValue(text.Slice(index, len), out var cat))
             {
                 bestCategory = cat;
                 bestLength = len;

@@ -54,7 +54,7 @@ partial struct RocDateTime :
 
     public bool Equals(RocDateTime other)
     {
-        return GetHashCode() == other.GetHashCode();
+        return GetRawValue() == other.GetRawValue();
     }
 
     #endregion

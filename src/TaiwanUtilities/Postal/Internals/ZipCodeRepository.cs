@@ -464,13 +464,60 @@ internal class ZipCodeRepository : IDisposable
                 ORDER BY city, area, road, id";
 
             using var reader = cmd.ExecuteReader();
+
+            // 快取所有欄位的 ordinal，避免每行重複查詢（80,000+ 行 × 26 欄）
+            var ordinals = new PostalRuleOrdinals(reader);
+
             while (reader.Read())
             {
-                rules.Add(MapToPostalRule(reader));
+                rules.Add(MapToPostalRule(reader, ordinals));
             }
 
             return rules;
         });
+    }
+
+    /// <summary>
+    /// 快取 postal_rules 所有欄位的 ordinal 索引
+    /// </summary>
+    private readonly struct PostalRuleOrdinals
+    {
+        public readonly int Id, ZipCode, City, Area, Road;
+        public readonly int LaneStart, LaneEnd, AlleyStart, AlleyEnd;
+        public readonly int NumberStart, NumberStartSub, NumberEnd, NumberEndSub;
+        public readonly int EvenOdd, FloorStart, FloorEnd;
+        public readonly int Scope, Department, Office, Remark;
+        public readonly int RoadNo, Road1, Lane11, Lane22, Alley11, Alley22;
+
+        public PostalRuleOrdinals(SqliteDataReader reader)
+        {
+            Id = reader.GetOrdinal("id");
+            ZipCode = reader.GetOrdinal("zipcode");
+            City = reader.GetOrdinal("city");
+            Area = reader.GetOrdinal("area");
+            Road = reader.GetOrdinal("road");
+            LaneStart = reader.GetOrdinal("lane_start");
+            LaneEnd = reader.GetOrdinal("lane_end");
+            AlleyStart = reader.GetOrdinal("alley_start");
+            AlleyEnd = reader.GetOrdinal("alley_end");
+            NumberStart = reader.GetOrdinal("number_start");
+            NumberStartSub = reader.GetOrdinal("number_start_sub");
+            NumberEnd = reader.GetOrdinal("number_end");
+            NumberEndSub = reader.GetOrdinal("number_end_sub");
+            EvenOdd = reader.GetOrdinal("even_odd");
+            FloorStart = reader.GetOrdinal("floor_start");
+            FloorEnd = reader.GetOrdinal("floor_end");
+            Scope = reader.GetOrdinal("scope");
+            Department = reader.GetOrdinal("department");
+            Office = reader.GetOrdinal("office");
+            Remark = reader.GetOrdinal("remark");
+            RoadNo = reader.GetOrdinal("road_no");
+            Road1 = reader.GetOrdinal("road1");
+            Lane11 = reader.GetOrdinal("lane11");
+            Lane22 = reader.GetOrdinal("lane22");
+            Alley11 = reader.GetOrdinal("alley11");
+            Alley22 = reader.GetOrdinal("alley22");
+        }
     }
 
     /// <summary>
@@ -482,44 +529,60 @@ internal class ZipCodeRepository : IDisposable
     }
 
     /// <summary>
-    /// 輔助方法：從 DbDataReader 映射到 PostalRule
+    /// 輔助方法：從 DbDataReader 映射到 PostalRule（使用快取的 ordinal）
     /// </summary>
-    private static PostalRule MapToPostalRule(SqliteDataReader reader)
+    private static PostalRule MapToPostalRule(SqliteDataReader reader, in PostalRuleOrdinals ord)
     {
         return new PostalRule
         {
-            Id = reader.GetInt64(reader.GetOrdinal("id")),
-            ZipCode = reader.GetString(reader.GetOrdinal("zipcode")),
-            City = reader.GetString(reader.GetOrdinal("city")),
-            Area = reader.GetString(reader.GetOrdinal("area")),
-            Road = reader.GetString(reader.GetOrdinal("road")),
+            Id = reader.GetInt64(ord.Id),
+            ZipCode = reader.GetString(ord.ZipCode),
+            City = reader.GetString(ord.City),
+            Area = reader.GetString(ord.Area),
+            Road = reader.GetString(ord.Road),
 
-            LaneStart = GetNullableInt(reader, "lane_start"),
-            LaneEnd = GetNullableInt(reader, "lane_end"),
-            AlleyStart = GetNullableInt(reader, "alley_start"),
-            AlleyEnd = GetNullableInt(reader, "alley_end"),
+            LaneStart = GetNullableInt(reader, ord.LaneStart),
+            LaneEnd = GetNullableInt(reader, ord.LaneEnd),
+            AlleyStart = GetNullableInt(reader, ord.AlleyStart),
+            AlleyEnd = GetNullableInt(reader, ord.AlleyEnd),
 
-            NumberStart = GetNullableInt(reader, "number_start"),
-            NumberStartSub = GetNullableInt(reader, "number_start_sub"),
-            NumberEnd = GetNullableInt(reader, "number_end"),
-            NumberEndSub = GetNullableInt(reader, "number_end_sub"),
+            NumberStart = GetNullableInt(reader, ord.NumberStart),
+            NumberStartSub = GetNullableInt(reader, ord.NumberStartSub),
+            NumberEnd = GetNullableInt(reader, ord.NumberEnd),
+            NumberEndSub = GetNullableInt(reader, ord.NumberEndSub),
 
-            EvenOdd = GetNullableInt(reader, "even_odd"),
-            FloorStart = GetNullableInt(reader, "floor_start"),
-            FloorEnd = GetNullableInt(reader, "floor_end"),
+            EvenOdd = GetNullableInt(reader, ord.EvenOdd),
+            FloorStart = GetNullableInt(reader, ord.FloorStart),
+            FloorEnd = GetNullableInt(reader, ord.FloorEnd),
 
-            Scope = GetNullableString(reader, "scope"),
-            Department = GetNullableString(reader, "department"),
-            Office = GetNullableString(reader, "office"),
-            Remark = GetNullableString(reader, "remark"),
+            Scope = GetNullableString(reader, ord.Scope),
+            Department = GetNullableString(reader, ord.Department),
+            Office = GetNullableString(reader, ord.Office),
+            Remark = GetNullableString(reader, ord.Remark),
 
-            RoadNo = GetNullableString(reader, "road_no"),
-            Road1 = GetNullableString(reader, "road1"),
-            Lane11 = GetNullableInt(reader, "lane11"),
-            Lane22 = GetNullableInt(reader, "lane22"),
-            Alley11 = GetNullableInt(reader, "alley11"),
-            Alley22 = GetNullableInt(reader, "alley22")
+            RoadNo = GetNullableString(reader, ord.RoadNo),
+            Road1 = GetNullableString(reader, ord.Road1),
+            Lane11 = GetNullableInt(reader, ord.Lane11),
+            Lane22 = GetNullableInt(reader, ord.Lane22),
+            Alley11 = GetNullableInt(reader, ord.Alley11),
+            Alley22 = GetNullableInt(reader, ord.Alley22)
         };
+    }
+
+    /// <summary>
+    /// 輔助方法：從 DbDataReader 映射到 PostalRule（單行查詢用，自動解析 ordinal）
+    /// </summary>
+    private static PostalRule MapToPostalRule(SqliteDataReader reader)
+    {
+        return MapToPostalRule(reader, new PostalRuleOrdinals(reader));
+    }
+
+    /// <summary>
+    /// 輔助方法：從 DbDataReader 讀取 nullable int（使用快取的 ordinal）
+    /// </summary>
+    private static int? GetNullableInt(SqliteDataReader reader, int ordinal)
+    {
+        return reader.IsDBNull(ordinal) ? null : reader.GetInt32(ordinal);
     }
 
     /// <summary>
@@ -529,6 +592,17 @@ internal class ZipCodeRepository : IDisposable
     {
         var ordinal = reader.GetOrdinal(columnName);
         return reader.IsDBNull(ordinal) ? null : reader.GetInt32(ordinal);
+    }
+
+    /// <summary>
+    /// 輔助方法：從 DbDataReader 讀取 nullable string（使用快取的 ordinal）
+    /// </summary>
+    private static string? GetNullableString(SqliteDataReader reader, int ordinal)
+    {
+        if (reader.IsDBNull(ordinal))
+            return null;
+        var value = reader.GetString(ordinal);
+        return string.IsNullOrEmpty(value) ? null : value;
     }
 
     /// <summary>
@@ -812,6 +886,12 @@ internal class ZipCodeRepository : IDisposable
             // - 檔案不存在：讀寫建立（供 builder 使用）
             if (_keepAlive && System.IO.File.Exists(_dbPath))
                 csb.Mode = SqliteOpenMode.ReadOnly;
+
+            // 釋放舊連線，避免資源洩漏
+            if (_conn != null)
+            {
+                try { _conn.Dispose(); } catch { }
+            }
 
             _conn = new SqliteConnection(csb.ToString());
         }

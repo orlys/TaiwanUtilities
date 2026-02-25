@@ -82,6 +82,11 @@ public sealed class PostalDatabase : IDisposable
     private const string ReleaseTag = "database-latest";
 
     /// <summary>
+    /// 下載大小上限（100 MB），防止資源耗盡攻擊
+    /// </summary>
+    private const long MaxDownloadSize = 100 * 1024 * 1024;
+
+    /// <summary>
     /// 內部類別：持有 ZipCodeRepository 實例和版本號
     /// </summary>
     private class DirectoryHolder
@@ -273,8 +278,9 @@ public sealed class PostalDatabase : IDisposable
 
             return updateInfo;
         }
-        catch
+        catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
         {
+            System.Diagnostics.Debug.WriteLine($"CheckForUpdates failed: {ex.Message}");
             return null;
         }
     }
@@ -290,17 +296,22 @@ public sealed class PostalDatabase : IDisposable
 
         try
         {
-            using var httpClient = new HttpClient();
+            using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(120) };
             httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("TaiwanUtilities-PostalDatabase-Updater/1.0");
 
-            var response = await httpClient.GetAsync(updateInfo.DownloadUrl, ct).ConfigureAwait(false);
+            var response = await httpClient.GetAsync(updateInfo.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
+
+            // 檢查 Content-Length 是否超過上限
+            if (response.Content.Headers.ContentLength > MaxDownloadSize)
+                return false;
 
             using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
             return await UpdateFromStreamInternalAsync(stream, "zipcode.db", ct).ConfigureAwait(false);
         }
-        catch
+        catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
         {
+            System.Diagnostics.Debug.WriteLine($"UpdateInternal failed: {ex.Message}");
             return false;
         }
     }
@@ -318,8 +329,9 @@ public sealed class PostalDatabase : IDisposable
             using var stream = File.OpenRead(dbPath);
             return await UpdateFromStreamInternalAsync(stream, Path.GetFileName(dbPath), ct).ConfigureAwait(false);
         }
-        catch
+        catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
         {
+            System.Diagnostics.Debug.WriteLine($"UpdateFromInternal failed: {ex.Message}");
             return false;
         }
     }
@@ -342,10 +354,23 @@ public sealed class PostalDatabase : IDisposable
                 if (!System.IO.Directory.Exists(tempDir))
                     System.IO.Directory.CreateDirectory(tempDir!);
 
-                // 複製串流到新檔案
+                // 複製串流到新檔案（限制最大大小）
                 using (var fileStream = File.Create(newDbPath))
                 {
-                    stream.CopyTo(fileStream);
+                    var buffer = new byte[81920];
+                    long totalBytes = 0;
+                    int bytesRead;
+                    while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) > 0)
+                    {
+                        totalBytes += bytesRead;
+                        if (totalBytes > MaxDownloadSize)
+                        {
+                            fileStream.Dispose();
+                            try { File.Delete(newDbPath); } catch { }
+                            return false;
+                        }
+                        fileStream.Write(buffer, 0, bytesRead);
+                    }
                 }
 
                 // 驗證資料庫（嘗試開啟並讀取版本資訊）
@@ -376,8 +401,9 @@ public sealed class PostalDatabase : IDisposable
 
                 return true;
             }
-            catch
+            catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
             {
+                System.Diagnostics.Debug.WriteLine($"UpdateFromStream failed: {ex.Message}");
                 return false;
             }
         }
@@ -494,8 +520,9 @@ public sealed class PostalDatabase : IDisposable
 
             return string.IsNullOrEmpty(info.Version) ? null : info;
         }
-        catch
+        catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
         {
+            System.Diagnostics.Debug.WriteLine($"LoadVersionInfo failed: {ex.Message}");
             return null;
         }
         finally

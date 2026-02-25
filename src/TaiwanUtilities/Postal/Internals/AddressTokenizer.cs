@@ -34,7 +34,7 @@ internal class AddressTokenizer
     /// </summary>
     private static HashSet<string>? _specialRoadNames;
     private static readonly object _specialRoadNamesLock = new object();
-    private static bool _specialRoadNamesInitialized = false;
+    private static volatile bool _specialRoadNamesInitialized = false;
 
     /// <summary>
     /// 台灣所有縣市名稱（包含特殊行政區）

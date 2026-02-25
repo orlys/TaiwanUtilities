@@ -40,7 +40,7 @@ public static class PostalRulesEngine
         = new(LoadAllRules, System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
 
     private static readonly object _reloadLock = new();
-    private static bool _isInitialized = false;
+    private static volatile bool _isInitialized = false;
 
     /// <summary>
     /// 預熱引擎（背景載入規則，可選）
