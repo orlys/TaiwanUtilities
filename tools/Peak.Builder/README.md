@@ -16,16 +16,16 @@ dotnet run -- build
 
 **預設：**
 - 輸入：`../../dataset/rall1.dbf`
-- 輸出：`../Peak/zipcode.db`（自動內嵌到 Peak.dll）
+- 輸出：`../../src/TaiwanUtilities/Postal/zipcode.db`（自動內嵌到 TaiwanUtilities.dll）
 
 **自訂輸入輸出：**
 ```bash
 dotnet run -- build <輸入檔案> <輸出資料庫>
 
 # 範例
-dotnet run -- build ../../dataset/rall1.dbf ../Peak/zipcode.db
-dotnet run -- build ../../dataset/zipcode.json ../Peak/zipcode.db
-dotnet run -- build ../../dataset/data.csv ../Peak/zipcode.db
+dotnet run -- build ../../data/rall1.dbf ../../src/TaiwanUtilities/Postal/zipcode.db
+dotnet run -- build ../../data/zipcode.json ../../src/TaiwanUtilities/Postal/zipcode.db
+dotnet run -- build ../../data/data.csv ../../src/TaiwanUtilities/Postal/zipcode.db
 ```
 
 ### 2. 檢查 DBF 結構 (inspect)
@@ -137,25 +137,24 @@ zipcode,city,area,road,scope
 
 ## 更新資料集流程
 
-1. 取得最新的 `rall1.dbf`，放置於 `dataset/` 目錄
+1. 取得最新的 `rall1.dbf`，放置於 `data/` 目錄
 2. 建立資料庫：
    ```bash
-   cd src/Peak.Builder
+   cd tools/Peak.Builder
    dotnet run
    ```
-3. 重新建置 Peak 專案以內嵌新資料庫：
+3. 重新建置 TaiwanUtilities 專案以內嵌新資料庫：
    ```bash
-   cd ../Peak
-   dotnet build
+   dotnet build src/TaiwanUtilities/
    ```
 
 ## 輸出資料庫
 
-**位置：** `src/Peak/zipcode.db`
+**位置：** `src/TaiwanUtilities/Postal/zipcode.db`
 
-- 大小：約 27 MB
+- 大小：約 50 MB
 - 記錄：約 80,000 筆
-- 自動內嵌到 `Peak.dll` 作為資源
+- 自動內嵌到 `TaiwanUtilities.dll` 作為資源
 - 建立時間：約 10-12 秒
 
 **資料表：**
@@ -176,7 +175,7 @@ zipcode,city,area,road,scope
 ```csharp
 // 自動註冊 BIG5 編碼
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-var big5 = Encoding.GetEncoding("big5");
+Encoding big5 = Encoding.GetEncoding("big5");
 ```
 
 ### 漸進式索引
@@ -233,4 +232,4 @@ dotnet run
 
 ## 授權
 
-本工具為 Peak 專案的一部分，遵循 MIT 授權條款。
+本工具為 TaiwanUtilities 專案的一部分，遵循 MIT 授權條款。

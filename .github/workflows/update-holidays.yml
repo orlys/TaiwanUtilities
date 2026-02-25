@@ -27,7 +27,7 @@ jobs:
           import json
 
           API_URL = "https://data.gov.tw/api/v2/rest/dataset/14718"
-          DATA_DIR = Path("data")
+          DATA_DIR = Path("data/holidays")
           WEEKDAY_NAMES = {5: "週六", 6: "週日"}
 
           def roc_to_ce(y): return y + 1911
@@ -108,13 +108,13 @@ jobs:
                   lines.append(f"{ds}, {'true ' if ih else 'false'}, {rl.ljust(8)}, {desc},")
               DATA_DIR.mkdir(parents=True, exist_ok=True)
               (DATA_DIR / f"{year}.csv").write_text("\n".join(lines) + "\n", encoding="utf-8")
-              print(f"  Written: data/{year}.csv")
+              print(f"  Written: data/holidays/{year}.csv")
           PYTHON_SCRIPT
 
       - name: Check for changes
         id: changes
         run: |
-          git add data/
+          git add data/holidays/
           if git diff --staged --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
@@ -137,7 +137,7 @@ jobs:
           from pathlib import Path
 
           all_rows = []
-          for csv_path in sorted(Path("data").glob("*.csv")):
+          for csv_path in sorted(Path("data/holidays").glob("*.csv")):
               if not csv_path.stem.isdigit(): continue
               for row in csv.reader(csv_path.read_text(encoding="utf-8").splitlines()):
                   if len(row) < 4: continue

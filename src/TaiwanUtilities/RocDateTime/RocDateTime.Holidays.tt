@@ -7,29 +7,30 @@
 
 <#@ output extension=".g.cs" #>
 <#
-    // 讀取本地 data/<YEAR>.csv 產生所有假日 entry
-    var dataDir = Path.GetFullPath(Path.Combine(Host.ResolvePath(""), "..", "..", "..", "data"));
-    var entries = new List<(string date, string isHoliday, string role, string description)>();
+    // 讀取本地 data/holidays/<YEAR>.csv 產生所有假日 entry
+    string dataDir = Path.GetFullPath(Path.Combine(Host.ResolvePath(""), "..", "..", "..", "data", "holidays"));
+    List<(string date, string isHoliday, string role, string description)> entries =
+        new List<(string date, string isHoliday, string role, string description)>();
 
     if (Directory.Exists(dataDir))
     {
-        foreach (var csvPath in Directory.GetFiles(dataDir, "*.csv").OrderBy(f => f))
+        foreach (string csvPath in Directory.GetFiles(dataDir, "*.csv").OrderBy(f => f))
         {
-            var lines = File.ReadAllLines(csvPath, Encoding.UTF8);
+            string[] lines = File.ReadAllLines(csvPath, Encoding.UTF8);
             for (int i = 1; i < lines.Length; i++) // skip header
             {
-                var line = lines[i];
+                string line = lines[i];
                 if (string.IsNullOrWhiteSpace(line)) continue;
 
-                var parts = line.Split(',');
+                string[] parts = line.Split(',');
                 if (parts.Length < 4) continue;
 
-                var dateStr = parts[0].Trim();
+                string dateStr = parts[0].Trim();
                 if (dateStr.Length != 8) continue;
 
-                var isHoliday = parts[1].Trim();
-                var role = parts[2].Trim();
-                var description = parts[3].Trim();
+                string isHoliday = parts[1].Trim();
+                string role = parts[2].Trim();
+                string description = parts[3].Trim();
 
                 entries.Add((dateStr, isHoliday, role, description));
             }
@@ -61,13 +62,13 @@ partial class RocHolidayDataSet
 
     private static readonly FrozenDictionary<DateTime, RocHoliday> s_embedded = new Dictionary<DateTime, RocHoliday>
     {
-<# foreach (var e in entries) {
-    var y = int.Parse(e.date.Substring(0, 4));
-    var m = int.Parse(e.date.Substring(4, 2));
-    var d = int.Parse(e.date.Substring(6, 2));
-    var isHol = e.isHoliday == "true" ? "true" : "false";
-    var roleEnum = e.role == "labor" ? "HolidayRole.Labor" : e.role == "soldier" ? "HolidayRole.Soldier" : "HolidayRole.All";
-    var desc = e.description.Replace("\\", "\\\\").Replace("\"", "\\\"");
+<# foreach ((string date, string isHoliday, string role, string description) e in entries) {
+    int y = int.Parse(e.date.Substring(0, 4));
+    int m = int.Parse(e.date.Substring(4, 2));
+    int d = int.Parse(e.date.Substring(6, 2));
+    string isHol = e.isHoliday == "true" ? "true" : "false";
+    string roleEnum = e.role == "labor" ? "HolidayRole.Labor" : e.role == "soldier" ? "HolidayRole.Soldier" : "HolidayRole.All";
+    string desc = e.description.Replace("\\", "\\\\").Replace("\"", "\\\"");
 #>
         { new DateTime(<#= y #>, <#= m #>, <#= d #>), new RocHoliday(<#= isHol #>, <#= roleEnum #>, "<#= desc #>") },
 <# } #>
