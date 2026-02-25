@@ -7,17 +7,14 @@
 
 <#@ output extension=".g.cs" #>
 <#
-    // 讀取本地 data/<YEAR>/holidays.csv 產生所有假日 entry
+    // 讀取本地 data/<YEAR>.csv 產生所有假日 entry
     var dataDir = Path.GetFullPath(Path.Combine(Host.ResolvePath(""), "..", "..", "..", "data"));
     var entries = new List<(string date, string isHoliday, string role, string description)>();
 
     if (Directory.Exists(dataDir))
     {
-        foreach (var yearDir in Directory.GetDirectories(dataDir).OrderBy(d => d))
+        foreach (var csvPath in Directory.GetFiles(dataDir, "*.csv").OrderBy(f => f))
         {
-            var csvPath = Path.Combine(yearDir, "holidays.csv");
-            if (!File.Exists(csvPath)) continue;
-
             var lines = File.ReadAllLines(csvPath, Encoding.UTF8);
             for (int i = 1; i < lines.Length; i++) // skip header
             {

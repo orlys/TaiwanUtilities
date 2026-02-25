@@ -28,8 +28,8 @@
   <PropertyGroup>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageTags>Taiwan,ChineseNumeric,InternationalNumericFormatter,RocDateTime,Validator</PackageTags>
-    <PackageVersion>1.0.22</PackageVersion>
+    <PackageTags>Taiwan,ChineseNumeric,InternationalNumericFormatter,RocDateTime,Validator,ZipCode,PostalCode</PackageTags>
+    <PackageVersion>1.1.0</PackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -45,6 +45,7 @@
     <PackageReference Include="System.Collections.Immutable" Version="8.*" />
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="*" />
     <PackageReference Include="System.Net.Http" Version="4.*" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="7.0.20" />
     <PackageReference Include="Polyfill" Version="8.*">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
@@ -57,11 +58,20 @@
     <PackageReference Include="Microsoft.Bcl.TimeProvider" Version="8.*" />
     <PackageReference Include="System.Collections.Immutable" Version="8.*" />
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="*" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="7.0.20" />
     <PackageReference Include="Polyfill" Version="8.*">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="*" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.11" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net10.0' ">
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -76,6 +86,16 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>RocDateTime.Holidays.g.cs</LastGenOutput>
     </None>
+  </ItemGroup>
+
+  <!-- Postal Database -->
+  <Import Project="Postal\Database.targets" />
+
+  <!-- InternalsVisibleTo -->
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>TaiwanUtilities.UnitTests</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 
   <!-- Additional Metadata -->
@@ -94,4 +114,3 @@
   </ItemGroup>
 
 </Project>
-

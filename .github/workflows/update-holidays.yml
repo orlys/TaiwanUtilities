@@ -106,10 +106,9 @@ jobs:
               lines = ["date,     is_holiday, role,     description,"]
               for ds, ih, rl, desc in rows:
                   lines.append(f"{ds}, {'true ' if ih else 'false'}, {rl.ljust(8)}, {desc},")
-              year_dir = DATA_DIR / str(year)
-              year_dir.mkdir(parents=True, exist_ok=True)
-              (year_dir / "holidays.csv").write_text("\n".join(lines) + "\n", encoding="utf-8")
-              print(f"  Written: data/{year}/holidays.csv")
+              DATA_DIR.mkdir(parents=True, exist_ok=True)
+              (DATA_DIR / f"{year}.csv").write_text("\n".join(lines) + "\n", encoding="utf-8")
+              print(f"  Written: data/{year}.csv")
           PYTHON_SCRIPT
 
       - name: Check for changes
@@ -138,10 +137,8 @@ jobs:
           from pathlib import Path
 
           all_rows = []
-          for year_dir in sorted(Path("data").iterdir()):
-              if not year_dir.is_dir() or not year_dir.name.isdigit(): continue
-              csv_path = year_dir / "holidays.csv"
-              if not csv_path.exists(): continue
+          for csv_path in sorted(Path("data").glob("*.csv")):
+              if not csv_path.stem.isdigit(): continue
               for row in csv.reader(csv_path.read_text(encoding="utf-8").splitlines()):
                   if len(row) < 4: continue
                   ds = row[0].strip()
