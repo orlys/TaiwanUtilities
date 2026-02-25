@@ -84,9 +84,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-test
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Download postal database from GitHub Release
       shell: bash
@@ -121,3 +125,59 @@ jobs:
 
     - name: Publish NuGet package
       run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+    - name: Upload to GitHub Release
+      shell: bash
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION="${GITHUB_REF_NAME#v}"
+        NUPKG=$(ls ./nupkg/*.nupkg | head -1)
+        NUPKG_NAME=$(basename "$NUPKG")
+        COMMIT_SHA="${GITHUB_SHA:0:7}"
+
+        RELEASE_TAG="package-latest"
+        RELEASE_TITLE="NuGet Package (v${VERSION})"
+        RELEASE_BODY="## 📦 最新 NuGet 套件
+
+        此 Release 包含最新建置的 TaiwanUtilities NuGet 套件。
+
+        ### 📊 套件資訊
+
+        - **版本**: ${VERSION}
+        - **建置時間**: $(date -u '+%Y-%m-%d %H:%M:%S') UTC
+        - **Commit**: ${GITHUB_SHA}
+
+        ### 📥 安裝方式
+
+        \`\`\`bash
+        dotnet add package TaiwanUtilities --version ${VERSION}
+        \`\`\`
+
+        或手動下載 .nupkg 檔案：
+        \`\`\`bash
+        gh release download package-latest --pattern \"*.nupkg\" --repo ${{ github.repository }}
+        \`\`\`
+
+        ---
+
+        🤖 由 GitHub Actions 自動更新"
+
+        # 刪除舊 release（如果存在）
+        gh release delete "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
+        git push --delete origin "$RELEASE_TAG" 2>/dev/null || true
+
+        # 建立新 release
+        gh release create "$RELEASE_TAG" \
+          --repo "$GITHUB_REPOSITORY" \
+          --title "$RELEASE_TITLE" \
+          --notes "$RELEASE_BODY" \
+          --latest=false \
+          "$NUPKG"
+
+        # 同時建立版本 tag 的正式 release
+        gh release create "${GITHUB_REF_NAME}" \
+          --repo "$GITHUB_REPOSITORY" \
+          --title "v${VERSION}" \
+          --generate-notes \
+          "$NUPKG" 2>/dev/null || true

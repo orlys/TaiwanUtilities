@@ -99,31 +99,33 @@ jobs:
           $releaseTag = "database-latest"
           $releaseTitle = "郵遞區號資料庫 (${{ steps.download.outputs.file_date }})"
           $releaseBody = @"
-          ## 最新郵遞區號資料庫
+          ## 📦 最新郵遞區號資料庫
 
           此 Release 包含最新的台灣郵遞區號資料庫，供自動化建置使用。
 
-          ### 資料資訊
+          ### 📊 資料資訊
 
           - **來源檔案**: rall1.dbf
             - 大小: ${{ steps.download.outputs.file_size }}
             - 日期: ${{ steps.download.outputs.file_date }}
-            - SHA256: ``${{ steps.download.outputs.file_sha256 }}``
 
           - **資料庫檔案**: zipcode.db
             - 大小: ${{ steps.build.outputs.db_size }}
-            - SHA256: ``${{ steps.build.outputs.db_sha256 }}``
 
           - **更新時間**: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") UTC
 
-          ### 使用方式
+          ### 📥 使用方式
 
           建置 TaiwanUtilities 專案時會自動下載此資料庫。
 
           手動下載：
           ``````bash
-          gh release download database-latest --pattern "zipcode.db" --repo orlys/TaiwanUtilities
+          gh release download database-latest --pattern "zipcode.db" --repo ${{ github.repository }}
           ``````
+
+          ---
+
+          🤖 由 GitHub Actions 自動更新
           "@
 
           $releaseExists = gh release view $releaseTag --repo $env:GITHUB_REPOSITORY 2>$null
