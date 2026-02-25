@@ -799,8 +799,6 @@ internal class ZipCodeRepository : IDisposable
 
     private void EnsureConnection()
     {
-        var shouldClose = !_keepAlive || _conn == null;
-
         if (_conn == null || !_keepAlive)
         {
             var csb = new SqliteConnectionStringBuilder
@@ -809,8 +807,10 @@ internal class ZipCodeRepository : IDisposable
                 Cache = SqliteCacheMode.Shared
             };
 
-            // keepAlive 模式表示唯讀查詢；非 keepAlive 模式為 builder 寫入
-            if (_keepAlive)
+            // keepAlive 模式下，根據檔案是否存在決定開啟模式：
+            // - 檔案存在：唯讀查詢
+            // - 檔案不存在：讀寫建立（供 builder 使用）
+            if (_keepAlive && System.IO.File.Exists(_dbPath))
                 csb.Mode = SqliteOpenMode.ReadOnly;
 
             _conn = new SqliteConnection(csb.ToString());
