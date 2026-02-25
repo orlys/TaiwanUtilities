@@ -25,8 +25,10 @@ public partial class RocDateTimeTest
     [Fact]
     public static void 國定假日判斷()
     {
-        var y = (DateTime.UtcNow.Year - 1911);
-        Assert.True(RocDateTime.Parse(y + "/1/1").IsHoliday);
+        // 使用嵌入資料範圍內的固定年份，避免嵌入資料過期後 flaky
+        var dataSet = RocHolidayDataSet.Default;
+        var embeddedMaxRocYear = dataSet.EmbeddedMaxYear - 1911;
+        Assert.True(RocDateTime.Parse(embeddedMaxRocYear + "/1/1").IsHoliday);
     }
 
     [Fact]

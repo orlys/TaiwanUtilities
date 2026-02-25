@@ -20,10 +20,10 @@ public static partial class BusinessAdministrationNumber
     {
         return
             ValidatorUtils.MatchCore(GetBaNumberPattern(), input) &&
-            Validate(input, applyOldRules);
+            ValidateChecksum(input, applyOldRules);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | (MethodImplOptions)512)]
-        static bool Validate(string input, bool applyOldRules)
+        static bool ValidateChecksum(string input, bool applyOldRules)
         {
             var checksum =
                 Fusion(input[0], 1) +

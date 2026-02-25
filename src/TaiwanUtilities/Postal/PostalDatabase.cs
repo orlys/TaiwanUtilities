@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -254,9 +255,25 @@ public sealed class PostalDatabase : IDisposable
 
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-            // 簡單的 JSON 解析（避免引入額外依賴）
-            var publishedAt = ExtractJsonValue(content, "published_at");
-            var downloadUrl = ExtractJsonValue(content, "browser_download_url");
+            // 使用 System.Text.Json 解析 GitHub API 回應
+            using var doc = JsonDocument.Parse(content);
+            var root = doc.RootElement;
+
+            var publishedAt = root.TryGetProperty("published_at", out var pat) ? pat.GetString() : null;
+
+            // 從 assets 陣列中找到下載 URL
+            string? downloadUrl = null;
+            if (root.TryGetProperty("assets", out var assets))
+            {
+                foreach (var asset in assets.EnumerateArray())
+                {
+                    if (asset.TryGetProperty("browser_download_url", out var urlProp))
+                    {
+                        downloadUrl = urlProp.GetString();
+                        break;
+                    }
+                }
+            }
 
             if (string.IsNullOrEmpty(publishedAt) || string.IsNullOrEmpty(downloadUrl))
                 return null;
@@ -557,24 +574,6 @@ public sealed class PostalDatabase : IDisposable
                 }
             }
         }
-    }
-
-    /// <summary>
-    /// 簡單的 JSON 值提取（避免引入額外依賴）
-    /// </summary>
-    private static string ExtractJsonValue(string json, string key)
-    {
-        var searchKey = $"\"{key}\":\"";
-        var startIndex = json.IndexOf(searchKey);
-        if (startIndex == -1)
-            return string.Empty;
-
-        startIndex += searchKey.Length;
-        var endIndex = json.IndexOf("\"", startIndex);
-        if (endIndex == -1)
-            return string.Empty;
-
-        return json.Substring(startIndex, endIndex - startIndex);
     }
 
     /// <summary>

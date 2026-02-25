@@ -53,12 +53,24 @@ public class DatabaseTests
 
     private bool IsDatabaseAvailable() => !string.IsNullOrEmpty(_dbPath) && File.Exists(_dbPath);
 
+    /// <summary>
+    /// 確認資料庫可用，不可用時輸出明確訊息並跳過（避免 silent pass）
+    /// </summary>
+    private bool EnsureDatabaseOrSkip()
+    {
+        if (IsDatabaseAvailable())
+            return true;
+
+        _output.WriteLine("[SKIP] 資料庫檔案不存在，跳過此測試。路徑搜尋失敗。");
+        return false;
+    }
+
     #region 基本功能測試
 
     [Fact]
     public void TestCurrentVersion_ShouldReturnVersionInfo()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         // PostalDatabase 類別會自動使用內嵌資源
         var version = PostalDatabase.CurrentVersion;
@@ -77,7 +89,7 @@ public class DatabaseTests
     [Fact]
     public void TestExecuteQuery_ShouldReturnResult()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         // 透過 PostalDatabase.ExecuteQuery 執行查詢
         var result = PostalDatabase.ExecuteQuery(dir =>
@@ -96,7 +108,7 @@ public class DatabaseTests
     [Fact]
     public void TestConcurrentQueries_SameResult()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         const int threadCount = 10;
         const int queriesPerThread = 100;
@@ -136,7 +148,7 @@ public class DatabaseTests
     [Fact]
     public async Task TestConcurrentQueries_Async()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         const int taskCount = 20;
         var tasks = new List<Task<string>>();
@@ -162,7 +174,7 @@ public class DatabaseTests
     [Fact]
     public void TestConcurrentQueries_DifferentAddresses()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         var addresses = new[]
         {
@@ -212,7 +224,7 @@ public class DatabaseTests
     [Fact]
     public async Task TestUpdateFromAsync_WithValidDatabase()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         // 複製當前資料庫到臨時位置
         var tempDb = Path.Combine(Path.GetTempPath(), $"test_db_{Guid.NewGuid():N}.db");
@@ -243,7 +255,7 @@ public class DatabaseTests
     [Fact]
     public async Task TestUpdateFromAsync_WithInvalidPath()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         var result = await PostalDatabase.UpdateFromAsync("/path/does/not/exist.db");
 
@@ -253,7 +265,7 @@ public class DatabaseTests
     [Fact]
     public async Task TestUpdateFromStreamAsync_WithValidStream()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         // 使用 FileShare.ReadWrite 允許其他處理程序同時存取檔案
         using var stream = new FileStream(_dbPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
@@ -265,7 +277,7 @@ public class DatabaseTests
     [Fact]
     public async Task TestUpdateFromStreamAsync_WithInvalidStream()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         // 建立一個無效的資料庫檔案
         var invalidDb = Path.Combine(Path.GetTempPath(), $"invalid_{Guid.NewGuid():N}.db");
@@ -293,7 +305,7 @@ public class DatabaseTests
     [Fact]
     public async Task TestHotReload_QueriesStillWork()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         // 執行初始查詢
         var initialResult = PostalDatabase.ExecuteQuery(dir =>
@@ -326,7 +338,7 @@ public class DatabaseTests
     [Fact]
     public async Task TestHotReload_ConcurrentQueriesDuringUpdate()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         var cts = new CancellationTokenSource();
         var queryTask = Task.Run(async () =>
@@ -364,7 +376,7 @@ public class DatabaseTests
     [Fact]
     public void TestReload_InvalidatesThreadLocalCache()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         // 在執行緒 1 中查詢
         var thread1Result = string.Empty;
@@ -404,7 +416,7 @@ public class DatabaseTests
     [Fact]
     public void TestThreadLocal_EachThreadHasOwnDirectory()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         var threadIds = new System.Collections.Concurrent.ConcurrentBag<int>();
         var threads = new List<Thread>();
@@ -438,7 +450,7 @@ public class DatabaseTests
     [Fact]
     public void TestThreadLocal_ReuseWithinSameThread()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         var results = new List<string>();
 
@@ -463,7 +475,7 @@ public class DatabaseTests
     [Fact]
     public async Task TestCheckForUpdatesAsync_ShouldComplete()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         // 使用短超時避免測試時間過長
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -472,21 +484,23 @@ public class DatabaseTests
         {
             var updateInfo = await PostalDatabase.CheckForUpdatesAsync(cts.Token);
 
-            // 可能成功也可能失敗（取決於網路狀況）
-            // 只驗證方法能正常執行不拋出異常
-            Assert.True(true);
+            // 可能成功（返回 UpdateInfo）也可能失敗（返回 null），取決於網路狀況
+            // 只要不拋出未處理例外即為通過
+            if (updateInfo != null)
+            {
+                Assert.NotEmpty(updateInfo.DownloadUrl);
+            }
         }
         catch (TaskCanceledException)
         {
-            // 超時也是可接受的
-            Assert.True(true);
+            // 超時也是可接受的（網路不可用時）
         }
     }
 
     [Fact]
     public async Task TestCheckForUpdatesAsync_WithCancellation()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         using var cts = new CancellationTokenSource();
         cts.Cancel(); // 立即取消
@@ -504,7 +518,7 @@ public class DatabaseTests
     [Fact]
     public void TestExecuteQuery_WithException_ShouldThrow()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         Assert.Throws<Exception>(() =>
         {
@@ -518,7 +532,7 @@ public class DatabaseTests
     [Fact]
     public void TestExecuteQuery_WithNullQuery_ShouldThrow()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         Assert.Throws<ArgumentNullException>(() =>
         {
@@ -533,7 +547,7 @@ public class DatabaseTests
     [Fact]
     public void TestPerformance_MultipleQueries()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         const int queryCount = 1000;
         var startTime = DateTime.Now;
@@ -559,7 +573,7 @@ public class DatabaseTests
     [Fact]
     public async Task TestPerformance_ConcurrentQueries()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!EnsureDatabaseOrSkip()) return;
 
         const int taskCount = 100;
         var startTime = DateTime.Now;
