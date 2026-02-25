@@ -24,6 +24,7 @@ jobs:
           from datetime import date
           from pathlib import Path
           from urllib.request import urlopen, Request
+          from urllib.parse import urlsplit, urlunsplit, quote
           import json
 
           API_URL = "https://data.gov.tw/api/v2/rest/dataset/14718"
@@ -64,7 +65,10 @@ jobs:
               desc = dist.get("resourceDescription", "")
               print(f"\nProcessing {year} ({desc})...")
 
-              with urlopen(Request(url, headers={"User-Agent": "Mozilla/5.0"}), timeout=30) as r:
+              # URL encode non-ASCII characters in the path
+              parts = urlsplit(url)
+              safe_url = urlunsplit((parts.scheme, parts.netloc, quote(parts.path, safe="/"), parts.query, parts.fragment))
+              with urlopen(Request(safe_url, headers={"User-Agent": "Mozilla/5.0"}), timeout=30) as r:
                   raw = r.read()
               content = None
               for enc in ("utf-8-sig", "utf-8", "big5"):
@@ -87,13 +91,18 @@ jobs:
                       d = date(int(ds[:4]), int(ds[4:6]), int(ds[6:8]))
                   except ValueError:
                       continue
-                  role = "all"
+                  role = "none"
                   if d.month == 5 and d.day == 1:
                       role, is_holiday = "labor", True
                       if not description: description = "勞動節"
                   elif d.month == 9 and d.day == 3:
                       role, is_holiday = "soldier", True
                       if not description or description == "工作日": description = "軍人節"
+                  elif d.month == 9 and d.day == 28 and d.year >= 2025:
+                      role, is_holiday = "teacher", True
+                      if not description or description == "工作日": description = "教師節"
+                  elif is_holiday:
+                      role = "all"
                   if not description:
                       description = WEEKDAY_NAMES.get(d.weekday(), "") if is_holiday else "工作日"
                   rows.append((ds, is_holiday, role, description))
