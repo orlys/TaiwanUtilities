@@ -96,12 +96,12 @@ string s1 = a.ToString("年月日 時分秒");  // 一百一十四年十月二�
 string s2 = a.ToString("g");              // 114/10/24 00:00:00
 
 // 手動新增假日
-RocHolidayDataSet.Default.Add(
-    new DateTime(2025, 12, 25),
+RocHolidayDataSet.Add(
+    new RocDateTime(114, 12, 25),
     new RocHoliday(true, HolidayRole.All, "聖誕節"));
 
 // 下載最新行事曆
-await RocHolidayDataSet.Default.DownloadAsync(115);
+await RocHolidayDataSet.DownloadAsync(115);
 ```
 
 <details>

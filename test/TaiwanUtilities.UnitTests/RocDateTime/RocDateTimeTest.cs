@@ -26,8 +26,7 @@ public partial class RocDateTimeTest
     public static void 國定假日判斷()
     {
         // 使用嵌入資料範圍內的固定年份，避免嵌入資料過期後 flaky
-        var dataSet = RocHolidayDataSet.Default;
-        var embeddedMaxRocYear = dataSet.EmbeddedMaxYear - 1911;
+        var embeddedMaxRocYear = RocHolidayDataSet.EmbeddedMaxYear - 1911;
         Assert.True(RocDateTime.Parse(embeddedMaxRocYear + "/1/1").IsHoliday);
     }
 
@@ -137,42 +136,36 @@ public partial class RocDateTimeTest
     [Fact]
     public static async System.Threading.Tasks.Task RocHolidayDataSet_手動增刪()
     {
-        var dataSet = RocHolidayDataSet.Default;
-
         // 新增自訂假日
         var testDate = new RocDateTime(114, 6, 15);
         var customHoliday = new RocHoliday(true, HolidayRole.All, "自訂假日");
-        dataSet.Add(testDate, customHoliday);
+        RocHolidayDataSet.Add(testDate, customHoliday);
 
         Assert.Equal(customHoliday, testDate.Holiday);
 
         // 移除
-        Assert.True(dataSet.Remove(testDate));
+        Assert.True(RocHolidayDataSet.Remove(testDate));
         Assert.False(testDate.Holiday);
 
         // 清除 overrides
-        await dataSet.ReloadAsync();
+        await RocHolidayDataSet.ReloadAsync();
     }
 
     [Fact]
     public static void RocHolidayDataSet_嵌入年份範圍()
     {
-        var dataSet = RocHolidayDataSet.Default;
-
-        Assert.Equal(1998, dataSet.EmbeddedMinYear);
-        Assert.Equal(2026, dataSet.EmbeddedMaxYear);
+        Assert.Equal(1998, RocHolidayDataSet.EmbeddedMinYear);
+        Assert.Equal(2026, RocHolidayDataSet.EmbeddedMaxYear);
     }
 
     [Fact]
     public static void RocHolidayDataSet_ContainsYear()
     {
-        var dataSet = RocHolidayDataSet.Default;
-
-        Assert.True(dataSet.ContainsYear(1998));
-        Assert.True(dataSet.ContainsYear(2025));
-        Assert.True(dataSet.ContainsYear(2026));
-        Assert.False(dataSet.ContainsYear(1997));
-        Assert.False(dataSet.ContainsYear(2027));
+        Assert.True(RocHolidayDataSet.ContainsYear(1998));
+        Assert.True(RocHolidayDataSet.ContainsYear(2025));
+        Assert.True(RocHolidayDataSet.ContainsYear(2026));
+        Assert.False(RocHolidayDataSet.ContainsYear(1997));
+        Assert.False(RocHolidayDataSet.ContainsYear(2027));
     }
 
     [Fact]

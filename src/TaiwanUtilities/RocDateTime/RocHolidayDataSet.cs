@@ -21,9 +21,9 @@ using System.Threading.Tasks;
 /// </remarks>
 public sealed partial class RocHolidayDataSet
 {
-    private readonly ConcurrentDictionary<DateTime, RocHoliday?> _overrides = new();
-    private readonly ConcurrentDictionary<int, Dictionary<DateTime, RocHoliday>> _cache = new();
-    private int _releaseDownloadAttempted;
+    private static readonly ConcurrentDictionary<DateTime, RocHoliday?> s_overrides = new();
+    private static readonly ConcurrentDictionary<int, Dictionary<DateTime, RocHoliday>> s_cache = new();
+    private static int s_releaseDownloadAttempted;
 
     private static HttpClient HttpClient => Internals.SharedHttpClient.Instance;
 
@@ -42,28 +42,28 @@ public sealed partial class RocHolidayDataSet
     /// <summary>
     /// 嵌入資料涵蓋的最早西元年份
     /// </summary>
-    public int EmbeddedMinYear => s_embeddedYearRange.Value.Min;
+    public static int EmbeddedMinYear => s_embeddedYearRange.Value.Min;
 
     /// <summary>
     /// 嵌入資料涵蓋的最晚西元年份
     /// </summary>
-    public int EmbeddedMaxYear => s_embeddedYearRange.Value.Max;
+    public static int EmbeddedMaxYear => s_embeddedYearRange.Value.Max;
 
     /// <summary>
     /// 查詢指定日期的假日資訊
     /// </summary>
-    internal RocHoliday GetHoliday(RocDateTime date)
+    internal static RocHoliday GetHoliday(RocDateTime date)
     {
         var dt = date.ToDateTime().Date;
 
         // Layer 1: 使用者手動增刪
-        if (_overrides.TryGetValue(dt, out var overrideValue))
+        if (s_overrides.TryGetValue(dt, out var overrideValue))
         {
             return overrideValue ?? RocHoliday.None;
         }
 
         // Layer 2: Runtime 下載快取
-        if (_cache.TryGetValue(dt.Year, out var yearCache) &&
+        if (s_cache.TryGetValue(dt.Year, out var yearCache) &&
             yearCache.TryGetValue(dt, out var cachedValue))
         {
             return cachedValue;
@@ -81,35 +81,35 @@ public sealed partial class RocHolidayDataSet
     /// <summary>
     /// 查詢指定西元年份是否有資料（嵌入或快取）
     /// </summary>
-    public bool ContainsYear(int year)
+    public static bool ContainsYear(int year)
     {
         if (year >= EmbeddedMinYear && year <= EmbeddedMaxYear)
             return true;
 
-        return _cache.ContainsKey(year);
+        return s_cache.ContainsKey(year);
     }
 
     /// <summary>
     /// 手動新增或覆寫假日資訊
     /// </summary>
-    public void Add(RocDateTime date, RocHoliday holiday)
+    public static void Add(RocDateTime date, RocHoliday holiday)
     {
         var dt = date.ToDateTime().Date;
-        _overrides[dt] = holiday;
+        s_overrides[dt] = holiday;
     }
 
     /// <summary>
     /// 手動移除假日（標記為非假日）
     /// </summary>
     /// <returns>若該日期已存在於任何資料層，回傳 <c>true</c></returns>
-    public bool Remove(RocDateTime date)
+    public static bool Remove(RocDateTime date)
     {
         var dt = date.ToDateTime().Date;
-        var existed = _overrides.ContainsKey(dt) ||
-                      (_cache.TryGetValue(dt.Year, out var yc) && yc.ContainsKey(dt)) ||
+        var existed = s_overrides.ContainsKey(dt) ||
+                      (s_cache.TryGetValue(dt.Year, out var yc) && yc.ContainsKey(dt)) ||
                       s_embedded.ContainsKey(dt);
 
-        _overrides[dt] = null; // null = 標記刪除
+        s_overrides[dt] = null; // null = 標記刪除
         return existed;
     }
 
@@ -123,33 +123,33 @@ public sealed partial class RocHolidayDataSet
     /// <item>行政院人事行政總處 data.gov.tw（單一年份）</item>
     /// </list>
     /// </remarks>
-    public async Task DownloadAsync(int year, CancellationToken ct = default)
+    public static async Task DownloadAsync(int year, CancellationToken ct = default)
     {
         // Primary: GitHub Release（僅首次嘗試，會快取所有年份）
-        if (Interlocked.CompareExchange(ref _releaseDownloadAttempted, 1, 0) == 0)
+        if (Interlocked.CompareExchange(ref s_releaseDownloadAttempted, 1, 0) == 0)
         {
             await TryDownloadFromReleaseAsync(ct).ConfigureAwait(false);
         }
 
-        if (_cache.ContainsKey(year))
+        if (s_cache.ContainsKey(year))
             return;
 
         // Fallback: data.gov.tw
         var holidays = await TryDownloadFromGovAsync(year, ct).ConfigureAwait(false);
         if (holidays.Count > 0)
         {
-            _cache[year] = holidays;
+            s_cache[year] = holidays;
         }
     }
 
     /// <summary>
     /// 重置資料集（清除 Runtime 快取與使用者修改，回到嵌入資料）
     /// </summary>
-    public Task ReloadAsync(CancellationToken ct = default)
+    public static Task ReloadAsync(CancellationToken ct = default)
     {
-        _overrides.Clear();
-        _cache.Clear();
-        Interlocked.Exchange(ref _releaseDownloadAttempted, 0);
+        s_overrides.Clear();
+        s_cache.Clear();
+        Interlocked.Exchange(ref s_releaseDownloadAttempted, 0);
         return Task.CompletedTask;
     }
 
@@ -157,7 +157,7 @@ public sealed partial class RocHolidayDataSet
 
     private const string ReleaseUrl = "https://github.com/Orlys/TaiwanUtilities/releases/latest/download/holidays.csv";
 
-    private async Task TryDownloadFromReleaseAsync(CancellationToken ct)
+    private static async Task TryDownloadFromReleaseAsync(CancellationToken ct)
     {
         try
         {
@@ -188,7 +188,7 @@ public sealed partial class RocHolidayDataSet
                 {
                     yearDict[kv.Key] = kv.Value;
                 }
-                _cache.TryAdd(group.Key, yearDict);
+                s_cache.TryAdd(group.Key, yearDict);
             }
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or OperationCanceledException)

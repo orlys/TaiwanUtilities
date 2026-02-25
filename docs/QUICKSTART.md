@@ -100,7 +100,7 @@ Console.WriteLine(holiday.IsHoliday);    // true
 Console.WriteLine(holiday.Description);  // 光復節補假
 
 // 下載最新行事曆
-await RocHolidayDataSet.Default.DownloadAsync(115);
+await RocHolidayDataSet.DownloadAsync(115);
 ```
 
 ---

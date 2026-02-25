@@ -85,7 +85,7 @@ public readonly partial struct RocDateTime
     /// <summary>
     /// 取得該日期的國定假日資訊
     /// </summary>
-    public RocHoliday Holiday => RocHolidayDataSet.Default.GetHoliday(this);
+    public RocHoliday Holiday => RocHolidayDataSet.GetHoliday(this);
 
     /// <summary>
     /// 判斷是否為法定假日

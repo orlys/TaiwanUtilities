@@ -55,11 +55,6 @@ using System.Collections.Generic;
 
 partial class RocHolidayDataSet
 {
-    /// <summary>
-    /// T4 產生的靜態預設實例（嵌入 1998-2026 資料）
-    /// </summary>
-    public static RocHolidayDataSet Default { get; } = new();
-
     private static readonly FrozenDictionary<DateTime, RocHoliday> s_embedded = new Dictionary<DateTime, RocHoliday>
     {
 <# foreach ((string date, string isHoliday, string role, string description) e in entries) {
