@@ -57,7 +57,7 @@ jobs:
       run: dotnet restore
 
     - name: Generate holiday data
-      run: t4 ${{ github.workspace }}/src/TaiwanUtilities/RocDateTime/RocHolidays.tt
+      run: t4 ${{ github.workspace }}/src/TaiwanUtilities/RocDateTime/RocHolidayDataSet.tt
 
     - name: Build
       run: dotnet build --configuration Release --no-restore
@@ -118,7 +118,7 @@ jobs:
       run: dotnet restore
 
     - name: Generate holiday data
-      run: t4 ${{ github.workspace }}/src/TaiwanUtilities/RocDateTime/RocHolidays.tt
+      run: t4 ${{ github.workspace }}/src/TaiwanUtilities/RocDateTime/RocHolidayDataSet.tt
 
     - name: Pack NuGet package
       run: dotnet pack src/TaiwanUtilities/TaiwanUtilities.csproj --configuration Release --output ./nupkg
