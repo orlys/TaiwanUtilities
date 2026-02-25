@@ -81,14 +81,14 @@
   <ItemGroup>
     <!-- Holiday -->
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
-    <Compile Update="RocDateTime\RocDateTime.Holidays.g.cs">
+    <Compile Update="RocDateTime\RocHolidays.g.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>RocDateTime.Holidays.tt</DependentUpon>
+      <DependentUpon>RocHolidays.tt</DependentUpon>
     </Compile>
-    <None Update="RocDateTime\RocDateTime.Holidays.tt">
+    <None Update="RocDateTime\RocHolidays.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>RocDateTime.Holidays.g.cs</LastGenOutput>
+      <LastGenOutput>RocHolidays.g.cs</LastGenOutput>
     </None>
   </ItemGroup>
 
