@@ -370,7 +370,7 @@ public sealed partial class RocHolidayDataSet
             var isHoliday = parts[2].Trim() == "2";
             var description = parts[3].Trim();
 
-            var role = HolidayRole.All;
+            var role = HolidayRole.None;
 
             // 勞動節
             if (dt.Month == 5 && dt.Day == 1)
@@ -385,6 +385,17 @@ public sealed partial class RocHolidayDataSet
                 role = HolidayRole.Soldier;
                 isHoliday = true;
                 if (string.IsNullOrEmpty(description) || description == "工作日") description = "軍人節";
+            }
+            // 教師節（2025年起）
+            else if (dt.Month == 9 && dt.Day == 28 && dt.Year >= 2025)
+            {
+                role = HolidayRole.Teacher;
+                isHoliday = true;
+                if (string.IsNullOrEmpty(description) || description == "工作日") description = "教師節";
+            }
+            else if (isHoliday)
+            {
+                role = HolidayRole.All;
             }
 
             if (string.IsNullOrEmpty(description))
@@ -465,7 +476,8 @@ public sealed partial class RocHolidayDataSet
             {
                 "labor" => HolidayRole.Labor,
                 "soldier" => HolidayRole.Soldier,
-                _ => HolidayRole.All,
+                "teacher" => HolidayRole.Teacher,
+                _ => isHoliday ? HolidayRole.All : HolidayRole.None,
             };
 
             target[dt] = new RocHoliday(isHoliday, role, description);

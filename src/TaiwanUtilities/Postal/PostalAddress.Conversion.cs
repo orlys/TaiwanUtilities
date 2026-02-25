@@ -43,6 +43,20 @@ partial class PostalAddress
         }
     }
 
+    public static implicit operator string?(PostalAddress? address)
+    {
+        return address?.ToAddressString();
+    }
+
+    public static implicit operator PostalAddress?(string? address)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            return null;
+        }
+        return Parse(address);
+    }
+
     private sealed class PostalAddressTypeConverter : System.ComponentModel.TypeConverter
     {
         private static readonly Type s_stringType = typeof(string);

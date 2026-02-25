@@ -17,8 +17,11 @@ public enum HolidayRole
     /// <summary>軍人適用</summary>
     Soldier = 1 << 1,
 
+    /// <summary>教師適用</summary>
+    Teacher = 1 << 2,
+
     /// <summary>全體適用</summary>
-    All = Labor | Soldier,
+    All = Labor | Soldier | Teacher,
 }
 
 /// <summary>

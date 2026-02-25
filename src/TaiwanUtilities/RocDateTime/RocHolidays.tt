@@ -67,7 +67,30 @@ partial class RocHolidayDataSet
     int m = int.Parse(e.date.Substring(4, 2));
     int d = int.Parse(e.date.Substring(6, 2));
     string isHol = e.isHoliday == "true" ? "true" : "false";
-    string roleEnum = e.role == "labor" ? "HolidayRole.Labor" : e.role == "soldier" ? "HolidayRole.Soldier" : "HolidayRole.All";
+    // 特殊職業假日：勞動節(5/1)、軍人節(9/3)、教師節(9/28, 2025年起) 無論 CSV 標記都強制為假日
+    bool isSpecialRole = (m == 5 && d == 1) || (m == 9 && d == 3) || (m == 9 && d == 28 && y >= 2025);
+    if (isSpecialRole)
+    {
+        isHol = "true";
+    }
+
+    string roleEnum;
+    if (m == 5 && d == 1)
+        roleEnum = "HolidayRole.Labor";
+    else if (m == 9 && d == 3)
+        roleEnum = "HolidayRole.Soldier";
+    else if (m == 9 && d == 28 && y >= 2025)
+        roleEnum = "HolidayRole.Teacher";
+    else if (isHol != "true")
+        roleEnum = "HolidayRole.None";
+    else if (e.role == "labor")
+        roleEnum = "HolidayRole.Labor";
+    else if (e.role == "soldier")
+        roleEnum = "HolidayRole.Soldier";
+    else if (e.role == "teacher")
+        roleEnum = "HolidayRole.Teacher";
+    else
+        roleEnum = "HolidayRole.All";
     string desc = e.description.Replace("\\", "\\\\").Replace("\"", "\\\"");
 #>
         { new DateTime(<#= y #>, <#= m #>, <#= d #>), new RocHoliday(<#= isHol #>, <#= roleEnum #>, "<#= desc #>") },

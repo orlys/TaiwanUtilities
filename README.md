@@ -1,6 +1,6 @@
 # 🇹🇼 TaiwanUtilities
 
-[![CI/CD](https://github.com/Orlys/TaiwanUtilities/actions/workflows/ci.yml/badge.svg)](https://github.com/Orlys/TaiwanUtilities/actions/workflows/ci.yml) [![NuGet Version](https://img.shields.io/nuget/v/TaiwanUtilities)](https://www.nuget.org/packages/TaiwanUtilities) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI/CD](https://github.com/Orlys/TaiwanUtilities/actions/workflows/ci.yml/badge.svg)](https://github.com/Orlys/TaiwanUtilities/actions/workflows/ci.yml) [![NuGet Version](https://img.shields.io/nuget/v/TaiwanUtilities)](https://www.nuget.org/packages/TaiwanUtilities) [![Tests](https://img.shields.io/badge/tests-999_passed-brightgreen)](https://github.com/Orlys/TaiwanUtilities/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 台灣專用 .NET 工具庫，涵蓋郵遞區號查詢、中文數字轉換、民國日期、證號驗證與中文髒話過濾。
 

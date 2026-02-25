@@ -100,7 +100,7 @@ public partial class RocDateTimeTest
     public static void RocHoliday隱含布林轉換()
     {
         var holiday = new RocHoliday(true, HolidayRole.All, "測試");
-        var nonHoliday = new RocHoliday(false, HolidayRole.All, "工作日");
+        var nonHoliday = new RocHoliday(false, HolidayRole.None, "工作日");
 
         Assert.True(holiday);
         Assert.False(nonHoliday);
@@ -110,9 +110,10 @@ public partial class RocDateTimeTest
     [Fact]
     public static void HolidayRole_Flags語意()
     {
-        // All 包含 Labor 和 Soldier
+        // All 包含 Labor、Soldier 和 Teacher
         Assert.True(HolidayRole.All.HasFlag(HolidayRole.Labor));
         Assert.True(HolidayRole.All.HasFlag(HolidayRole.Soldier));
+        Assert.True(HolidayRole.All.HasFlag(HolidayRole.Teacher));
 
         // Labor 不包含 Soldier
         Assert.False(HolidayRole.Labor.HasFlag(HolidayRole.Soldier));
@@ -124,11 +125,13 @@ public partial class RocDateTimeTest
         // 國定假日（全民）的 Role 可用 HasFlag 判斷
         var newYear = new RocDateTime(114, 1, 1).Holiday;
         Assert.True(newYear.Role.HasFlag(HolidayRole.Labor));
+        Assert.True(newYear.Role.HasFlag(HolidayRole.Teacher));
 
         // 勞動節只適用勞工
         var laborDay = new RocDateTime(114, 5, 1).Holiday;
         Assert.True(laborDay.Role.HasFlag(HolidayRole.Labor));
         Assert.False(laborDay.Role.HasFlag(HolidayRole.Soldier));
+        Assert.False(laborDay.Role.HasFlag(HolidayRole.Teacher));
     }
 
     [Fact]
@@ -182,6 +185,28 @@ public partial class RocDateTimeTest
         Assert.True(holiday);
         Assert.Equal(HolidayRole.Soldier, holiday.Role);
         Assert.Equal("軍人節", holiday.Description);
+    }
+
+    [Fact]
+    public static void Holiday屬性_教師節()
+    {
+        // 2025/9/28 教師節（孔子誕辰紀念日）
+        var date = new RocDateTime(114, 9, 28);
+        var holiday = date.Holiday;
+
+        Assert.True(holiday);
+        Assert.Equal(HolidayRole.Teacher, holiday.Role);
+    }
+
+    [Fact]
+    public static void Holiday屬性_工作日Role為None()
+    {
+        // 2025/1/2 工作日
+        var date = new RocDateTime(114, 1, 2);
+        var holiday = date.Holiday;
+
+        Assert.False(holiday);
+        Assert.Equal(HolidayRole.None, holiday.Role);
     }
 
     [Fact]
