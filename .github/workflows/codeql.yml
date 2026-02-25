@@ -23,6 +23,10 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.x
+      - name: Install T4 Text Template Tool
+        run: dotnet tool install -g dotnet-t4
+      - name: Generate holiday data
+        run: t4 ${{ github.workspace }}/src/TaiwanUtilities/RocDateTime/RocHolidays.tt
       - name: Build
         run: dotnet build --configuration Release
       - name: Perform CodeQL Analysis
