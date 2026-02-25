@@ -341,71 +341,84 @@ public sealed class PostalDatabase : IDisposable
     /// </summary>
     private async Task<bool> UpdateFromStreamInternalAsync(Stream stream, string fileName, CancellationToken ct)
     {
-        lock (_updateLock)
+        string? newDbPath = null;
+        try
         {
-            try
+            // === Phase 1: I/O 操作在 lock 外執行，不阻塞查詢執行緒 ===
+
+            // 使用時間戳記確保檔名唯一，避免累積垃圾檔案
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+            var counter = Volatile.Read(ref _databaseVersion) + 1;
+            newDbPath = Path.Combine(Path.GetTempPath(), "TaiwanUtilities", $"zipcode_{timestamp}_{counter}.db");
+            var tempDir = Path.GetDirectoryName(newDbPath);
+
+            if (!System.IO.Directory.Exists(tempDir))
+                System.IO.Directory.CreateDirectory(tempDir!);
+
+            // 複製串流到新檔案（限制最大大小）
+            using (var fileStream = File.Create(newDbPath))
             {
-                // 使用時間戳記確保檔名唯一，避免累積垃圾檔案
-                var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
-                var counter = _databaseVersion + 1;
-                var newDbPath = Path.Combine(Path.GetTempPath(), "TaiwanUtilities", $"zipcode_{timestamp}_{counter}.db");
-                var tempDir = Path.GetDirectoryName(newDbPath);
-
-                if (!System.IO.Directory.Exists(tempDir))
-                    System.IO.Directory.CreateDirectory(tempDir!);
-
-                // 複製串流到新檔案（限制最大大小）
-                using (var fileStream = File.Create(newDbPath))
+                var buffer = new byte[81920];
+                long totalBytes = 0;
+                int bytesRead;
+                while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, ct).ConfigureAwait(false)) > 0)
                 {
-                    var buffer = new byte[81920];
-                    long totalBytes = 0;
-                    int bytesRead;
-                    while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) > 0)
+                    totalBytes += bytesRead;
+                    if (totalBytes > MaxDownloadSize)
                     {
-                        totalBytes += bytesRead;
-                        if (totalBytes > MaxDownloadSize)
-                        {
-                            fileStream.Dispose();
-                            try { File.Delete(newDbPath); } catch { }
-                            return false;
-                        }
-                        fileStream.Write(buffer, 0, bytesRead);
+                        fileStream.Dispose();
+                        try { File.Delete(newDbPath); } catch { }
+                        return false;
                     }
+                    await fileStream.WriteAsync(buffer, 0, bytesRead, ct).ConfigureAwait(false);
                 }
+            }
 
-                // 驗證資料庫（嘗試開啟並讀取版本資訊）
-                var newVersion = LoadVersionInfo(newDbPath);
-                if (newVersion == null)
-                {
-                    try { File.Delete(newDbPath); } catch { }
-                    return false;
-                }
+            // 驗證資料庫（嘗試開啟並讀取版本資訊）
+            var newVersion = LoadVersionInfo(newDbPath);
+            if (newVersion == null)
+            {
+                try { File.Delete(newDbPath); } catch { }
+                return false;
+            }
 
-                // 更新資料庫路徑和版本
-                var oldDbPath = _currentDatabasePath;
+            // === Phase 2: 僅 pointer swap 需要 lock，極短暫 ===
+            string? oldDbPath;
+            lock (_updateLock)
+            {
+                oldDbPath = _currentDatabasePath;
                 _currentDatabasePath = newDbPath;
                 _currentVersion = newVersion;
 
                 // 遞增版本號（觸發 ThreadLocal 重新載入）
                 Interlocked.Increment(ref _databaseVersion);
-
-                // 清理舊的臨時檔案（延遲刪除，避免其他執行緒仍在使用）
-                if (oldDbPath.Contains(Path.GetTempPath()))
-                {
-                    Task.Run(() =>
-                    {
-                        Thread.Sleep(5000); // 等待 5 秒
-                        try { File.Delete(oldDbPath); } catch { }
-                    });
-                }
-
-                return true;
             }
-            catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
+
+            // 標記成功，避免 finally 清理新檔案
+            newDbPath = null;
+
+            // 清理舊的臨時檔案（延遲刪除，避免其他執行緒仍在使用）
+            if (oldDbPath.Contains(Path.GetTempPath()))
             {
-                System.Diagnostics.Debug.WriteLine($"UpdateFromStream failed: {ex.Message}");
-                return false;
+                _ = Task.Delay(5000, CancellationToken.None).ContinueWith(_ =>
+                {
+                    try { File.Delete(oldDbPath); } catch { }
+                }, TaskScheduler.Default);
             }
+
+            return true;
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
+        {
+            System.Diagnostics.Debug.WriteLine($"UpdateFromStream failed: {ex.Message}");
+
+            // 清理失敗時產生的暫存檔
+            if (newDbPath != null)
+            {
+                try { File.Delete(newDbPath); } catch { }
+            }
+
+            return false;
         }
     }
 
