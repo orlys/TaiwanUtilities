@@ -65,9 +65,9 @@ jobs:
               desc = dist.get("resourceDescription", "")
               print(f"\nProcessing {year} ({desc})...")
 
-              # URL encode non-ASCII characters in the path
+              # URL encode non-ASCII characters in path and query
               parts = urlsplit(url)
-              safe_url = urlunsplit((parts.scheme, parts.netloc, quote(parts.path, safe="/"), parts.query, parts.fragment))
+              safe_url = urlunsplit((parts.scheme, parts.netloc, quote(parts.path, safe="/"), quote(parts.query, safe="=&/"), parts.fragment))
               with urlopen(Request(safe_url, headers={"User-Agent": "Mozilla/5.0"}), timeout=30) as r:
                   raw = r.read()
               content = None
