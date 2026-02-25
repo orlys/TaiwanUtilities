@@ -127,7 +127,14 @@ partial struct ChineseNumeric : IFormattable
 
             foreach (var c in str)
             {
-                sb.Append(profile.Digits[c - '0']);
+                if (c == '-')
+                {
+                    sb.Append(profile.NegativeSign);
+                }
+                else
+                {
+                    sb.Append(profile.Digits[c - '0']);
+                }
             }
 
             return sb.ToString();
@@ -219,7 +226,12 @@ partial struct ChineseNumeric : IFormattable
 
         private static string CrawlStack(ChineseNumeric input, FormatterProfile profile)
         {
-            return new Builder().ToString(input.GetRawValue(), profile);
+            var value = input.GetRawValue();
+            if (value < 0)
+            {
+                return profile.NegativeSign + new Builder().ToString(-value, profile);
+            }
+            return new Builder().ToString(value, profile);
         }
     }
 
@@ -504,36 +516,37 @@ partial struct ChineseNumeric : IFormattable
         /// <summary>
         /// 繁體大寫
         /// </summary>
-        public static FormatterProfile TraditionalUppercase { get; } = new(FormatterFlags.CrawlStack, "零", "壹", "貳", "參", "肆", "伍", "陸", "柒", "捌", "玖", "拾", "佰", "仟", "萬", "億", "兆", "京", "垓",  "秭","穰");
+        public static FormatterProfile TraditionalUppercase { get; } = new(FormatterFlags.CrawlStack, "負", "零", "壹", "貳", "參", "肆", "伍", "陸", "柒", "捌", "玖", "拾", "佰", "仟", "萬", "億", "兆", "京", "垓",  "秭","穰");
 
         /// <summary>
         /// 繁體小寫
         /// </summary>
-        public static FormatterProfile TraditionalLowercase { get; } = new(FormatterFlags.CrawlStack, "〇", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "萬", "億", "兆", "京", "垓", "秭", "穰");
+        public static FormatterProfile TraditionalLowercase { get; } = new(FormatterFlags.CrawlStack, "負", "〇", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "萬", "億", "兆", "京", "垓", "秭", "穰");
 
         /// <summary>
         /// 簡體大寫
         /// </summary>
-        public static FormatterProfile SimplifiedUppercase { get; } = new(FormatterFlags.CrawlStack, "零", "壹", "贰", "参", "肆", "伍", "陆", "柒", "捌", "玖", "拾", "佰", "仟", "万", "亿", "兆", "京", "垓", "秭", "穰");
+        public static FormatterProfile SimplifiedUppercase { get; } = new(FormatterFlags.CrawlStack, "负", "零", "壹", "贰", "参", "肆", "伍", "陆", "柒", "捌", "玖", "拾", "佰", "仟", "万", "亿", "兆", "京", "垓", "秭", "穰");
 
         /// <summary>
         /// 簡體小寫
         /// </summary>
-        public static FormatterProfile SimplifiedLowercase { get; } = new(FormatterFlags.CrawlStack, "〇", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "万", "亿", "兆", "京", "垓", "秭", "穰");
+        public static FormatterProfile SimplifiedLowercase { get; } = new(FormatterFlags.CrawlStack, "负", "〇", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "万", "亿", "兆", "京", "垓", "秭", "穰");
 
         /// <summary>
         /// 全形數字
         /// </summary>
-        public static FormatterProfile FullwidthWestern { get; } = new(FormatterFlags.DirectTranslate | FormatterFlags.Mapping, "０", "１", "２", "３", "４", "５", "６", "７", "８", "９", null, null, null, null, null, null, null, null, null, null);
+        public static FormatterProfile FullwidthWestern { get; } = new(FormatterFlags.DirectTranslate | FormatterFlags.Mapping, "－", "０", "１", "２", "３", "４", "５", "６", "７", "８", "９", null, null, null, null, null, null, null, null, null, null);
 
         /// <summary>
         /// 半形數字
         /// </summary>
-        public static FormatterProfile HalfwidthWestern { get; } = new(FormatterFlags.DirectTranslate, "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", null, null, null, null, null, null, null, null, null, null);
+        public static FormatterProfile HalfwidthWestern { get; } = new(FormatterFlags.DirectTranslate, "-", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", null, null, null, null, null, null, null, null, null, null);
 
 
 
 
+        internal string NegativeSign { get; }
         internal IReadOnlyList<string> Digits { get; }
         internal IReadOnlyList<string> GroupTinyUnits { get; }
         internal IReadOnlyList<string> GroupUnits { get; }
@@ -541,6 +554,7 @@ partial struct ChineseNumeric : IFormattable
 
         public FormatterProfile(
             FormatterFlags mode,
+            string negativeSign,
             string zero,
             string one,
             string two,
@@ -563,6 +577,7 @@ partial struct ChineseNumeric : IFormattable
             string tenOctillion)
         {
             Mode = mode;
+            NegativeSign = negativeSign;
 
             Digits = [
                 zero,

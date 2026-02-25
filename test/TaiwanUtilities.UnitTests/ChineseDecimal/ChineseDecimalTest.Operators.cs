@@ -114,12 +114,10 @@ public partial class ChineseNumericTest
     }
 
     [Fact]
-    public static void 隱含轉換_負數_應拋出例外()
+    public static void 隱含轉換_負數()
     {
-        Assert.Throws<System.ArgumentOutOfRangeException>(() =>
-        {
-            ChineseNumeric cn = -42m;
-        });
+        ChineseNumeric cn = -42m;
+        Assert.Equal(-42m, (decimal)cn);
     }
 
     [Fact]

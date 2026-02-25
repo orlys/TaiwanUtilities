@@ -148,4 +148,25 @@ partial class ChineseNumericTest
             expected: decimal.Parse(expectedDecimal),
             actual: ChineseNumeric.Parse(input));
     }
+
+    [Theory]
+    [InlineData("負三十一", "-31")]
+    [InlineData("負一百二十三", "-123")]
+    [InlineData("負零", "0")]
+    [InlineData("負一萬", "-10000")]
+    [InlineData("負零點伍", "-0.5")]
+    [InlineData("負五又三分二釐一毫", "-5.321")]
+    [InlineData("负四十二", "-42")]
+    public static void 負數解析(string input, string expectedDecimal)
+    {
+        Assert.Equal<decimal>(
+            expected: decimal.Parse(expectedDecimal),
+            actual: ChineseNumeric.Parse(input));
+    }
+
+    [Fact]
+    public static void 負號後無數字_應拋出例外()
+    {
+        Assert.Throws<FormatException>(() => ChineseNumeric.Parse("負"));
+    }
 }

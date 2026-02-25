@@ -171,4 +171,32 @@ partial class ChineseNumericTest
         var parsedValue = ChineseNumeric.Parse(str);
         Assert.Equal(expected: value, actual: (decimal)parsedValue);
     }
+
+    [Theory]
+    [InlineData(-1, "負一")]
+    [InlineData(-31, "負三十一")]
+    [InlineData(-123, "負一百二十三")]
+    [InlineData(-10000, "負一萬")]
+    [InlineData(-9999, "負九千九百九十九")]
+    public void 負數轉換(int feed, string expected)
+    {
+        var value = (decimal)feed;
+        var stringifyValue = new ChineseNumeric(value).ToString("tw");
+        Assert.Equal(expected: expected, actual: stringifyValue);
+
+        var parsedValue = ChineseNumeric.Parse(stringifyValue);
+        Assert.Equal(expected: value, actual: (decimal)parsedValue);
+    }
+
+    [Theory]
+    [InlineData(-42, "TW", "負肆拾貳")]
+    [InlineData(-42, "cn", "负四十二")]
+    [InlineData(-42, "CN", "负肆拾贰")]
+    [InlineData(-42, "HW", "-42")]
+    [InlineData(-42, "FW", "－４２")]
+    public void 負數格式化(int feed, string format, string expected)
+    {
+        var cn = new ChineseNumeric((decimal)feed);
+        Assert.Equal(expected, cn.ToString(format));
+    }
 }

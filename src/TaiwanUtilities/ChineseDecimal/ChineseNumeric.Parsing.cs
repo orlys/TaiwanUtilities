@@ -30,6 +30,22 @@ partial struct ChineseNumeric
             return false;
         }
 
+        // 處理負號前綴
+        var isNegative = false;
+        if (tokens.Count > 0 && tokens[0].IsNegative)
+        {
+            isNegative = true;
+            tokens.RemoveAt(0);
+            if (tokens.Count == 0)
+            {
+                if (throwError)
+                {
+                    throw new FormatException("Negative sign must be followed by a number");
+                }
+                return false;
+            }
+        }
+
         // 尋找小數分隔符（點/又）或小數位量詞（分/釐/毫）的位置
         var floatPointIndex = -1;
         var hasDecimalMultiplier = false;
@@ -111,12 +127,20 @@ partial struct ChineseNumeric
                 }
             }
 
-            result = integerPart + decimalPart;
+            result = isNegative ? -(integerPart + decimalPart) : integerPart + decimalPart;
             return true;
         }
 
         // 沒有小數部分，走原有整數解析邏輯
-        return ParseIntegerTokens(tokens, out result, throwError);
+        if (!ParseIntegerTokens(tokens, out result, throwError))
+        {
+            return false;
+        }
+        if (isNegative)
+        {
+            result = -(decimal)result;
+        }
+        return true;
     }
 
     private static bool ParseDecimalDigits(List<Token> tokens, out decimal result, bool throwError)

@@ -157,6 +157,11 @@ partial struct ChineseNumeric
         /// </summary>
         public bool IsDecimalMultiplier => Character.IsKindOf(CharacterKind.DecimalMultiplier);
 
+        /// <summary>
+        /// 判斷是否為負號（負/负）。
+        /// </summary>
+        public bool IsNegative => Character.IsKindOf(CharacterKind.Negative);
+
         public override string ToString()
         {
             return $"[{Index}] = '{Value}'";
@@ -251,6 +256,7 @@ partial struct ChineseNumeric
             TenThousandth = new(CharacterKind.DecimalMultiplier, 0.0001m, '絲', '丝');
             HundredThousandth = new(CharacterKind.DecimalMultiplier, 0.00001m, '忽');
 
+            NegativeSign = new(CharacterKind.Negative, 0m, '負', '负');
 
             Unknown.Previous = Unknown;
             Unknown.Next = Unknown;
@@ -333,6 +339,7 @@ partial struct ChineseNumeric
                 Thousandth,
                 TenThousandth,
                 HundredThousandth,
+                NegativeSign,
             ];
             var numericTokens = new Dictionary<char, Character>();
             foreach (var token in List)
@@ -480,6 +487,11 @@ partial struct ChineseNumeric
         /// </summary>
         public static Character HundredThousandth { get; }
 
+        /// <summary>
+        /// 負號
+        /// </summary>
+        public static Character NegativeSign { get; }
+
         public static Character Get(char character)
         {
             return s_numericTokens.GetValueOrDefault(character, Unknown);
@@ -561,6 +573,9 @@ partial struct ChineseNumeric
 
         /// <summary> 小數位量詞 (分/釐/毫) </summary>
         DecimalMultiplier = 65536,
+
+        /// <summary> 負號 </summary>
+        Negative = 131072,
     }
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]

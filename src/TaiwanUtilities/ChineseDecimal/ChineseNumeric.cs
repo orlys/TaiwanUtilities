@@ -16,13 +16,11 @@ public readonly partial struct ChineseNumeric
     }
 
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <param name="value"></param>
-    /// <exception cref="ArgumentOutOfRangeException" />
     public ChineseNumeric(decimal value)
     {
-        Guard.ThrowIfNegative(value);
         _value = value;
     }
 
