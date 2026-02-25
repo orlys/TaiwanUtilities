@@ -29,8 +29,12 @@
     <PackageReadmeFile>readme.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>Taiwan,ChineseNumeric,InternationalNumericFormatter,RocDateTime,Validator,ZipCode,PostalCode</PackageTags>
-    <PackageVersion>1.1.0</PackageVersion>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinVer" Version="6.0.0" PrivateAssets="All" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Include="..\..\readme.md" Link="readme.md" Pack="true" PackagePath="\" />
