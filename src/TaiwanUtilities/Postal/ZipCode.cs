@@ -51,7 +51,8 @@ public static class ZipCode
             return ZipCodeResult.NotFound(address ?? string.Empty);
 
         // 檢查環境變數，允許用戶選擇是否使用預載入引擎
-        var enablePreloaded = Environment.GetEnvironmentVariable("PEAK_ENABLE_PRELOADED") != "0";
+        var enablePreloaded = (Environment.GetEnvironmentVariable("TAIWANUTILITIES_ENABLE_PRELOADED")
+                            ?? Environment.GetEnvironmentVariable("PEAK_ENABLE_PRELOADED")) != "0";
 
         if (enablePreloaded)
         {

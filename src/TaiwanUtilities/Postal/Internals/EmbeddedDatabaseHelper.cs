@@ -9,6 +9,7 @@ namespace TaiwanUtilities;
 using System;
 using System.IO;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Threading;
 
 /// <summary>
@@ -52,8 +53,9 @@ internal static class EmbeddedDatabaseHelper
                 $"找不到內嵌資源 '{resourceName}'。請確保資料庫已設為內嵌資源。");
         }
 
-        // 建立臨時檔案
-        var tempPath = Path.Combine(Path.GetTempPath(), "TaiwanUtilities", resourceName);
+        // 建立臨時檔案（使用組件 hash 避免路徑可預測）
+        var assemblyHash = assembly.GetHashCode().ToString("x8");
+        var tempPath = Path.Combine(Path.GetTempPath(), "TaiwanUtilities", $"{assemblyHash}_{resourceName}");
         var tempDir = Path.GetDirectoryName(tempPath);
 
         if (!System.IO.Directory.Exists(tempDir))
@@ -62,22 +64,34 @@ internal static class EmbeddedDatabaseHelper
         // 使用鎖定確保只有一個執行緒/處理程序執行解壓縮
         lock (_extractLock)
         {
-            // 如果臨時檔案已存在且大小相同，直接使用
+            // 如果臨時檔案已存在且大小和內容雜湊相同，直接使用
             if (File.Exists(tempPath))
             {
                 var fileInfo = new FileInfo(tempPath);
                 if (fileInfo.Length == resource.Length)
                 {
-                    resource.Dispose();
-                    return tempPath;
+                    // 比較前 8KB 的雜湊，避免被替換的同大小檔案
+                    if (VerifyPartialHash(resource, tempPath))
+                    {
+                        resource.Dispose();
+                        return tempPath;
+                    }
+                    resource.Position = 0; // 重置 stream 位置
                 }
             }
 
             // 複製資源到臨時檔案
             // 使用 FileShare.None 防止其他處理程序在寫入時存取
-            using (var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            try
             {
-                resource.CopyTo(fileStream);
+                using (var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    resource.CopyTo(fileStream);
+                }
+            }
+            catch (IOException) when (File.Exists(tempPath))
+            {
+                // 檔案被其他程序佔用（如 SQLite），但已存在則直接使用
             }
         }
 
@@ -109,5 +123,49 @@ internal static class EmbeddedDatabaseHelper
     {
         var assembly = typeof(EmbeddedDatabaseHelper).Assembly;
         return assembly.GetManifestResourceNames();
+    }
+
+    /// <summary>
+    /// 比較嵌入資源和磁碟檔案的前 8KB 雜湊，快速驗證內容一致性
+    /// </summary>
+    private static bool VerifyPartialHash(Stream resource, string filePath)
+    {
+        const int hashSize = 8192;
+        try
+        {
+            var buffer1 = new byte[hashSize];
+            var buffer2 = new byte[hashSize];
+
+            resource.Position = 0;
+            var read1 = ReadFully(resource, buffer1);
+
+            using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            var read2 = ReadFully(fileStream, buffer2);
+
+            if (read1 != read2) return false;
+
+            for (int i = 0; i < read1; i++)
+            {
+                if (buffer1[i] != buffer2[i]) return false;
+            }
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static int ReadFully(Stream stream, byte[] buffer)
+    {
+        int totalRead = 0;
+        int read;
+        while (totalRead < buffer.Length &&
+               (read = stream.Read(buffer, totalRead, buffer.Length - totalRead)) > 0)
+        {
+            totalRead += read;
+        }
+        return totalRead;
     }
 }

@@ -20,11 +20,11 @@ partial struct RocDateTime : IFormattable
     }
     public string ToString(IFormatProvider formatProvider)
     {
-        return ToStringCore(null, s_formatProvider);
+        return ToStringCore(null, formatProvider ?? s_formatProvider);
     }
     public string ToString(string format, IFormatProvider formatProvider)
     {
-        return ToStringCore(format, s_formatProvider);
+        return ToStringCore(format, formatProvider ?? s_formatProvider);
     }
 
     private string ToStringCore(string format, IFormatProvider formatProvider)

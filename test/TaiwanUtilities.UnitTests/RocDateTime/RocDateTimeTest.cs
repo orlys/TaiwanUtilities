@@ -193,9 +193,7 @@ public partial class RocDateTimeTest
             expected: new RocDateTime(-1, 1, 1),
             actual: RocDateTime.Era.AddYears(-1));
 
-        Assert.Equal(
-            expected: new RocDateTime(0, 1, 1),
-            actual: RocDateTime.Era.AddYears(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RocDateTime(0, 1, 1));
 
         Assert.Equal(
             expected: new RocDateTime(1, 1, 1),

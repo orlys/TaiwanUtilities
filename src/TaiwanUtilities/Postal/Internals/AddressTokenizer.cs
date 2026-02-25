@@ -59,7 +59,8 @@ internal class AddressTokenizer
     /// </summary>
     private static readonly Regex TokenRegex = new Regex(
         @"(?:(?<no>\d+)(?<subno>(?:之\d+)+)?(?=[巷弄衖號樓室層線]|$)|(?<name>.+?))(?:(?<unit>[縣市鄉鎮市區村里鄰路街段巷弄衖號樓室層線])|(?=\d+(?:之\d+)*[巷弄衖號樓室層線]|$))",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled,
+        TimeSpan.FromSeconds(1));
 
     /// <summary>
     /// 需要替換的字元正規表達式
@@ -68,7 +69,8 @@ internal class AddressTokenizer
     /// </summary>
     private static readonly Regex ToReplaceRegex = new Regex(
         @"[ 　,，台~-]|[０-９]|[一二三四五六七八九十壹貳參叁肆伍陸柒捌玖拾佰仟百千]*[一二三四五六七八九壹貳參叁肆伍陸柒捌玖](?=[段路街巷弄號樓層])",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled,
+        TimeSpan.FromSeconds(1));
 
     /// <summary>
     /// 字元替換映射表
@@ -137,10 +139,18 @@ internal class AddressTokenizer
     /// <summary>
     /// 正規化地址字串：統一格式、轉換數字等
     /// </summary>
+    /// <summary>
+    /// 地址最大長度限制，防止超長字串導致 CPU 高消耗
+    /// </summary>
+    private const int MaxAddressLength = 500;
+
     internal static string Normalize(string s)
     {
         if (string.IsNullOrEmpty(s))
             return string.Empty;
+
+        if (s.Length > MaxAddressLength)
+            s = s.Substring(0, MaxAddressLength);
 
         // 正則表達式已經限制了只在 [段路街巷弄號樓層] 之前才轉換中文數字
         // 所以"一村巷"中的"一"不會被轉換（因為後面是"村"）

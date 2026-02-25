@@ -139,6 +139,8 @@ public readonly partial struct RocDateTime
     /// <exception cref="ArgumentOutOfRangeException" />
     public RocDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond)
     {
+        if (year == 0)
+            throw new ArgumentOutOfRangeException(nameof(year), year, "民國年不支援 0，此值基於 1。");
         ThrowIfOutOfRange(-999, 999, year);
         ThrowIfOutOfRange(1, 12, month);
         ThrowIfOutOfRange(1, 31, day);

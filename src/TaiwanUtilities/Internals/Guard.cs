@@ -47,7 +47,7 @@ internal static class Guard
 #else
         if (value.CompareTo(default(T)) < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(value), "The argument must be a non-negative number.");
+            throw new ArgumentOutOfRangeException(name, "The argument must be a non-negative number.");
         }
 #endif
     }
@@ -70,7 +70,7 @@ internal static class Guard
         var isZero = value.CompareTo(v) == 0 || (value is BigInteger big && big.IsZero);
         if(isZero)
         {
-            throw new ArgumentOutOfRangeException(nameof(value), "The argument must be a non-zero number.");
+            throw new ArgumentOutOfRangeException(name, "The argument must be a non-zero number.");
         }
 #endif
     }
