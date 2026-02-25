@@ -96,6 +96,9 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>TaiwanUtilities.UnitTests</_Parameter1>
     </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Peak.Builder</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 
   <!-- Additional Metadata -->

@@ -1,15 +1,13 @@
 <Solution>
-  <Folder Name="/docs/">
-    <File Path="docs/experimental.md" />
-  </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
     <File Path=".gitattributes" />
     <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/update-postal-database.yml" />
     <File Path=".gitignore" />
     <File Path="LICENSE" />
+    <File Path="NOTICE.md" />
     <File Path="readme.md" />
-    <File Path="sdk/metadata.props" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/TaiwanUtilities/TaiwanUtilities.csproj" />
@@ -17,5 +15,8 @@
   <Folder Name="/test/">
     <Project Path="test/TaiwanUtilities.Playground/TaiwanUtilities.Playground.csproj" />
     <Project Path="test/TaiwanUtilities.UnitTests/TaiwanUtilities.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Peak.Builder/Peak.Builder.csproj" />
   </Folder>
 </Solution>

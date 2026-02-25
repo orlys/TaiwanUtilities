@@ -1,0 +1,137 @@
+name: Update Postal Database
+
+on:
+  # 手動觸發
+  workflow_dispatch:
+
+  # 每季 2 日自動執行（1/2, 4/2, 7/2, 10/2 UTC 00:00，台灣時間 08:00）
+  # 配合中華郵政每季更新資料的時程
+  schedule:
+    - cron: '0 0 2 1,4,7,10 *'
+
+jobs:
+  update-database:
+    name: Download and Build Database
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Download rall1.dbf from Postal Service
+        id: download
+        shell: pwsh
+        run: |
+          Write-Host "開始下載郵遞區號資料庫..." -ForegroundColor Cyan
+          .\tools\Download-PostalDatabase.ps1 -ErrorAction Stop
+
+          if (Test-Path "temp\rall1.dbf") {
+            $fileInfo = Get-Item "temp\rall1.dbf"
+            $fileSizeMB = [math]::Round($fileInfo.Length / 1MB, 2)
+            $fileDate = $fileInfo.LastWriteTime.ToString("yyyy-MM-dd")
+            $fileHash = (Get-FileHash "temp\rall1.dbf" -Algorithm SHA256).Hash.ToLower()
+
+            echo "file_size=$fileSizeMB MB" >> $env:GITHUB_OUTPUT
+            echo "file_date=$fileDate" >> $env:GITHUB_OUTPUT
+            echo "file_sha256=$fileHash" >> $env:GITHUB_OUTPUT
+            echo "success=true" >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Error "下載失敗：找不到 rall1.dbf"
+            exit 1
+          }
+
+      - name: Build SQLite Database
+        id: build
+        shell: pwsh
+        run: |
+          Write-Host "開始建立 SQLite 資料庫..." -ForegroundColor Cyan
+          cd tools
+          .\Build-PostalDatabase.ps1
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "資料庫建立失敗"
+            exit 1
+          }
+
+          if (Test-Path "..\src\TaiwanUtilities\Postal\zipcode.db") {
+            $dbInfo = Get-Item "..\src\TaiwanUtilities\Postal\zipcode.db"
+            $dbSizeMB = [math]::Round($dbInfo.Length / 1MB, 2)
+            $dbHash = (Get-FileHash "..\src\TaiwanUtilities\Postal\zipcode.db" -Algorithm SHA256).Hash.ToLower()
+
+            echo "db_size=$dbSizeMB MB" >> $env:GITHUB_OUTPUT
+            echo "db_sha256=$dbHash" >> $env:GITHUB_OUTPUT
+            echo "success=true" >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Error "資料庫建立失敗：找不到 zipcode.db"
+            exit 1
+          }
+          cd ..
+
+      - name: Upload database artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: postal-database-${{ steps.download.outputs.file_date }}
+          path: |
+            temp/rall1.dbf
+            src/TaiwanUtilities/Postal/zipcode.db
+          retention-days: 90
+
+      - name: Upload to GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $releaseTag = "database-latest"
+          $releaseTitle = "郵遞區號資料庫 (${{ steps.download.outputs.file_date }})"
+          $releaseBody = @"
+          ## 最新郵遞區號資料庫
+
+          此 Release 包含最新的台灣郵遞區號資料庫，供自動化建置使用。
+
+          ### 資料資訊
+
+          - **來源檔案**: rall1.dbf
+            - 大小: ${{ steps.download.outputs.file_size }}
+            - 日期: ${{ steps.download.outputs.file_date }}
+            - SHA256: ``${{ steps.download.outputs.file_sha256 }}``
+
+          - **資料庫檔案**: zipcode.db
+            - 大小: ${{ steps.build.outputs.db_size }}
+            - SHA256: ``${{ steps.build.outputs.db_sha256 }}``
+
+          - **更新時間**: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") UTC
+
+          ### 使用方式
+
+          建置 TaiwanUtilities 專案時會自動下載此資料庫。
+
+          手動下載：
+          ``````bash
+          gh release download database-latest --pattern "zipcode.db" --repo orlys/TaiwanUtilities
+          ``````
+          "@
+
+          $releaseExists = gh release view $releaseTag --repo $env:GITHUB_REPOSITORY 2>$null
+
+          if ($LASTEXITCODE -eq 0) {
+            gh release delete $releaseTag --repo $env:GITHUB_REPOSITORY --yes
+            git push --delete origin $releaseTag 2>$null
+          }
+
+          gh release create $releaseTag `
+            --repo $env:GITHUB_REPOSITORY `
+            --title "$releaseTitle" `
+            --notes "$releaseBody" `
+            --latest=false `
+            src/TaiwanUtilities/Postal/zipcode.db
