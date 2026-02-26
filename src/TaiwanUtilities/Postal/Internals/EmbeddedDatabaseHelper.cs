@@ -134,11 +134,11 @@ internal static class EmbeddedDatabaseHelper
     /// </summary>
     private static bool VerifyPartialHash(Stream resource, string filePath)
     {
-        const int hashSize = 8192;
+        const int HASH_SIZE = 8192;
         try
         {
-            var buffer1 = new byte[hashSize];
-            var buffer2 = new byte[hashSize];
+            var buffer1 = new byte[HASH_SIZE];
+            var buffer2 = new byte[HASH_SIZE];
 
             resource.Position = 0;
             var read1 = ReadFully(resource, buffer1);

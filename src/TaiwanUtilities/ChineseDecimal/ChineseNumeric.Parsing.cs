@@ -454,8 +454,8 @@ partial struct ChineseNumeric
             // SOURCE: https://github.com/raminrahimzada/CSharp-Helper-Classes/blob/master/Math/DecimalMath/DecimalMath.cs
 
 
-            const decimal E_Inv = 0.3678794411714423215955237701614608674458111310317678m;
-            const decimal Log10_Inv = 0.434294481903251827651128918916605082294397005803666566114m;
+            const decimal E_INV = 0.3678794411714423215955237701614608674458111310317678m;
+            const decimal LOG10_INV = 0.434294481903251827651128918916605082294397005803666566114m;
             const decimal E = 2.7182818284590452353602874713526624977572470936999595749m;
 
             Guard.ThrowIfLessThanOrEqual(value, decimal.Zero);
@@ -463,10 +463,10 @@ partial struct ChineseNumeric
             var count = 0;
             while (value >= decimal.One)
             {
-                value *= E_Inv;
+                value *= E_INV;
                 count++;
             }
-            while (value <= E_Inv)
+            while (value <= E_INV)
             {
                 value *= E;
                 count--;
@@ -490,7 +490,7 @@ partial struct ChineseNumeric
                 result += y / iteration;
             }
 
-            return (count - result) * Log10_Inv;
+            return (count - result) * LOG10_INV;
         }
     }
 
