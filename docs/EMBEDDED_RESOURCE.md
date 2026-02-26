@@ -33,7 +33,7 @@ TaiwanUtilities 將郵遞區號資料庫（`zipcode.db`）嵌入 DLL 中，部�
 dotnet build src/TaiwanUtilities/
 
 # 手動重建資料庫
-.\tools\Build-PostalDatabase.ps1
+.\tools\postal\Build-PostalDatabase.ps1
 ```
 
 ## 部署
