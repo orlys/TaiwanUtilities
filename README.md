@@ -1,6 +1,6 @@
 # 🇹🇼 TaiwanUtilities
 
-[![CI/CD](https://github.com/Orlys/TaiwanUtilities/actions/workflows/ci.yml/badge.svg)](https://github.com/Orlys/TaiwanUtilities/actions/workflows/ci.yml) [![NuGet Version](https://img.shields.io/nuget/v/TaiwanUtilities)](https://www.nuget.org/packages/TaiwanUtilities) [![Tests](https://img.shields.io/badge/tests-999_passed-brightgreen)](https://github.com/Orlys/TaiwanUtilities/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI/CD](https://github.com/Orlys/TaiwanUtilities/actions/workflows/ci.yml/badge.svg)](https://github.com/Orlys/TaiwanUtilities/actions/workflows/ci.yml) [![NuGet Version](https://img.shields.io/nuget/v/TaiwanUtilities)](https://www.nuget.org/packages/TaiwanUtilities) [![Tests](https://img.shields.io/badge/tests-1004_passed-brightgreen)](https://github.com/Orlys/TaiwanUtilities/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 台灣專用 .NET 工具庫，涵蓋郵遞區號查詢、中文數字轉換、民國日期、證號驗證與中文髒話過濾。
 
@@ -78,7 +78,7 @@ string lower = value.ToString("tw"); // 二千三百六十九
 ## 📅 民國日期 `RocDateTime`
 
 支援中文日期時間解析，可隱含轉換為 `DateTime` / `DateTimeOffset`，支援民國前紀年。
-內嵌行政院公告之國定假日資料（民國 87 年至今），支援執行時自動下載最新行事曆。
+內嵌行政院公告之國定假日資料（民國 87 年至今），支援執行時自動更新最新行事曆。
 
 ```csharp
 using TaiwanUtilities;
@@ -99,9 +99,25 @@ string s2 = a.ToString("g");              // 114/10/24 00:00:00
 RocHolidayDataSet.Add(
     new RocDateTime(114, 12, 25),
     new RocHoliday(true, HolidayRole.All, "聖誕節"));
+```
 
-// 下載最新行事曆（自動判斷所需年份）
+#### 假日資料自動更新
+
+`RocHolidayDataSet` 採用三層資料查詢機制：手動增刪 > 執行時更新 > 編譯時嵌入。
+支援從遠端（GitHub Release / data.gov.tw）或本地 CSV 檔案更新，API 設計與 `PostalDatabase` 一致。
+
+```csharp
+// 從遠端更新（自動判斷當前年與下一年）
 await RocHolidayDataSet.UpdateAsync();
+
+// 從本地 CSV 檔案更新
+await RocHolidayDataSet.UpdateFromAsync("holidays.csv");
+
+// 從串流更新
+await RocHolidayDataSet.UpdateFromStreamAsync(stream);
+
+// 重置回嵌入資料
+RocHolidayDataSet.Reload();
 ```
 
 <details>
@@ -198,7 +214,7 @@ TaiwanUtilities/
 # 建置
 dotnet build src/TaiwanUtilities/
 
-# 測試（951 個測試案例）
+# 測試
 dotnet test test/TaiwanUtilities.UnitTests/
 
 # 發布新版本

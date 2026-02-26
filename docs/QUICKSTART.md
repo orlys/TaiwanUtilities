@@ -99,8 +99,11 @@ RocHoliday holiday = roc.Holiday;
 Console.WriteLine(holiday.IsHoliday);    // true
 Console.WriteLine(holiday.Description);  // 光復節補假
 
-// 下載最新行事曆（自動判斷所需年份）
+// 從遠端更新假日資料（自動判斷當前年與下一年）
 await RocHolidayDataSet.UpdateAsync();
+
+// 或從本地 CSV 檔案更新
+await RocHolidayDataSet.UpdateFromAsync("holidays.csv");
 ```
 
 ---
