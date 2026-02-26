@@ -10,7 +10,7 @@ dotnet add package TaiwanUtilities
 
 ### ✨ 核心功能
 
-- 🏠 **郵遞區號查詢** — 內嵌全台 80,000+ 筆投遞規則，支援 3+2 碼精確查詢與地址解析
+- 🏠 **郵遞區號查詢** — 內嵌全台 80,000+ 筆投遞規則，支援 3+3 碼精確查詢與地址解析
 - 🔢 **中文數字轉換** — 中文大小寫數字與 `decimal` 之間的解析與格式化
 - 📅 **民國日期** — 支援中文日期時間解析、國定假日查詢，可隱含轉換為 `DateTime`
 - ✅ **證號驗證** — 身分證、統編、自然人憑證、手機條碼、捐贈碼
@@ -187,7 +187,8 @@ TaiwanUtilities/
 │   ├── RocDateTime/              # 民國日期模組
 │   └── Validators/               # 證號驗證模組
 ├── test/TaiwanUtilities.UnitTests/
-├── tools/Postal.Builder/         # 郵遞區號資料庫建立工具
+├── tools/postal/                 # 郵遞區號工具
+│   └── Postal.Builder/           # 資料庫建立工具
 └── docs/                         # 技術文件
 ```
 

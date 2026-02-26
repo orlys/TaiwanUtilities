@@ -17,6 +17,6 @@
     <Project Path="test/TaiwanUtilities.UnitTests/TaiwanUtilities.UnitTests.csproj" />
   </Folder>
   <Folder Name="/tools/">
-    <Project Path="tools/Postal.Builder/Postal.Builder.csproj" />
+    <Project Path="tools/postal/Postal.Builder/Postal.Builder.csproj" />
   </Folder>
 </Solution>

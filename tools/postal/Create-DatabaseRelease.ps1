@@ -25,13 +25,13 @@ if (!(Get-Command gh -ErrorAction SilentlyContinue)) {
 }
 
 # 檢查資料庫檔案
-$dbPath = Join-Path $PSScriptRoot ".." "src" "TaiwanUtilities" "Postal" "zipcode.db"
+$dbPath = Join-Path $PSScriptRoot ".." ".." "src" "TaiwanUtilities" "Postal" "zipcode.db"
 if (!(Test-Path $dbPath)) {
     Write-Error "找不到資料庫檔案: $dbPath"
     Write-Host ""
     Write-Host "請先執行以下命令建立資料庫：" -ForegroundColor Yellow
-    Write-Host "  pwsh tools/Download-PostalDatabase.ps1" -ForegroundColor White
-    Write-Host "  pwsh tools/Build-PostalDatabase.ps1" -ForegroundColor White
+    Write-Host "  pwsh tools/postal/Download-PostalDatabase.ps1" -ForegroundColor White
+    Write-Host "  pwsh tools/postal/Build-PostalDatabase.ps1" -ForegroundColor White
     exit 1
 }
 

@@ -45,8 +45,8 @@ if (-not $ghInstalled) {
   4. 解壓縮並將 zipcode.db 放置於 $DatabasePath
 
 方法 3: 執行完整建置流程
-  1. 下載原始資料: .\tools\Download-PostalDatabase.ps1
-  2. 建立資料庫: .\tools\Build-PostalDatabase.ps1
+  1. 下載原始資料: .\tools\postal\Download-PostalDatabase.ps1
+  2. 建立資料庫: .\tools\postal\Build-PostalDatabase.ps1
 "@
     exit 1
 }
@@ -215,8 +215,8 @@ try {
 ❌ 無法從 Artifacts 或 Release 下載資料庫
 
 請手動建置資料庫：
-1. 下載原始資料: .\tools\Download-PostalDatabase.ps1
-2. 建立資料庫: .\tools\Build-PostalDatabase.ps1
+1. 下載原始資料: .\tools\postal\Download-PostalDatabase.ps1
+2. 建立資料庫: .\tools\postal\Build-PostalDatabase.ps1
 
 或從 GitHub 手動下載：
 https://github.com/$Repository/releases/tag/database-latest

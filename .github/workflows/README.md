@@ -74,6 +74,6 @@
 
 ## 相關資源
 
-- [工具腳本文件](../../tools/README.md)
-- [Postal.Builder 文件](../../tools/Postal.Builder/README.md)
+- [工具腳本文件](../../tools/postal/README.md)
+- [Postal.Builder 文件](../../tools/postal/Postal.Builder/README.md)
 - [專案 README](../../README.md)

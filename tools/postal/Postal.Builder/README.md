@@ -140,7 +140,7 @@ zipcode,city,area,road,scope
 1. 取得最新的 `rall1.dbf`，放置於 `data/` 目錄
 2. 建立資料庫：
    ```bash
-   cd tools/Postal.Builder
+   cd tools/postal/Postal.Builder
    dotnet run
    ```
 3. 重新建置 TaiwanUtilities 專案以內嵌新資料庫：

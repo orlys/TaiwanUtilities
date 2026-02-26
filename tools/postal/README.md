@@ -17,13 +17,13 @@
 
 ```powershell
 # 基本使用（輸出到 data/rall1.dbf）
-.\tools\Download-PostalDatabase.ps1
+.\tools\postal\Download-PostalDatabase.ps1
 
 # 指定輸出路徑
-.\tools\Download-PostalDatabase.ps1 -OutputPath "C:\path\to\rall1.dbf"
+.\tools\postal\Download-PostalDatabase.ps1 -OutputPath "C:\path\to\rall1.dbf"
 
 # 保留暫存檔案（用於除錯）
-.\tools\Download-PostalDatabase.ps1 -KeepTemp
+.\tools\postal\Download-PostalDatabase.ps1 -KeepTemp
 ```
 
 ### 執行流程
@@ -43,10 +43,10 @@
 
 ```powershell
 # 基本使用（預設路徑）
-.\tools\Build-PostalDatabase.ps1
+.\tools\postal\Build-PostalDatabase.ps1
 
 # 指定輸入和輸出路徑
-.\tools\Build-PostalDatabase.ps1 -DbfPath "data\rall1.dbf" -OutputPath "src\TaiwanUtilities\Postal\zipcode.db"
+.\tools\postal\Build-PostalDatabase.ps1 -DbfPath "data\rall1.dbf" -OutputPath "src\TaiwanUtilities\Postal\zipcode.db"
 ```
 
 ## Ensure-Database.ps1
@@ -54,7 +54,7 @@
 確保 zipcode.db 存在，不存在時自動下載。用於 CI 環境。
 
 ```powershell
-.\tools\Ensure-Database.ps1
+.\tools\postal\Ensure-Database.ps1
 ```
 
 ## Create-DatabaseRelease.ps1
@@ -62,17 +62,17 @@
 建立資料庫 GitHub Release 的腳本。
 
 ```powershell
-.\tools\Create-DatabaseRelease.ps1
+.\tools\postal\Create-DatabaseRelease.ps1
 ```
 
 ## 完整工作流程
 
 ```powershell
 # 1. 下載最新資料庫
-.\tools\Download-PostalDatabase.ps1
+.\tools\postal\Download-PostalDatabase.ps1
 
 # 2. 建立 SQLite 資料庫
-.\tools\Build-PostalDatabase.ps1
+.\tools\postal\Build-PostalDatabase.ps1
 
 # 3. 重新建置專案（內嵌新資料庫）
 dotnet build src\TaiwanUtilities\

@@ -177,9 +177,9 @@ try {
     Write-Host "=== 下載完成！ ===" -ForegroundColor Green
     Write-Host ""
     Write-Host "下一步：" -ForegroundColor Cyan
-    Write-Host "  1. cd tools\Postal.Builder" -ForegroundColor White
+    Write-Host "  1. cd tools\postal\Postal.Builder" -ForegroundColor White
     Write-Host "  2. dotnet run" -ForegroundColor White
-    Write-Host "  3. cd ..\..\src\TaiwanUtilities" -ForegroundColor White
+    Write-Host "  3. cd ..\..\..\src\TaiwanUtilities" -ForegroundColor White
     Write-Host "  4. dotnet build" -ForegroundColor White
 
 } finally {
