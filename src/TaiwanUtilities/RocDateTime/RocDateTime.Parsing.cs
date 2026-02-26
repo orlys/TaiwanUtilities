@@ -1,4 +1,5 @@
 ﻿namespace TaiwanUtilities;
+
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
@@ -35,7 +36,7 @@ partial struct RocDateTime
     private static Regex GetPattern() => s_patternCache.Value;
 #endif
 
-    public static RocDateTime  Parse(string s)
+    public static RocDateTime Parse(string s)
     {
         Guard.ThrowIfNullOrWhiteSpace(s);
         _ = ParseCore(s, true, out var rocDateTime);
@@ -194,4 +195,3 @@ partial struct RocDateTime
         return ParseCore(s, false, out result);
     }
 }
-

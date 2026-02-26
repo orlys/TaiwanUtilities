@@ -156,11 +156,17 @@ public class PostalDeliveryRule
         {
             // 可能同時有單雙號限制
             if (ruleTokens.Contains("單"))
+            {
                 deliveryRule.Type = PostalRuleType.Odd;
+            }
             else if (ruleTokens.Contains("雙"))
+            {
                 deliveryRule.Type = PostalRuleType.Even;
+            }
             else
+            {
                 deliveryRule.Type = PostalRuleType.GreaterOrEqual;
+            }
 
             deliveryRule.StartNumber = lastTokenNoPair.No;
         }
@@ -168,11 +174,17 @@ public class PostalDeliveryRule
         {
             // 可能同時有單雙號限制
             if (ruleTokens.Contains("單"))
+            {
                 deliveryRule.Type = PostalRuleType.Odd;
+            }
             else if (ruleTokens.Contains("雙"))
+            {
                 deliveryRule.Type = PostalRuleType.Even;
+            }
             else
+            {
                 deliveryRule.Type = PostalRuleType.LessOrEqual;
+            }
 
             deliveryRule.EndNumber = lastTokenNoPair.No;
         }
@@ -238,7 +250,9 @@ public class PostalDeliveryRule
     public bool Matches(PostalAddress components)
     {
         if (_internalRule == null)
+        {
             return false;
+        }
 
         // 使用內部規則進行匹配
         var addr = new AddressTokenizer(components.NormalizedAddress);
@@ -271,18 +285,28 @@ public class PostalDeliveryRule
             parts.Add("單號");
             // 如果有範圍限制，也添加範圍描述
             if (StartNumber.HasValue)
+            {
                 parts.Add($"{StartNumber}號以上");
+            }
+
             if (EndNumber.HasValue)
+            {
                 parts.Add($"{EndNumber}號以下");
+            }
         }
         else if (Type == PostalRuleType.Even)
         {
             parts.Add("雙號");
             // 如果有範圍限制，也添加範圍描述
             if (StartNumber.HasValue)
+            {
                 parts.Add($"{StartNumber}號以上");
+            }
+
             if (EndNumber.HasValue)
+            {
                 parts.Add($"{EndNumber}號以下");
+            }
         }
         else if (Type == PostalRuleType.All)
         {
@@ -307,9 +331,14 @@ public class PostalDeliveryRule
 
                 case PostalRuleType.Specific:
                     if (SpecificSubNumber.HasValue)
+                    {
                         parts.Add($"{SpecificNumber}之{SpecificSubNumber}號");
+                    }
                     else
+                    {
                         parts.Add($"{SpecificNumber}號");
+                    }
+
                     break;
 
                 case PostalRuleType.WithSubNumber:
@@ -322,16 +351,26 @@ public class PostalDeliveryRule
 
                 case PostalRuleType.SubNumberAbove:
                     if (SpecificSubNumber.HasValue)
+                    {
                         parts.Add($"{SpecificNumber}之{SpecificSubNumber}號及以上附號");
+                    }
                     else
+                    {
                         parts.Add($"{SpecificNumber}號及以上附號");
+                    }
+
                     break;
 
                 case PostalRuleType.SubNumberBelow:
                     if (SpecificSubNumber.HasValue)
+                    {
                         parts.Add($"{SpecificNumber}之{SpecificSubNumber}號含附號以下");
+                    }
                     else
+                    {
                         parts.Add($"{SpecificNumber}號含附號以下");
+                    }
+
                     break;
             }
         }

@@ -113,7 +113,7 @@ csharp_prefer_braces = true:silent
 csharp_prefer_simple_using_statement = true:silent
 csharp_style_namespace_declarations = file_scoped:silent
 csharp_style_prefer_method_group_conversion = true:silent
-csharp_style_prefer_primary_constructors = true:suggestion
+csharp_style_prefer_primary_constructors = false:suggestion
 csharp_style_prefer_top_level_statements = true:silent
 
 # Expression-level preferences
@@ -204,6 +204,10 @@ dotnet_naming_rule.non_field_members_should_be_pascal_case.severity = suggestion
 dotnet_naming_rule.non_field_members_should_be_pascal_case.symbols = non_field_members
 dotnet_naming_rule.non_field_members_should_be_pascal_case.style = pascal_case
 
+dotnet_naming_rule.const_should_be_screaming_snake_case.severity = suggestion
+dotnet_naming_rule.const_should_be_screaming_snake_case.symbols = const_field
+dotnet_naming_rule.const_should_be_screaming_snake_case.style = screaming_snake_case
+
 dotnet_naming_rule.private_field_should_be_begins_with__.severity = suggestion
 dotnet_naming_rule.private_field_should_be_begins_with__.symbols = private_field
 dotnet_naming_rule.private_field_should_be_begins_with__.style = begins_with__
@@ -226,9 +230,13 @@ dotnet_naming_symbols.non_field_members.applicable_kinds = property, event, meth
 dotnet_naming_symbols.non_field_members.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
 dotnet_naming_symbols.non_field_members.required_modifiers = 
 
+dotnet_naming_symbols.const_field.applicable_kinds = field
+dotnet_naming_symbols.const_field.applicable_accessibilities = *
+dotnet_naming_symbols.const_field.required_modifiers = const
+
 dotnet_naming_symbols.private_field.applicable_kinds = field
 dotnet_naming_symbols.private_field.applicable_accessibilities = private
-dotnet_naming_symbols.private_field.required_modifiers = 
+dotnet_naming_symbols.private_field.required_modifiers =
 
 dotnet_naming_symbols.private_static_field.applicable_kinds = field
 dotnet_naming_symbols.private_static_field.applicable_accessibilities = private
@@ -252,9 +260,14 @@ dotnet_naming_style.begins_with__.word_separator =
 dotnet_naming_style.begins_with__.capitalization = camel_case
 
 dotnet_naming_style.begins_with_s_.required_prefix = s_
-dotnet_naming_style.begins_with_s_.required_suffix = 
-dotnet_naming_style.begins_with_s_.word_separator = 
+dotnet_naming_style.begins_with_s_.required_suffix =
+dotnet_naming_style.begins_with_s_.word_separator =
 dotnet_naming_style.begins_with_s_.capitalization = camel_case
+
+dotnet_naming_style.screaming_snake_case.required_prefix =
+dotnet_naming_style.screaming_snake_case.required_suffix =
+dotnet_naming_style.screaming_snake_case.word_separator = _
+dotnet_naming_style.screaming_snake_case.capitalization = all_upper
 csharp_prefer_system_threading_lock = true:suggestion
 
 [*.{cs,vb}]

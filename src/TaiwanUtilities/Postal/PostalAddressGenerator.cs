@@ -76,7 +76,9 @@ public class PostalAddressGenerator
         var addresses = new List<GeneratedPostalAddress>();
 
         if (rules.Count == 0)
+        {
             return addresses;
+        }
 
         // 計算每個規則需要生成多少個地址（向上取整）
         var addressesPerRule = Math.Max(1, (count + rules.Count - 1) / rules.Count);
@@ -87,7 +89,9 @@ public class PostalAddressGenerator
         foreach (var rule in shuffledRules)
         {
             if (addresses.Count >= count)
+            {
                 break;
+            }
 
             // 從每個規則生成多個地址
             for (int i = 0; i < addressesPerRule && addresses.Count < count; i++)
@@ -221,7 +225,9 @@ public class PostalAddressGenerator
             foreach (var query in queries)
             {
                 if (addresses.Count >= count)
+                {
                     break;
+                }
 
                 var result = ZipCode.Find(query);
                 if (!string.IsNullOrEmpty(result.ZipCode))
@@ -302,7 +308,9 @@ public class PostalAddressGenerator
     private string ExtractAddressPrefix(string ruleString)
     {
         if (string.IsNullOrEmpty(ruleString))
+        {
             return string.Empty;
+        }
 
         // 移除常見的規則關鍵字
         var ruleKeywords = new[]
@@ -364,14 +372,21 @@ public class PostalAddressGenerator
     private int? GenerateNumberInRange(int? start, int? end, int? evenOdd = null)
     {
         if (!start.HasValue)
+        {
             return null;
+        }
 
         var max = end ?? start;
-        if (max < start) max = start.Value;
+        if (max < start)
+        {
+            max = start.Value;
+        }
 
         // 限制範圍避免生成過大的數字
         if (max - start.Value > 1000)
+        {
             max = start.Value + 1000;
+        }
 
         // 如果有單雙號規則
         if (evenOdd.HasValue && evenOdd.Value != 0)
@@ -382,13 +397,19 @@ public class PostalAddressGenerator
             for (int i = start.Value; i <= max && candidates.Count < 100; i++)
             {
                 if (isEven && i % 2 == 0)
+                {
                     candidates.Add(i);
+                }
                 else if (!isEven && i % 2 == 1)
+                {
                     candidates.Add(i);
+                }
             }
 
             if (candidates.Count > 0)
+            {
                 return candidates[_random.Next(candidates.Count)];
+            }
 
             return null;
         }
@@ -404,30 +425,46 @@ public class PostalAddressGenerator
         var parts = new List<string>();
 
         if (!string.IsNullOrEmpty(address.City))
+        {
             parts.Add(address.City!);
+        }
 
         if (!string.IsNullOrEmpty(address.District))
+        {
             parts.Add(address.District!);
+        }
 
         if (!string.IsNullOrEmpty(address.Road))
+        {
             parts.Add(address.Road!);
+        }
 
         if (!string.IsNullOrEmpty(address.Lane))
+        {
             parts.Add($"{address.Lane}巷");
+        }
 
         if (!string.IsNullOrEmpty(address.Alley))
+        {
             parts.Add($"{address.Alley}弄");
+        }
 
         if (address.Number.HasValue)
         {
             if (address.SubNumbers != null && address.SubNumbers.Count > 0)
+            {
                 parts.Add($"{address.Number}之{address.SubNumbers[0]}號");
+            }
             else
+            {
                 parts.Add($"{address.Number}號");
+            }
         }
 
         if (!string.IsNullOrEmpty(address.Floor))
+        {
             parts.Add($"{address.Floor}樓");
+        }
 
         return string.Join("", parts);
     }

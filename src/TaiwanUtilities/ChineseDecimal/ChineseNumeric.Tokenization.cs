@@ -470,7 +470,7 @@ partial struct ChineseNumeric
         /// <summary>
         /// 釐（0.01）
         /// </summary>
-        public static Character Hundredth{ get; }
+        public static Character Hundredth { get; }
 
         /// <summary>
         /// 毫（0.001）

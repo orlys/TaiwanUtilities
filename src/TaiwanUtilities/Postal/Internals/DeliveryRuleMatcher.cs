@@ -24,7 +24,7 @@ internal class DeliveryRuleMatcher : AddressTokenizer
     /// <summary>
     /// 規則 token 正規表達式
     /// </summary>
-    private static readonly Regex RuleTokenRegex = new Regex(
+    private static readonly Regex s_ruleTokenRegex = new Regex(
         @"及以上附號|含附號以下|含附號全|含附號|以下|以上|附號全|[連至單雙全](?=[\d全]|$)",
         RegexOptions.Compiled);
 
@@ -36,7 +36,7 @@ internal class DeliveryRuleMatcher : AddressTokenizer
         var normalized = Normalize(ruleStr);
         var ruleTokens = new HashSet<string>();
 
-        var addrStr = RuleTokenRegex.Replace(normalized, m =>
+        var addrStr = s_ruleTokenRegex.Replace(normalized, m =>
         {
             var token = m.Value;
             var retval = string.Empty;
@@ -51,7 +51,9 @@ internal class DeliveryRuleMatcher : AddressTokenizer
             }
 
             if (!string.IsNullOrEmpty(token))
+            {
                 ruleTokens.Add(token);
+            }
 
             return retval;
         });
@@ -73,7 +75,9 @@ internal class DeliveryRuleMatcher : AddressTokenizer
     {
         // 先比較主號碼
         if (a.No != b.No)
+        {
             return a.No.CompareTo(b.No);
+        }
 
         // 主號碼相同，比較第一層附號
         var aSubNo = a.SubNos.Count > 0 ? a.SubNos[0] : 0;
@@ -89,25 +93,36 @@ internal class DeliveryRuleMatcher : AddressTokenizer
         // 計算需要精確匹配的 token 位置
         var myLastPos = Tokens.Count - 1;
         if (RuleTokens.Count > 0 && !RuleTokens.Contains("全"))
+        {
             myLastPos--;
+        }
+
         if (RuleTokens.Contains("至"))
+        {
             myLastPos--;
+        }
 
         // 檢查 token 數量是否足夠
         if (myLastPos >= addr.Tokens.Count)
+        {
             return false;
+        }
 
         // 檢查前面的 tokens 是否完全匹配
         for (var i = myLastPos; i >= 0; i--)
         {
             if (!TokensEqual(Tokens[i], addr.Tokens[i]))
+            {
                 return false;
+            }
         }
 
         // 檢查規則 tokens
         var hisNoPair = addr.Parse(myLastPos + 1);
         if (RuleTokens.Count > 0 && hisNoPair.No == 0 && hisNoPair.SubNos.Count == 0)
+        {
             return false;
+        }
 
         var myNoPair = Parse(-1);
         var myAsstNoPair = Parse(-2);
@@ -129,7 +144,10 @@ internal class DeliveryRuleMatcher : AddressTokenizer
                         var hasContainSubno = RuleTokens.Contains("含附號全") &&
                                               hisNoPair.No == myNoPair.No;
                         if (!inRange && !hasContainSubno)
+                        {
                             return false;
+                        }
+
                         break;
                     }
 
@@ -143,7 +161,10 @@ internal class DeliveryRuleMatcher : AddressTokenizer
                         var isBelow = CompareNoPairs(hisNoPair, myNoPair) <= 0;
                         var isSameNoWithSubno = hisNoPair.No == myNoPair.No;
                         if (!isBelow && !isSameNoWithSubno)
+                        {
                             return false;
+                        }
+
                         break;
                     }
             }

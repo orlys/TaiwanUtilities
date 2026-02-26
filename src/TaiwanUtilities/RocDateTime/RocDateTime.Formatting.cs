@@ -1,4 +1,5 @@
 ﻿namespace TaiwanUtilities;
+
 using System;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
@@ -91,7 +92,7 @@ partial struct RocDateTime : IFormattable
                 "秒" => $"{ChineseNumeric.ToString(rdt.Second, "tw")}秒",
 
                 "yyy" or "year" => rdt.BeforeEra
-                    ? $"{BeforeEraSymbol}{rdt.Year:D3}"
+                    ? $"{BEFORE_ERA_SYMBOL}{rdt.Year:D3}"
                     : $"{rdt.Year:D3}",
 
                 "MM" or "month" => rdt.Month.ToString("D2"),
@@ -101,12 +102,12 @@ partial struct RocDateTime : IFormattable
                 "ss" or "sec" or "second" => rdt.Second.ToString("D2"),
 
                 // 年月模式
-                "m" => $"{(rdt.BeforeEra ? BeforeEraSymbol : null)}{rdt.Year:D}/{rdt.Month:D2}",
+                "m" => $"{(rdt.BeforeEra ? BEFORE_ERA_SYMBOL : null)}{rdt.Year:D}/{rdt.Month:D2}",
                 // 年月模式
-                "M" => $"{(rdt.BeforeEra ? BeforeEraSymbol : null)}{rdt.Year:D}年{rdt.Month:D2}月",
+                "M" => $"{(rdt.BeforeEra ? BEFORE_ERA_SYMBOL : null)}{rdt.Year:D}年{rdt.Month:D2}月",
 
                 // 簡短日期模式
-                "d" or "date" => $"{(rdt.BeforeEra ? BeforeEraSymbol : null)}{rdt.Year:D}/{rdt.Month:D2}/{rdt.Day:D2}",
+                "d" or "date" => $"{(rdt.BeforeEra ? BEFORE_ERA_SYMBOL : null)}{rdt.Year:D}/{rdt.Month:D2}/{rdt.Day:D2}",
 
                 // 完整日期模式
                 "D" or "DATE" => $"{(rdt.BeforeEra ? "民前" : null)}{rdt.Year:D}年{rdt.Month:D}月{rdt.Day:D}日",
@@ -146,7 +147,7 @@ partial struct RocDateTime : IFormattable
                 //=> string.Join(null, m.Cast<Match>().Select(m => FormatCore(m.Groups["FORMAT"].Value, rdt, fp))),
 
                 var formats when !string.IsNullOrWhiteSpace(formats)
-                    => GetFormatPattern().Replace(formats, x => FormatCore( x.Groups["FORMAT"].Value, rdt, fp)),
+                    => GetFormatPattern().Replace(formats, x => FormatCore(x.Groups["FORMAT"].Value, rdt, fp)),
 
 
                 _ => throw new NotSupportedException($"Format '{format}' is not supported.")

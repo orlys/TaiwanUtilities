@@ -1,4 +1,5 @@
 ﻿namespace TaiwanUtilities;
+
 using System;
 using System.Runtime.CompilerServices;
 
@@ -140,7 +141,10 @@ public readonly partial struct RocDateTime
     public RocDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond)
     {
         if (year == 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(year), year, "民國年不支援 0，此值基於 1。");
+        }
+
         ThrowIfOutOfRange(-999, 999, year);
         ThrowIfOutOfRange(1, 12, month);
         ThrowIfOutOfRange(1, 31, day);
@@ -235,19 +239,19 @@ public readonly partial struct RocDateTime
     private static class YearConversion
     {
 
-        private const int EraYearOffset = 1911;
+        private const int ERA_YEAR_OFFSET = 1911;
 
         public static int EraToMinguo(int eraYear)
         {
-            var value = eraYear > EraYearOffset
-                ? eraYear - EraYearOffset
-                : 1 + EraYearOffset - eraYear;
+            var value = eraYear > ERA_YEAR_OFFSET
+                ? eraYear - ERA_YEAR_OFFSET
+                : 1 + ERA_YEAR_OFFSET - eraYear;
             return value;
         }
         public static int MinguoToEra(int minGuoYear)
         {
             // 民國前一年為 1911, 民國一(元)年為 1912
-            var value = minGuoYear + EraYearOffset + (minGuoYear < 1 ? 1 : 0);
+            var value = minGuoYear + ERA_YEAR_OFFSET + (minGuoYear < 1 ? 1 : 0);
             return value;
         }
 

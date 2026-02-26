@@ -2,6 +2,7 @@ namespace TaiwanUtilities;
 
 using System;
 using System.Text;
+
 using TaiwanUtilities.Internals;
 
 /// <summary>
@@ -17,7 +18,9 @@ public static class ChineseProfanity
     public static bool Censor(string? text)
     {
         if (string.IsNullOrWhiteSpace(text))
+        {
             return false;
+        }
 
         var matches = ProfanityAnalyzer.Analyze(text.AsSpan());
         return matches.Count > 0;
@@ -37,16 +40,20 @@ public static class ChineseProfanity
     /// 將文字中的髒話以指定字元替換
     /// </summary>
     /// <param name="text"></param>
-    /// <param name="replaceWith">要替換髒話的字元，預設為 <see cref="ReplacementCharacters.WhiteCircle"/></param>
+    /// <param name="replaceWith">要替換髒話的字元</param>
     /// <returns></returns>
-    public static string? Replace(string? text, char replaceWith = ReplacementCharacters.WhiteCircle)
+    public static string? Replace(string? text, char replaceWith)
     {
         if (string.IsNullOrWhiteSpace(text))
+        {
             return text;
+        }
 
         var matches = ProfanityAnalyzer.Analyze(text.AsSpan());
         if (matches.Count == 0)
+        {
             return text;
+        }
 
         var sb = new StringBuilder(text);
 

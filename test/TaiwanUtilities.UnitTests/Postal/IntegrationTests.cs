@@ -46,7 +46,9 @@ public class IntegrationTests
         foreach (var path in paths)
         {
             if (File.Exists(path))
+            {
                 return path;
+            }
         }
 
         return string.Empty;
@@ -85,9 +87,12 @@ public class IntegrationTests
     [InlineData("臺北市 信義區 市府路 1 號")]      // 空格
     public void TestVariousFormats_SameResult(string address)
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!IsDatabaseAvailable())
+        {
+            return;
+        }
 
-                var zipcode = ZipCode.Find(address).ZipCode;
+        var zipcode = ZipCode.Find(address).ZipCode;
 
         Assert.NotEmpty(zipcode);
         Assert.StartsWith("110", zipcode);
@@ -101,9 +106,12 @@ public class IntegrationTests
     [InlineData("台中市", "4")]
     public void TestDifferentCities(string address, string expectedPrefix)
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!IsDatabaseAvailable())
+        {
+            return;
+        }
 
-                var zipcode = ZipCode.Find(address).ZipCode;
+        var zipcode = ZipCode.Find(address).ZipCode;
 
         Assert.NotEmpty(zipcode);
         Assert.StartsWith(expectedPrefix, zipcode);
@@ -112,9 +120,12 @@ public class IntegrationTests
     [Fact]
     public void TestNormalizationWithQuery()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!IsDatabaseAvailable())
+        {
+            return;
+        }
 
-        
+
         // 測試中文數字
         var normalized = PostalAddressUtils.Normalize("信義路一段");
         Assert.Equal("信義路1段", normalized);
@@ -130,9 +141,11 @@ public class IntegrationTests
     [Fact]
     public void TestNotFound()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!IsDatabaseAvailable())
+        {
+            return;
+        }
 
-        
         var zipcode = ZipCode.Find("這是一個不存在的地址123456789").ZipCode;
         Assert.Empty(zipcode);
     }
@@ -140,9 +153,11 @@ public class IntegrationTests
     [Fact]
     public void TestEmptyInput()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!IsDatabaseAvailable())
+        {
+            return;
+        }
 
-        
         Assert.Empty(ZipCode.Find((string)"").ZipCode);
         Assert.Empty(ZipCode.Find((string)null!).ZipCode);
         Assert.Empty(ZipCode.Find((string)"   ").ZipCode);
@@ -151,10 +166,13 @@ public class IntegrationTests
     [Fact]
     public void TestKeepAlivePerformance()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!IsDatabaseAvailable())
+        {
+            return;
+        }
 
         // 使用 keepAlive=true 應該更快
-        
+
         // 執行多次查詢
         for (int i = 0; i < 100; i++)
         {
@@ -168,9 +186,12 @@ public class IntegrationTests
     [InlineData("臺北市中正區仁愛路１段1號", "100")]    // 實際查詢結果
     public void TestSpecificAddresses(string address, string expectedPrefix)
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!IsDatabaseAvailable())
+        {
+            return;
+        }
 
-                var zipcode = ZipCode.Find(address).ZipCode;
+        var zipcode = ZipCode.Find(address).ZipCode;
 
         Assert.NotEmpty(zipcode);
         Assert.StartsWith(expectedPrefix, zipcode);
@@ -179,9 +200,11 @@ public class IntegrationTests
     [Fact]
     public void TestAddressWithSubNumber()
     {
-        if (!IsDatabaseAvailable()) return;
+        if (!IsDatabaseAvailable())
+        {
+            return;
+        }
 
-        
         var zip1 = ZipCode.Find("臺北市信義區市府路1號").ZipCode;
         var zip2 = ZipCode.Find("臺北市信義區市府路1之1號").ZipCode;
 

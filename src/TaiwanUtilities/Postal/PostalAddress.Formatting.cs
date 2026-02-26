@@ -18,40 +18,64 @@ partial class PostalAddress
         };
 
         if (!string.IsNullOrEmpty(Section))
+        {
             parts.Add($"Section={Section}");
+        }
 
         if (!string.IsNullOrEmpty(Lane))
+        {
             parts.Add($"Lane={Lane}");
+        }
 
         if (!string.IsNullOrEmpty(Alley))
+        {
             parts.Add($"Alley={Alley}");
+        }
 
         if (!string.IsNullOrEmpty(SubAlley))
+        {
             parts.Add($"SubAlley={SubAlley}");
+        }
 
         if (!string.IsNullOrEmpty(Locality))
+        {
             parts.Add($"Locality={Locality}");
+        }
 
         if (Number.HasValue)
+        {
             parts.Add($"Number={Number}");
+        }
 
         if (SubNumbers != null && SubNumbers.Count > 0)
+        {
             parts.Add($"SubNumbers=[{string.Join(", ", SubNumbers)}]");
+        }
 
         if (!string.IsNullOrEmpty(Floor))
+        {
             parts.Add($"Floor={Floor}");
+        }
 
         if (SubFloor.HasValue)
+        {
             parts.Add($"SubFloor={SubFloor}");
+        }
 
         if (!string.IsNullOrEmpty(Room))
+        {
             parts.Add($"Room={Room}");
+        }
 
         if (IsTemporary)
+        {
             parts.Add($"IsTemporary=True");
+        }
 
         if (IsBasement)
+        {
             parts.Add($"IsBasement=True");
+        }
 
         return $"PostalAddress({string.Join(", ", parts)})";
     }
@@ -70,34 +94,54 @@ partial class PostalAddress
         var sb = new StringBuilder();
 
         if (!string.IsNullOrEmpty(City))
+        {
             sb.Append(City);
+        }
 
         if (!string.IsNullOrEmpty(District))
+        {
             sb.Append(District);
+        }
 
         if (!string.IsNullOrEmpty(Village))
+        {
             sb.Append(Village);
+        }
 
         if (!string.IsNullOrEmpty(Neighborhood))
+        {
             sb.Append(Neighborhood);
+        }
 
         if (!string.IsNullOrEmpty(Road))
+        {
             sb.Append(Road);
+        }
 
         if (!string.IsNullOrEmpty(Section))
+        {
             sb.Append(Section);
+        }
 
         if (!string.IsNullOrEmpty(Lane))
+        {
             sb.Append(Lane);
+        }
 
         if (!string.IsNullOrEmpty(Alley))
+        {
             sb.Append(Alley);
+        }
 
         if (!string.IsNullOrEmpty(SubAlley))
+        {
             sb.Append(SubAlley);
+        }
 
         if (IsTemporary)
+        {
             sb.Append("臨");
+        }
 
         if (Number.HasValue)
         {
@@ -114,7 +158,9 @@ partial class PostalAddress
         }
 
         if (!string.IsNullOrEmpty(Floor))
+        {
             sb.Append(Floor);
+        }
 
         if (SubFloor.HasValue)
         {
@@ -123,7 +169,9 @@ partial class PostalAddress
         }
 
         if (!string.IsNullOrEmpty(Room))
+        {
             sb.Append(Room);
+        }
 
         return sb.ToString();
     }

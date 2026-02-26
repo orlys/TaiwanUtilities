@@ -6,11 +6,11 @@
 
 namespace TaiwanUtilities;
 
+using Microsoft.Data.Sqlite;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
-using Microsoft.Data.Sqlite;
 
 /// <summary>
 /// 郵遞區號資料存取層（Repository）
@@ -134,8 +134,15 @@ internal class ZipCodeRepository : IDisposable
     /// </summary>
     internal static string? GetCommonPart(string? strA, string? strB)
     {
-        if (strA == null) return strB;
-        if (strB == null) return strA;
+        if (strA == null)
+        {
+            return strB;
+        }
+
+        if (strB == null)
+        {
+            return strA;
+        }
 
         var minLen = Math.Min(strA.Length, strB.Length);
         var i = 0;
@@ -143,15 +150,32 @@ internal class ZipCodeRepository : IDisposable
         for (; i < minLen; i++)
         {
             if (strA[i] != strB[i])
+            {
                 break;
+            }
         }
 
         // 台灣郵遞區號格式：3碼（區域）、5碼（3+2）、6碼（3+2+1）
         // 避免產生 4 碼：如果共同前綴是 4 碼，截取到 3 碼
-        if (i >= 6) return strA.Substring(0, 6);  // 完整 6 碼
-        if (i == 5) return strA.Substring(0, 5);  // 5 碼（標準）
-        if (i == 4) return strA.Substring(0, 3);  // 4 碼 → 截取到 3 碼（避免不標準長度）
-        if (i >= 3) return strA.Substring(0, 3);  // 3 碼（區域碼）
+        if (i >= 6)
+        {
+            return strA.Substring(0, 6);  // 完整 6 碼
+        }
+
+        if (i == 5)
+        {
+            return strA.Substring(0, 5);  // 5 碼（標準）
+        }
+
+        if (i == 4)
+        {
+            return strA.Substring(0, 3);  // 4 碼 → 截取到 3 碼（避免不標準長度）
+        }
+
+        if (i >= 3)
+        {
+            return strA.Substring(0, 3);  // 3 碼（區域碼）
+        }
 
         // 共同前綴 < 3 碼（1或2碼），保留原樣以支持漸進式查詢（如："1"代表臺北）
         return strA.Substring(0, i);
@@ -187,7 +211,9 @@ internal class ZipCodeRepository : IDisposable
             cmd.Parameters.AddWithValue("$addr_str", addrStr);
             var result = cmd.ExecuteScalar();
             if (result != null)
+            {
                 storedZipcode = result.ToString();
+            }
         }
 
         // 更新或插入
@@ -600,7 +626,10 @@ internal class ZipCodeRepository : IDisposable
     private static string? GetNullableString(SqliteDataReader reader, int ordinal)
     {
         if (reader.IsDBNull(ordinal))
+        {
             return null;
+        }
+
         var value = reader.GetString(ordinal);
         return string.IsNullOrEmpty(value) ? null : value;
     }
@@ -612,7 +641,10 @@ internal class ZipCodeRepository : IDisposable
     {
         var ordinal = reader.GetOrdinal(columnName);
         if (reader.IsDBNull(ordinal))
+        {
             return null;
+        }
+
         var value = reader.GetString(ordinal);
         return string.IsNullOrEmpty(value) ? null : value;
     }
@@ -628,7 +660,10 @@ internal class ZipCodeRepository : IDisposable
 
             foreach (var row in csvRows)
             {
-                if (row.Length < 2) continue;
+                if (row.Length < 2)
+                {
+                    continue;
+                }
 
                 var zipcode = row[0];
 
@@ -676,7 +711,10 @@ internal class ZipCodeRepository : IDisposable
             // 然後載入傳統資料（用於 precise 和 gradual 表）
             foreach (var row in csvRows)
             {
-                if (row.Length < 2) continue;
+                if (row.Length < 2)
+                {
+                    continue;
+                }
 
                 var zipcode = row[0];
 
@@ -780,7 +818,10 @@ internal class ZipCodeRepository : IDisposable
             {
                 var pair = addr.Parse(startLen - 1);
                 if (pair.No == 0 && pair.SubNos.Count == 0)
+                {
                     break;
+                }
+
                 startLen--;
             }
 
@@ -805,7 +846,7 @@ internal class ZipCodeRepository : IDisposable
                     if (lenAddrTokens >= 4 && addr.Tokens[3][AddressTokenizer.UNIT] == "號")
                     {
                         // 清空村里 token 的單位
-                        addr.Tokens[2] = new[] { "", "", addr.Tokens[2][AddressTokenizer.NAME], "" };
+                        addr.Tokens[2] = ["", "", addr.Tokens[2][AddressTokenizer.NAME], ""];
                     }
                     else
                     {
@@ -834,7 +875,9 @@ internal class ZipCodeRepository : IDisposable
                 // 檢查漸進式匹配
                 var gzipcode = GetGradualZipcode(conn, currentAddrStr);
                 if (gzipcode != null)
+                {
                     return ZipCodeResult.PartialMatch(addrStr, gzipcode, currentAddrStr);
+                }
             }
 
             return ZipCodeResult.NotFound(addrStr);
@@ -885,7 +928,9 @@ internal class ZipCodeRepository : IDisposable
             // - 檔案存在：唯讀查詢
             // - 檔案不存在：讀寫建立（供 builder 使用）
             if (_keepAlive && System.IO.File.Exists(_dbPath))
+            {
                 csb.Mode = SqliteOpenMode.ReadOnly;
+            }
 
             // 釋放舊連線，避免資源洩漏
             if (_conn != null)
@@ -897,7 +942,9 @@ internal class ZipCodeRepository : IDisposable
         }
 
         if (_conn.State != System.Data.ConnectionState.Open)
+        {
             _conn.Open();
+        }
     }
 
     /// <summary>
@@ -938,7 +985,10 @@ internal class ZipCodeRepository : IDisposable
             {
                 var pair = addr.Parse(startLen - 1);
                 if (pair.No == 0 && pair.SubNos.Count == 0)
+                {
                     break;
+                }
+
                 startLen--;
             }
 
@@ -964,7 +1014,7 @@ internal class ZipCodeRepository : IDisposable
 
                     if (lenAddrTokens >= 4 && addr.Tokens[3][AddressTokenizer.UNIT] == "號")
                     {
-                        addr.Tokens[2] = new[] { "", "", addr.Tokens[2][AddressTokenizer.NAME], "" };
+                        addr.Tokens[2] = ["", "", addr.Tokens[2][AddressTokenizer.NAME], ""];
                     }
                     else
                     {
@@ -1078,7 +1128,9 @@ internal class ZipCodeRepository : IDisposable
             }
 
             if (suggestions.Count >= 3)
+            {
                 break;
+            }
         }
 
         return suggestions;
@@ -1126,7 +1178,9 @@ internal class ZipCodeRepository : IDisposable
     internal List<PostalAddressSuggestion> GetSuggestionsDetailed(string partialAddress, int maxResults = 10)
     {
         if (string.IsNullOrWhiteSpace(partialAddress))
+        {
             return new List<PostalAddressSuggestion>();
+        }
 
         return WithinTransaction(conn =>
         {
@@ -1174,7 +1228,9 @@ internal class ZipCodeRepository : IDisposable
                             ));
 
                             if (suggestions.Count >= maxResults)
+                            {
                                 break;
+                            }
                         }
                     }
                 }

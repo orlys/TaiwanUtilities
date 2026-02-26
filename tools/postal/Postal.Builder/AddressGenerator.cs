@@ -186,7 +186,9 @@ public class AddressGenerator
             var number = GenerateNumberInRange(numberStart.Value, numberEnd, evenOdd);
 
             if (number == null)
+            {
                 return null; // 無法生成符合單雙號規則的號碼
+            }
 
             var numberStr = number.Value.ToString();
 
@@ -214,11 +216,16 @@ public class AddressGenerator
     private int? GenerateNumberInRange(int start, int? end, int? evenOdd = null)
     {
         var max = end ?? start;
-        if (max < start) max = start;
+        if (max < start)
+        {
+            max = start;
+        }
 
         // 限制範圍避免生成過大的數字
         if (max - start > 1000)
+        {
             max = start + 1000;
+        }
 
         // 如果有單雙號規則
         if (evenOdd.HasValue && evenOdd.Value != 0)
@@ -229,13 +236,19 @@ public class AddressGenerator
             for (int i = start; i <= max && candidates.Count < 100; i++)
             {
                 if (isEven && i % 2 == 0)
+                {
                     candidates.Add(i);
+                }
                 else if (!isEven && i % 2 == 1)
+                {
                     candidates.Add(i);
+                }
             }
 
             if (candidates.Count == 0)
+            {
                 return null;
+            }
 
             return candidates[_random.Next(candidates.Count)];
         }
@@ -264,7 +277,9 @@ public class AddressGenerator
     private int? GetNullableInt(SqliteDataReader reader, int ordinal)
     {
         if (reader.IsDBNull(ordinal))
+        {
             return null;
+        }
 
         var value = reader.GetInt32(ordinal);
         return value == 0 ? null : value;

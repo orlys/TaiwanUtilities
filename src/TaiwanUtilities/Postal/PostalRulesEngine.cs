@@ -36,11 +36,11 @@ public static class PostalRulesEngine
     /// <summary>
     /// 規則索引（按 city|district|road 分組，每組為編譯後的決策樹）
     /// </summary>
-    private static Lazy<Dictionary<string, CompiledRoad>> _rulesIndex
+    private static Lazy<Dictionary<string, CompiledRoad>> s_rulesIndex
         = new(LoadAllRules, System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
 
-    private static readonly object _reloadLock = new();
-    private static volatile bool _isInitialized = false;
+    private static readonly object s_reloadLock = new();
+    private static volatile bool s_isInitialized = false;
 
     /// <summary>
     /// 預熱引擎（背景載入規則，可選）
@@ -57,7 +57,7 @@ public static class PostalRulesEngine
     /// </example>
     public static void Warmup()
     {
-        _ = _rulesIndex.Value;
+        _ = s_rulesIndex.Value;
     }
 
     /// <summary>
@@ -76,13 +76,13 @@ public static class PostalRulesEngine
     /// </example>
     public static void Reload()
     {
-        lock (_reloadLock)
+        lock (s_reloadLock)
         {
             var newIndex = LoadAllRules();
-            _rulesIndex = new Lazy<Dictionary<string, CompiledRoad>>(
+            s_rulesIndex = new Lazy<Dictionary<string, CompiledRoad>>(
                 () => newIndex,
                 System.Threading.LazyThreadSafetyMode.PublicationOnly);
-            _isInitialized = true;
+            s_isInitialized = true;
         }
     }
 
@@ -133,8 +133,10 @@ public static class PostalRulesEngine
         var key = string.Concat(addr.City, "|", addr.District, "|", addr.Road);
 
         // 查詢記憶體索引
-        if (!_rulesIndex.Value.TryGetValue(key, out var compiledRoad))
+        if (!s_rulesIndex.Value.TryGetValue(key, out var compiledRoad))
+        {
             return null;
+        }
 
         // 解析巷號（從 "243巷" → 243）
         int lane = ParseNumericPrefix(addr.Lane);
@@ -151,7 +153,9 @@ public static class PostalRulesEngine
         int ruleIndex = compiledRoad.Matcher(addr.Number.Value, subNumber, lane, alley);
 
         if (ruleIndex < 0)
+        {
             return null;
+        }
 
         var meta = compiledRoad.Metadata[ruleIndex];
 
@@ -175,21 +179,31 @@ public static class PostalRulesEngine
     internal static int ParseNumericPrefix(string? field)
     {
         if (string.IsNullOrEmpty(field))
+        {
             return 0;
+        }
 
         int end = 0;
         while (end < field!.Length && field[end] >= '0' && field[end] <= '9')
+        {
             end++;
+        }
 
         if (end == 0)
+        {
             return 0;
+        }
 
 #if NET8_0_OR_GREATER
         if (int.TryParse(field.AsSpan(0, end), out var value))
+        {
             return value;
+        }
 #else
         if (int.TryParse(field.Substring(0, end), out var value))
+        {
             return value;
+        }
 #endif
 
         return 0;
@@ -208,7 +222,9 @@ public static class PostalRulesEngine
         };
 
         if (!string.IsNullOrEmpty(meta.Scope))
+        {
             parts.Add(meta.Scope!);
+        }
 
         return string.Concat(parts);
     }
@@ -251,7 +267,7 @@ public static class PostalRulesEngine
             return 0;
         });
 
-        _isInitialized = true;
+        s_isInitialized = true;
         return index;
     }
 
@@ -272,15 +288,19 @@ public static class PostalRulesEngine
     /// </example>
     public static (int TotalKeys, int TotalRules, long MemoryBytes) GetStats()
     {
-        if (!_isInitialized && !_rulesIndex.IsValueCreated)
+        if (!s_isInitialized && !s_rulesIndex.IsValueCreated)
+        {
             return (0, 0, 0);
+        }
 
-        var index = _rulesIndex.Value;
+        var index = s_rulesIndex.Value;
         var totalKeys = index.Count;
         var totalRules = 0;
 
         foreach (var road in index.Values)
+        {
             totalRules += road.Metadata.Length;
+        }
 
         // 估計記憶體占用
         // RuleMetadata: ~60 bytes/規則（含字串引用）
@@ -294,5 +314,5 @@ public static class PostalRulesEngine
     /// <summary>
     /// 檢查引擎是否已初始化
     /// </summary>
-    public static bool IsInitialized => _isInitialized || _rulesIndex.IsValueCreated;
+    public static bool IsInitialized => s_isInitialized || s_rulesIndex.IsValueCreated;
 }

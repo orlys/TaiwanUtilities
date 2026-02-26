@@ -1,4 +1,5 @@
 ﻿namespace TaiwanUtilities;
+
 using System;
 using System.Diagnostics;
 
@@ -110,5 +111,6 @@ partial struct RocDateTime
     /// 表示民國年物件的前綴符號。
     /// </summary>
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    public const string BeforeEraSymbol = "^";
+    private const string BEFORE_ERA_SYMBOL = "^";
+    public static string BeforeEraSymbol => BEFORE_ERA_SYMBOL;
 }

@@ -1,4 +1,5 @@
 ﻿namespace TaiwanUtilities;
+
 partial struct ChineseNumeric
 {
     public static implicit operator decimal(ChineseNumeric chineseNumeric)

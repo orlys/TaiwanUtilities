@@ -48,7 +48,9 @@ public static class ZipCode
     public static ZipCodeResult Find(string address)
     {
         if (string.IsNullOrWhiteSpace(address))
+        {
             return ZipCodeResult.NotFound(address ?? string.Empty);
+        }
 
         // 檢查環境變數，允許用戶選擇是否使用預載入引擎
         var enablePreloaded = (Environment.GetEnvironmentVariable("TAIWANUTILITIES_ENABLE_PRELOADED")
@@ -61,7 +63,9 @@ public static class ZipCode
             var preloadedResult = PostalRulesEngine.Find(addr);
 
             if (preloadedResult != null)
+            {
                 return preloadedResult;
+            }
         }
 
         // 降級到 SQLite 查詢（支援漸進式匹配和其他複雜場景）

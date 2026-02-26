@@ -126,7 +126,9 @@ public partial class PostalAddress
     public string GetFullNumber()
     {
         if (!Number.HasValue)
+        {
             return string.Empty;
+        }
 
         if (SubNumbers != null && SubNumbers.Count > 0)
         {
@@ -473,4 +475,3 @@ public record PostalAddressValidation
     public bool IsValid => IsValidCity && IsValidDistrict && (IsValidRoad || IsValidLocality) &&
                           IsValidLane && IsValidAlley && IsValidNumber;
 }
-

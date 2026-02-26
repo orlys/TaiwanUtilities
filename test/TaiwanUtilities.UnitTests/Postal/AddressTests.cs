@@ -12,9 +12,9 @@ public class AddressTests
         var expected = new[]
         {
             new[] { "", "", "臺北", "市" },
-            new[] { "", "", "大安", "區" },
-            new[] { "", "", "市府", "路" },
-            new[] { "1", "", "", "號" }
+            ["", "", "大安", "區"],
+            ["", "", "市府", "路"],
+            ["1", "", "", "號"]
         };
 
         Assert.Equal(4, addr.Tokens.Count);

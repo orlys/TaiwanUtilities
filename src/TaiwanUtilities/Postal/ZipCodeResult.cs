@@ -53,7 +53,9 @@ public record ZipCodeResult
         get
         {
             if (string.IsNullOrEmpty(ZipCode))
+            {
                 return string.Empty;
+            }
 
             return ZipCode.Length >= 3 ? ZipCode.Substring(0, 3) : ZipCode;
         }
@@ -67,7 +69,9 @@ public record ZipCodeResult
         get
         {
             if (string.IsNullOrEmpty(ZipCode))
+            {
                 return null;
+            }
 
             return ZipCode.Length > 3 ? ZipCode : null;
         }

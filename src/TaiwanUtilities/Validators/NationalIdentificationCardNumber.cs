@@ -2,6 +2,7 @@
 // license: MIT
 
 namespace TaiwanUtilities;
+
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -29,7 +30,7 @@ public static partial class NationalIdentificationCardNumber
         if (ValidatorUtils.MatchCore(GetUiNumberNewFormatPattern(), input, true))
         {
             return VerifyTaiwanIdIntermediateString(input);
-        } 
+        }
 
         return false;
     }
@@ -90,7 +91,7 @@ public static partial class NationalIdentificationCardNumber
     *  Step 1: 英文字母按照上表轉換為數字之後，十位數 * 1 + 個位數 * 9 相加
     */
 
-    private static readonly int[] TAIWAN_ID_LOCALE_CODE_LIST = [
+    private static readonly int[] s_taiwanIdLocaleCodeList = [
         1,  // A -> 10 -> 1 * 1 + 9 * 0 = 1
         10, // B -> 11 -> 1 * 1 + 9 * 1 = 10
         19, // Character -> 12 -> 1 * 1 + 9 * 2 = 19
@@ -119,7 +120,7 @@ public static partial class NationalIdentificationCardNumber
         30  // Z -> 33 -> 1 * 3 + 9 * 3 = 30
     ];
 
-    private static readonly int[] RESIDENT_CERTIFICATE_NUMBER_LIST = [
+    private static readonly int[] s_residentCertificateNumberList = [
         0, // A
         1, // B
         2, // Character
@@ -149,7 +150,7 @@ public static partial class NationalIdentificationCardNumber
     ];
 
     // Step 2: 第 1 位數字 (只能為 1 or 2) 至第 8 位數字分別乘上 8, 7, 6, 5, 4, 3, 2, 1 後相加，再加上第 9 位數字
-    private static readonly int[] ID_COEFFICIENTS = [1, 8, 7, 6, 5, 4, 3, 2, 1, 1];
+    private static readonly int[] s_idCoefficients = [1, 8, 7, 6, 5, 4, 3, 2, 1, 1];
 
     /// <summary>
     /// 驗證台灣身分證號碼或居留證號碼的中間字串
@@ -160,12 +161,12 @@ public static partial class NationalIdentificationCardNumber
     {
         int GetCharOrder(string s, int i) => s[i] - 'A';
 
-        var firstDigit = TAIWAN_ID_LOCALE_CODE_LIST[GetCharOrder(input, 0)];
+        var firstDigit = s_taiwanIdLocaleCodeList[GetCharOrder(input, 0)];
         var secondDigit = 0;
 
         if (char.IsLetter(input[1])) // 舊版居留證編號
         {
-            secondDigit = RESIDENT_CERTIFICATE_NUMBER_LIST[GetCharOrder(input, 1)];
+            secondDigit = s_residentCertificateNumberList[GetCharOrder(input, 1)];
         }
         else
         {
@@ -182,11 +183,10 @@ public static partial class NationalIdentificationCardNumber
         var sum = 0;
         for (var i = 0; i < idInDigits.Count; i++)
         {
-            sum += idInDigits[i] * ID_COEFFICIENTS[i];
+            sum += idInDigits[i] * s_idCoefficients[i];
         }
 
         // Step 3: 如果該數字為 10 的倍數，則為正確身分證字號
         return sum % 10 is 0;
     }
 }
-

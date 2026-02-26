@@ -1,4 +1,5 @@
 ﻿namespace TaiwanUtilities;
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -516,7 +517,7 @@ partial struct ChineseNumeric : IFormattable
         /// <summary>
         /// 繁體大寫
         /// </summary>
-        public static FormatterProfile TraditionalUppercase { get; } = new(FormatterFlags.CrawlStack, "負", "零", "壹", "貳", "參", "肆", "伍", "陸", "柒", "捌", "玖", "拾", "佰", "仟", "萬", "億", "兆", "京", "垓",  "秭","穰");
+        public static FormatterProfile TraditionalUppercase { get; } = new(FormatterFlags.CrawlStack, "負", "零", "壹", "貳", "參", "肆", "伍", "陸", "柒", "捌", "玖", "拾", "佰", "仟", "萬", "億", "兆", "京", "垓", "秭", "穰");
 
         /// <summary>
         /// 繁體小寫
@@ -614,4 +615,3 @@ partial struct ChineseNumeric : IFormattable
     }
 
 }
-

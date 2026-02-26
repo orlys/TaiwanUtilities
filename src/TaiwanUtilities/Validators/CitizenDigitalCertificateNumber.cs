@@ -2,6 +2,7 @@
 // license: MIT
 
 namespace TaiwanUtilities;
+
 using System;
 using System.Text.RegularExpressions;
 
@@ -30,4 +31,3 @@ public static partial class CitizenDigitalCertificateNumber
 #endif
 
 }
-

@@ -115,7 +115,10 @@ internal sealed class Trie : ICollection<string>, IReadOnlyCollection<string>
 
         var (existingTerminalNode, parent) = AddNodesFromUpToBottom(word.AsSpan());
 
-        if (existingTerminalNode is not null && existingTerminalNode.IsTerminal) return false; // already exists
+        if (existingTerminalNode is not null && existingTerminalNode.IsTerminal)
+        {
+            return false; // already exists
+        }
 
         var newTerminalNode = new TerminalCharTrieNode(word[^1]) { Word = word };
 
@@ -150,7 +153,10 @@ internal sealed class Trie : ICollection<string>, IReadOnlyCollection<string>
 
         var nodesUpToBottom = GetNodesForRemoval(word);
 
-        if (nodesUpToBottom.Count == 0) return false;
+        if (nodesUpToBottom.Count == 0)
+        {
+            return false;
+        }
 
         RemoveNode(nodesUpToBottom);
 
@@ -326,10 +332,14 @@ internal sealed class Trie : ICollection<string>, IReadOnlyCollection<string>
             current = GetChildNode(current, text[i]);
 
             if (current is null)
+            {
                 break;
+            }
 
             if (current.IsTerminal)
+            {
                 longest = i - startIndex + 1;
+            }
         }
 
         return longest;
@@ -440,7 +450,10 @@ internal sealed class Trie : ICollection<string>, IReadOnlyCollection<string>
                 var parent = nodesUpToBottom.Pop();
                 RemoveChildFromNode(parent, node.Key);
 
-                if (parent.IsTerminal) return;
+                if (parent.IsTerminal)
+                {
+                    return;
+                }
 
                 node = parent;
 

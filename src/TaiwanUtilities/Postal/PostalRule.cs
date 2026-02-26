@@ -98,26 +98,41 @@ public class PostalRule
     {
         // 檢查主號範圍
         if (NumberStart.HasValue && number < NumberStart.Value)
+        {
             return false;
+        }
+
         if (NumberEnd.HasValue && number > NumberEnd.Value)
+        {
             return false;
+        }
 
         // 檢查附號範圍（如果地址有附號）
         if (subNumber.HasValue)
         {
             if (NumberStartSub.HasValue && subNumber.Value < NumberStartSub.Value)
+            {
                 return false;
+            }
+
             if (NumberEndSub.HasValue && subNumber.Value > NumberEndSub.Value)
+            {
                 return false;
+            }
         }
 
         // 檢查單雙號規則
         if (EvenOdd.HasValue)
         {
             if (EvenOdd.Value == 1 && number % 2 == 0)
+            {
                 return false; // 規則要求單號，但地址是雙號
+            }
+
             if (EvenOdd.Value == 2 && number % 2 == 1)
+            {
                 return false; // 規則要求雙號，但地址是單號
+            }
         }
 
         return true;
@@ -129,9 +144,15 @@ public class PostalRule
     public bool IsLaneInRange(int lane)
     {
         if (LaneStart.HasValue && lane < LaneStart.Value)
+        {
             return false;
+        }
+
         if (LaneEnd.HasValue && lane > LaneEnd.Value)
+        {
             return false;
+        }
+
         return true;
     }
 
@@ -141,9 +162,15 @@ public class PostalRule
     public bool IsAlleyInRange(int alley)
     {
         if (AlleyStart.HasValue && alley < AlleyStart.Value)
+        {
             return false;
+        }
+
         if (AlleyEnd.HasValue && alley > AlleyEnd.Value)
+        {
             return false;
+        }
+
         return true;
     }
 }

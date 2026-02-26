@@ -32,16 +32,16 @@ internal class AddressTokenizer
     /// <summary>
     /// 特殊路名快取（不以 路/街/道 結尾的路名，避免中文數字轉換）
     /// </summary>
-    private static HashSet<string>? _specialRoadNames;
-    private static readonly object _specialRoadNamesLock = new object();
-    private static volatile bool _specialRoadNamesInitialized = false;
+    private static HashSet<string>? s_specialRoadNames;
+    private static readonly object s_specialRoadNamesLock = new object();
+    private static volatile bool s_specialRoadNamesInitialized = false;
 
     /// <summary>
     /// 台灣所有縣市名稱（包含特殊行政區）
     /// 按長度降序排列以支援最長前綴匹配
     /// </summary>
-    private static readonly string[] AllCities = new[]
-    {
+    private static readonly string[] s_allCities =
+    [
         // 直轄市（6個）
         "臺北市", "新北市", "桃園市", "臺中市", "臺南市", "高雄市",
         // 市（3個）
@@ -51,13 +51,13 @@ internal class AddressTokenizer
         "宜蘭縣", "花蓮縣", "臺東縣", "澎湖縣", "金門縣", "連江縣",
         // 特殊行政區（2個）
         "南海諸", "釣魚臺"
-    };
+    ];
 
     /// <summary>
     /// Token 正規表達式：匹配地址中的各個組成部分
     /// 支援多層附號（如：150之1之1之1）
     /// </summary>
-    private static readonly Regex TokenRegex = new Regex(
+    private static readonly Regex s_tokenRegex = new Regex(
         @"(?:(?<no>\d+)(?<subno>(?:之\d+)+)?(?=[巷弄衖號樓室層線]|$)|(?<name>.+?))(?:(?<unit>[縣市鄉鎮市區村里鄰路街段巷弄衖號樓室層線])|(?=\d+(?:之\d+)*[巷弄衖號樓室層線]|$))",
         RegexOptions.Compiled,
         TimeSpan.FromSeconds(1));
@@ -67,51 +67,73 @@ internal class AddressTokenizer
     /// 支援小寫中文數字（一二三...九十）和大寫中文數字（壹貳參...玖拾佰）
     /// 必須以數字字元（非位數字元如十/拾/百/千）結尾，避免匹配路名中的「二十路」等
     /// </summary>
-    private static readonly Regex ToReplaceRegex = new Regex(
-        @"[ 　,，台~-]|[０-９]|[一二三四五六七八九十壹貳參叁肆伍陸柒捌玖拾佰仟百千]*[一二三四五六七八九壹貳參叁肆伍陸柒捌玖](?=[段路街巷弄號樓層室])",
+    private static readonly Regex s_toReplaceRegex = new Regex(
+        @"[ 　,，台鄕~-]|[０-９]|[一二三四五六七八九十壹貳參叁肆伍陸柒捌玖拾佰仟百千]*[一二三四五六七八九壹貳參叁肆伍陸柒捌玖](?=[段路街巷弄號樓層室])",
         RegexOptions.Compiled,
         TimeSpan.FromSeconds(1));
 
     /// <summary>
     /// 字元替換映射表
     /// </summary>
-    private static readonly Dictionary<string, string> ToReplaceMap = new()
+    private static readonly Dictionary<string, string> s_toReplaceMap = new()
     {
-        ["-"] = "之", ["~"] = "之", ["台"] = "臺",
-        ["１"] = "1", ["２"] = "2", ["３"] = "3", ["４"] = "4", ["５"] = "5",
-        ["６"] = "6", ["７"] = "7", ["８"] = "8", ["９"] = "9", ["０"] = "0",
-        ["一"] = "1", ["二"] = "2", ["三"] = "3", ["四"] = "4", ["五"] = "5",
-        ["六"] = "6", ["七"] = "7", ["八"] = "8", ["九"] = "9"
+        ["-"] = "之",
+        ["~"] = "之",
+        ["台"] = "臺",
+        ["鄕"] = "鄉",
+        ["１"] = "1",
+        ["２"] = "2",
+        ["３"] = "3",
+        ["４"] = "4",
+        ["５"] = "5",
+        ["６"] = "6",
+        ["７"] = "7",
+        ["８"] = "8",
+        ["９"] = "9",
+        ["０"] = "0",
+        ["一"] = "1",
+        ["二"] = "2",
+        ["三"] = "3",
+        ["四"] = "4",
+        ["五"] = "5",
+        ["六"] = "6",
+        ["七"] = "7",
+        ["八"] = "8",
+        ["九"] = "9"
     };
 
     /// <summary>
     /// 中文數字集合（小寫+大寫+位數）
     /// </summary>
-    private static readonly HashSet<char> ChineseNumeralsSet = new("一二三四五六七八九十壹貳參叁肆伍陸柒捌玖拾佰仟百千");
+    private static readonly HashSet<char> s_chineseNumeralsSet = new("一二三四五六七八九十壹貳參叁肆伍陸柒捌玖拾佰仟百千");
 
     /// <summary>
     /// 初始化特殊路名快取（延遲載入）
     /// </summary>
     private static void EnsureSpecialRoadNamesLoaded()
     {
-        if (_specialRoadNamesInitialized)
-            return;
-
-        lock (_specialRoadNamesLock)
+        if (s_specialRoadNamesInitialized)
         {
-            if (_specialRoadNamesInitialized)
+            return;
+        }
+
+        lock (s_specialRoadNamesLock)
+        {
+            if (s_specialRoadNamesInitialized)
+            {
                 return;
+            }
 
             try
             {
-                _specialRoadNames = PostalDatabase.LoadSpecialRoadNames();
-                _specialRoadNamesInitialized = true;
+                s_specialRoadNames = PostalDatabase.LoadSpecialRoadNames();
+                s_specialRoadNamesInitialized = true;
             }
             catch
             {
                 // 如果載入失敗（例如資料庫尚未初始化），使用空集合
-                _specialRoadNames = new HashSet<string>();
-                _specialRoadNamesInitialized = true;
+                s_specialRoadNames = new HashSet<string>();
+                s_specialRoadNamesInitialized = true;
             }
         }
     }
@@ -123,14 +145,18 @@ internal class AddressTokenizer
     {
         EnsureSpecialRoadNamesLoaded();
 
-        if (_specialRoadNames == null || _specialRoadNames.Count == 0)
+        if (s_specialRoadNames == null || s_specialRoadNames.Count == 0)
+        {
             return false;
+        }
 
         // 使用 HashSet 的 Contains 逐段檢查（以滑動視窗減少比對次數）
-        foreach (var specialRoad in _specialRoadNames)
+        foreach (var specialRoad in s_specialRoadNames)
         {
             if (specialRoad.Length <= address.Length && address.IndexOf(specialRoad, StringComparison.Ordinal) >= 0)
+            {
                 return true;
+            }
         }
 
         return false;
@@ -142,31 +168,35 @@ internal class AddressTokenizer
     /// <summary>
     /// 地址最大長度限制，防止超長字串導致 CPU 高消耗
     /// </summary>
-    private const int MaxAddressLength = 500;
+    private const int MAX_ADDRESS_LENGTH = 500;
 
     internal static string Normalize(string s)
     {
         if (string.IsNullOrEmpty(s))
+        {
             return string.Empty;
+        }
 
-        if (s.Length > MaxAddressLength)
-            s = s.Substring(0, MaxAddressLength);
+        if (s.Length > MAX_ADDRESS_LENGTH)
+        {
+            s = s[..MAX_ADDRESS_LENGTH];
+        }
 
         // 正則表達式已經限制了只在 [段路街巷弄號樓層] 之前才轉換中文數字
         // 所以"一村巷"中的"一"不會被轉換（因為後面是"村"）
         // 但"一段"中的"一"會被轉換（因為後面是"段"）
-        return ToReplaceRegex.Replace(s, m =>
+        return s_toReplaceRegex.Replace(s, m =>
         {
             var found = m.Value;
 
-            if (ToReplaceMap.TryGetValue(found, out var replacement))
+            if (s_toReplaceMap.TryGetValue(found, out var replacement))
             {
                 return replacement;
             }
 
             // 處理中文數字：使用 TaiwanUtilities.ChineseNumeric 作為通用轉換器
             // 支援小寫（一二三...九十）、大寫（壹貳參...玖拾佰）和複合格式
-            if (found.Length > 0 && ChineseNumeralsSet.Contains(found[0]))
+            if (found.Length > 0 && s_chineseNumeralsSet.Contains(found[0]))
             {
                 if (ChineseNumeric.TryParse(found, out var parsed))
                 {
@@ -190,12 +220,12 @@ internal class AddressTokenizer
         string? cityName = null;
         string remainingAddress = normalized;
 
-        foreach (var city in AllCities)
+        foreach (var city in s_allCities)
         {
             if (normalized.StartsWith(city))
             {
                 cityName = city;
-                remainingAddress = normalized.Substring(city.Length);
+                remainingAddress = normalized[city.Length..];
                 break;
             }
         }
@@ -204,22 +234,22 @@ internal class AddressTokenizer
         if (cityName != null)
         {
             // 對於特殊行政區（不以縣/市結尾），使用完整名稱作為 NAME+UNIT
-            if (!cityName.EndsWith("縣") && !cityName.EndsWith("市"))
+            if (!cityName.EndsWith('縣') && !cityName.EndsWith('市'))
             {
                 // 特殊行政區：name 為完整名稱，unit 為空（以便與標準縣市區分）
-                tokens.Add(new[] { "", "", cityName, "" });
+                tokens.Add([string.Empty, string.Empty, cityName, string.Empty]);
             }
             // 標準縣市：保持原有的 name+unit 結構
             else
             {
-                var cityNameWithoutUnit = cityName.Substring(0, cityName.Length - 1);
-                var unit = cityName.Substring(cityName.Length - 1);
-                tokens.Add(new[] { "", "", cityNameWithoutUnit, unit });
+                var cityNameWithoutUnit = cityName[..^1];
+                var unit = cityName[^1..];
+                tokens.Add([string.Empty, string.Empty, cityNameWithoutUnit, unit]);
             }
         }
 
         // 對剩餘地址進行正常 tokenization
-        var matches = TokenRegex.Matches(remainingAddress);
+        var matches = s_tokenRegex.Matches(remainingAddress);
         foreach (Match match in matches)
         {
             var token = new string[4];
@@ -264,7 +294,9 @@ internal class AddressTokenizer
         var count = Math.Max(0, endIdx - startIdx);
 
         if (count == 0)
+        {
             return string.Empty;
+        }
 
         var sb = new System.Text.StringBuilder();
         for (var i = startIdx; i < startIdx + count && i < Tokens.Count; i++)
@@ -296,10 +328,14 @@ internal class AddressTokenizer
     internal (int No, List<int> SubNos) Parse(int idx)
     {
         if (idx < 0)
+        {
             idx = Tokens.Count + idx;
+        }
 
         if (idx < 0 || idx >= Tokens.Count)
+        {
             return (0, new List<int>());
+        }
 
         var token = Tokens[idx];
         var no = int.TryParse(token[NO], out var n) ? n : 0;
@@ -309,11 +345,13 @@ internal class AddressTokenizer
         if (!string.IsNullOrEmpty(token[SUBNO]))
         {
             var subnoStr = token[SUBNO];
-            var parts = subnoStr.Split(new[] { '之' }, StringSplitOptions.RemoveEmptyEntries);
+            var parts = subnoStr.Split(['之'], StringSplitOptions.RemoveEmptyEntries);
             foreach (var part in parts)
             {
                 if (int.TryParse(part, out var sn))
+                {
                     subnos.Add(sn);
+                }
             }
         }
 

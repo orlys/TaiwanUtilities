@@ -63,7 +63,9 @@ partial class PostalAddress
             if (!string.IsNullOrEmpty(no) && unit == "號")
             {
                 if (int.TryParse(no, out var number))
+                {
                     components.Number = number;
+                }
 
                 // 檢查前一個 token 是否為「臨」（臨時門牌）
                 if (i >= 1 && tokens[i - 1][AddressTokenizer.NAME] == "臨")
@@ -75,11 +77,13 @@ partial class PostalAddress
                 if (!string.IsNullOrEmpty(subno))
                 {
                     var subNumbers = new List<int>();
-                    var parts = subno.Split(new[] { '之' }, StringSplitOptions.RemoveEmptyEntries);
+                    var parts = subno.Split(['之'], StringSplitOptions.RemoveEmptyEntries);
                     foreach (var part in parts)
                     {
                         if (int.TryParse(part, out var sn))
+                        {
                             subNumbers.Add(sn);
+                        }
                     }
 
                     if (subNumbers.Count > 0)

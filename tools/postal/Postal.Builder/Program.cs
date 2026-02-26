@@ -336,9 +336,13 @@ class Program
 
                     // 統計各 department 出現次數
                     if (deptStats.ContainsKey(dept))
+                    {
                         deptStats[dept]++;
+                    }
                     else
+                    {
                         deptStats[dept] = 1;
+                    }
 
                     if (deptExamples.Count < 30)
                     {
@@ -424,7 +428,9 @@ class Program
                 {
                     var road = reader.GetString(roadIdx)?.Trim() ?? "";
                     if (string.IsNullOrEmpty(road))
+                    {
                         continue;
+                    }
 
                     var city = reader.GetString(cityIdx)?.Trim() ?? "";
                     var area = reader.GetString(areaIdx)?.Trim() ?? "";
@@ -436,13 +442,19 @@ class Program
                     if (!isNormal)
                     {
                         if (!abnormalRoads.ContainsKey(road))
+                        {
                             abnormalRoads[road] = new HashSet<string>();
+                        }
+
                         abnormalRoads[road].Add(fullAddr);
                     }
                     else
                     {
                         if (!roads.ContainsKey(road))
+                        {
                             roads[road] = new HashSet<string>();
+                        }
+
                         roads[road].Add(fullAddr);
                     }
                 }
@@ -859,7 +871,11 @@ class Program
 
     static string Percentage(int value, int total)
     {
-        if (total == 0) return "0%";
+        if (total == 0)
+        {
+            return "0%";
+        }
+
         return $"{(double)value / total * 100:F1}%";
     }
 
@@ -897,7 +913,9 @@ class Program
 
                 // 過濾無效資料
                 if (string.IsNullOrEmpty(city) || string.IsNullOrEmpty(area) || string.IsNullOrEmpty(zipcode))
+                {
                     continue;
+                }
 
                 // 格式：郵遞區號,縣市,區域,路名,範圍,部門/大樓,郵局
                 var row = new[] { zipcode, city, area, road, scope, department, office };
@@ -942,7 +960,9 @@ class Program
 
                 // 過濾無效資料
                 if (string.IsNullOrEmpty(city) || string.IsNullOrEmpty(area) || string.IsNullOrEmpty(zipcode))
+                {
                     continue;
+                }
 
                 var rule = new PostalRuleData
                 {
@@ -1005,7 +1025,9 @@ class Program
         {
             var idx = reader.GetOrdinal(columnName);
             if (reader.IsDBNull(idx))
+            {
                 return null;
+            }
 
             var value = reader.GetInt32(idx);
             return value == 0 ? null : value; // 將 0 視為 NULL
@@ -1029,7 +1051,9 @@ class Program
             var cityName = cityProp.Name;
 
             if (!cityProp.Value.TryGetProperty("areas", out var areas))
+            {
                 continue;
+            }
 
             // 遍歷所有區域
             foreach (var areaProp in areas.EnumerateObject())
@@ -1037,7 +1061,9 @@ class Program
                 var areaName = areaProp.Name;
 
                 if (!areaProp.Value.TryGetProperty("roads", out var roads))
+                {
                     continue;
+                }
 
                 // 遍歷所有路名
                 foreach (var roadProp in roads.EnumerateObject())
@@ -1045,14 +1071,18 @@ class Program
                     var roadName = roadProp.Name;
 
                     if (!roadProp.Value.TryGetProperty("scopes", out var scopes))
+                    {
                         continue;
+                    }
 
                     // 遍歷所有範圍規則
                     foreach (var scope in scopes.EnumerateArray())
                     {
                         if (!scope.TryGetProperty("scope", out var scopeValue) ||
                             !scope.TryGetProperty("zipcode", out var zipcodeValue))
+                        {
                             continue;
+                        }
 
                         var scopeStr = scopeValue.GetString() ?? "";
                         var zipcode = zipcodeValue.GetInt32().ToString();
@@ -1085,7 +1115,7 @@ class Program
         };
 
         // 嘗試不同的編碼
-        Encoding[] encodings = { Encoding.UTF8, Encoding.GetEncoding("Big5") };
+        Encoding[] encodings = [Encoding.UTF8, Encoding.GetEncoding("Big5")];
 
         foreach (var encoding in encodings)
         {
@@ -1112,7 +1142,9 @@ class Program
                     if (string.IsNullOrWhiteSpace(fullZipcode) ||
                         string.IsNullOrWhiteSpace(city) ||
                         string.IsNullOrWhiteSpace(area))
+                    {
                         continue;
+                    }
 
                     // 格式：郵遞區號,縣市,區域,路名,範圍
                     var row = new[] {
@@ -1213,6 +1245,8 @@ class Program
 
         Console.WriteLine($"✓ 寫入資料庫版本資訊: {version} ({createdAt})");
         if (commitSha != "unknown")
+        {
             Console.WriteLine($"  Commit SHA: {commitSha}");
+        }
     }
 }

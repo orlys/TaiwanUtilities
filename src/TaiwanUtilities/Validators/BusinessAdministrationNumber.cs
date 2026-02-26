@@ -2,6 +2,7 @@
 // license: MIT
 
 namespace TaiwanUtilities;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -37,12 +38,12 @@ public static partial class BusinessAdministrationNumber
 
             var divisor = applyOldRules ? 10 : 5;
 
-            if(checksum % divisor is 0)
+            if (checksum % divisor is 0)
             {
                 return true;
             }
 
-            if(input[6] is '7' &&
+            if (input[6] is '7' &&
                (checksum + 1) % divisor is 0)
             {
                 return true;
@@ -72,4 +73,3 @@ public static partial class BusinessAdministrationNumber
 #endif
 
 }
-

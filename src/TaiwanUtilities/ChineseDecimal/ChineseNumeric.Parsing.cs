@@ -1,8 +1,9 @@
 ﻿namespace TaiwanUtilities;
+
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 
@@ -551,4 +552,3 @@ partial struct ChineseNumeric
         return ParseCore(str, out value, false);
     }
 }
-

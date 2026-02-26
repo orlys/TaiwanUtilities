@@ -6,6 +6,8 @@
 
 namespace TaiwanUtilities;
 
+using Microsoft.Data.Sqlite;
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -14,8 +16,6 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-
-using Microsoft.Data.Sqlite;
 
 /// <summary>
 /// 資料庫版本資訊
@@ -69,9 +69,9 @@ public record PostalDatabaseUpdateInfo(
 /// </remarks>
 public sealed class PostalDatabase : IDisposable
 {
-    private static string? _externalDatabasePath = null;
-    private static readonly Lazy<PostalDatabase> _instance = new(() => new PostalDatabase());
-    private static PostalDatabase Instance => _instance.Value;
+    private static string? s_externalDatabasePath = null;
+    private static readonly Lazy<PostalDatabase> s_instance = new(() => new PostalDatabase());
+    private static PostalDatabase Instance => s_instance.Value;
 
     private readonly ThreadLocal<DirectoryHolder> _threadLocalDirectory;
     private string _currentDatabasePath;
@@ -79,13 +79,13 @@ public sealed class PostalDatabase : IDisposable
     private PostalDatabaseVersionInfo? _currentVersion;
     private readonly object _updateLock = new object();
 
-    private const string GitHubRepository = "orlys/TaiwanUtilities";
-    private const string ReleaseTag = "database-latest";
+    private const string GITHUB_REPOSITORY = "orlys/TaiwanUtilities";
+    private const string RELEASE_TAG = "database-latest";
 
     /// <summary>
     /// 下載大小上限（100 MB），防止資源耗盡攻擊
     /// </summary>
-    private const long MaxDownloadSize = 100 * 1024 * 1024;
+    private const long MAX_DOWNLOAD_SIZE = 100 * 1024 * 1024;
 
     /// <summary>
     /// 內部類別：持有 ZipCodeRepository 實例和版本號
@@ -108,9 +108,9 @@ public sealed class PostalDatabase : IDisposable
     private PostalDatabase()
     {
         // 初始化資料庫路徑（優先使用外部路徑，其次是內嵌資源）
-        if (!string.IsNullOrEmpty(_externalDatabasePath) && File.Exists(_externalDatabasePath))
+        if (!string.IsNullOrEmpty(s_externalDatabasePath) && File.Exists(s_externalDatabasePath))
         {
-            _currentDatabasePath = _externalDatabasePath!;
+            _currentDatabasePath = s_externalDatabasePath!;
         }
         else if (EmbeddedDatabaseHelper.HasEmbeddedDatabase())
         {
@@ -165,13 +165,13 @@ public sealed class PostalDatabase : IDisposable
     [EditorBrowsable(EditorBrowsableState.Never)]
     internal static void UseExternalDatabase(string dbPath)
     {
-        if (_instance.IsValueCreated)
+        if (s_instance.IsValueCreated)
         {
             throw new InvalidOperationException(
                 "PostalDatabase 單例已經初始化，無法變更資料庫路徑。請在使用任何查詢方法之前呼叫此方法。");
         }
 
-        _externalDatabasePath = dbPath;
+        s_externalDatabasePath = dbPath;
     }
 
     /// <summary>
@@ -247,11 +247,13 @@ public sealed class PostalDatabase : IDisposable
         {
             var httpClient = Internals.SharedHttpClient.Instance;
 
-            var releaseUrl = $"https://api.github.com/repos/{GitHubRepository}/releases/tags/{ReleaseTag}";
+            var releaseUrl = $"https://api.github.com/repos/{GITHUB_REPOSITORY}/releases/tags/{RELEASE_TAG}";
             var response = await httpClient.GetAsync(releaseUrl, ct).ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
+            {
                 return null;
+            }
 
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
@@ -276,7 +278,9 @@ public sealed class PostalDatabase : IDisposable
             }
 
             if (string.IsNullOrEmpty(publishedAt) || string.IsNullOrEmpty(downloadUrl))
+            {
                 return null;
+            }
 
             var remoteVersion = new PostalDatabaseVersionInfo
             {
@@ -308,7 +312,9 @@ public sealed class PostalDatabase : IDisposable
     {
         var updateInfo = await CheckForUpdatesInternalAsync(ct).ConfigureAwait(false);
         if (updateInfo == null || !updateInfo.HasUpdate)
+        {
             return false;
+        }
 
         try
         {
@@ -318,8 +324,10 @@ public sealed class PostalDatabase : IDisposable
             response.EnsureSuccessStatusCode();
 
             // 檢查 Content-Length 是否超過上限
-            if (response.Content.Headers.ContentLength > MaxDownloadSize)
+            if (response.Content.Headers.ContentLength > MAX_DOWNLOAD_SIZE)
+            {
                 return false;
+            }
 
             using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
             return await UpdateFromStreamInternalAsync(stream, "zipcode.db", ct).ConfigureAwait(false);
@@ -337,7 +345,9 @@ public sealed class PostalDatabase : IDisposable
     private async Task<bool> UpdateFromInternalAsync(string dbPath, CancellationToken ct)
     {
         if (!File.Exists(dbPath))
+        {
             return false;
+        }
 
         try
         {
@@ -368,7 +378,9 @@ public sealed class PostalDatabase : IDisposable
             var tempDir = Path.GetDirectoryName(newDbPath);
 
             if (!System.IO.Directory.Exists(tempDir))
+            {
                 System.IO.Directory.CreateDirectory(tempDir!);
+            }
 
             // 複製串流到新檔案（限制最大大小）
             using (var fileStream = File.Create(newDbPath))
@@ -379,7 +391,7 @@ public sealed class PostalDatabase : IDisposable
                 while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, ct).ConfigureAwait(false)) > 0)
                 {
                     totalBytes += bytesRead;
-                    if (totalBytes > MaxDownloadSize)
+                    if (totalBytes > MAX_DOWNLOAD_SIZE)
                     {
                         fileStream.Dispose();
                         try { File.Delete(newDbPath); } catch { }
@@ -454,7 +466,9 @@ public sealed class PostalDatabase : IDisposable
     private T ExecuteQueryInternal<T>(Func<ZipCodeRepository, T> query)
     {
         if (query == null)
+        {
             throw new ArgumentNullException(nameof(query));
+        }
 
         var holder = _threadLocalDirectory.Value!;
         var currentVersion = _databaseVersion;
@@ -528,14 +542,20 @@ public sealed class PostalDatabase : IDisposable
                         break;
                     case "created_at":
                         if (DateTime.TryParse(value, out var createdAt))
+                        {
                             info.CreatedAt = createdAt;
+                        }
+
                         break;
                     case "source_file":
                         info.SourceFile = value;
                         break;
                     case "record_count":
                         if (int.TryParse(value, out var count))
+                        {
                             info.RecordCount = count;
+                        }
+
                         break;
                     case "builder_version":
                         info.BuilderVersion = value;

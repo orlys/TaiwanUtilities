@@ -2,6 +2,7 @@
 // license: MIT
 
 namespace TaiwanUtilities;
+
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
@@ -14,10 +15,14 @@ internal static class ValidatorUtils
     public static bool MatchCore(Regex pattern, string input, bool caseSensitive = false)
     {
         if (string.IsNullOrWhiteSpace(input))
+        {
             return false;
+        }
 
         if (caseSensitive)
+        {
             return pattern.IsMatch(input);
+        }
 
         // 避免 ToUpperInvariant() 的字串分配：
         // 驗證器的 regex pattern 皆使用 [A-Z] 明確匹配大寫，
@@ -26,7 +31,9 @@ internal static class ValidatorUtils
         return pattern.IsMatch(string.Create(input.Length, input, static (span, src) =>
         {
             for (var i = 0; i < src.Length; i++)
+            {
                 span[i] = char.ToUpperInvariant(src[i]);
+            }
         }));
 #else
         return pattern.IsMatch(input.ToUpperInvariant());

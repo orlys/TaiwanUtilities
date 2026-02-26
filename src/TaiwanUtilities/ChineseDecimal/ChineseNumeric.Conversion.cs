@@ -1,4 +1,5 @@
 ﻿namespace TaiwanUtilities;
+
 using System;
 using System.ComponentModel;
 using System.Globalization;
@@ -102,9 +103,9 @@ partial struct ChineseNumeric : ISerializable
     }
 
     private ChineseNumeric(SerializationInfo info, StreamingContext context)
-        :this(info.GetDecimal("VALUE"))
+        : this(info.GetDecimal("VALUE"))
     {
-        
+
     }
 
     void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)

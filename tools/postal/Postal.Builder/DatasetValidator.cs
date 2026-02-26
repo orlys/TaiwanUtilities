@@ -441,10 +441,14 @@ public class DatasetValidator
                 {
                     Console.WriteLine($"  [{issue.Category}] {issue.Message}");
                     if (!string.IsNullOrEmpty(issue.Location))
+                    {
                         Console.WriteLine($"    位置: {issue.Location}");
+                    }
                 }
                 if (!verbose && errors.Count > 10)
+                {
                     Console.WriteLine($"  ... 還有 {errors.Count - 10} 個錯誤（使用 --verbose 查看全部）");
+                }
             }
 
             if (warnings.Any())
@@ -454,10 +458,14 @@ public class DatasetValidator
                 {
                     Console.WriteLine($"  [{issue.Category}] {issue.Message}");
                     if (!string.IsNullOrEmpty(issue.Location))
+                    {
                         Console.WriteLine($"    位置: {issue.Location}");
+                    }
                 }
                 if (!verbose && warnings.Count > 10)
+                {
                     Console.WriteLine($"  ... 還有 {warnings.Count - 10} 個警告（使用 --verbose 查看全部）");
+                }
             }
 
             if (infos.Any())
@@ -467,10 +475,14 @@ public class DatasetValidator
                 {
                     Console.WriteLine($"  [{issue.Category}] {issue.Message}");
                     if (!string.IsNullOrEmpty(issue.Location))
+                    {
                         Console.WriteLine($"    位置: {issue.Location}");
+                    }
                 }
                 if (!verbose && infos.Count > 10)
+                {
                     Console.WriteLine($"  ... 還有 {infos.Count - 10} 則資訊（使用 --verbose 查看全部）");
+                }
             }
         }
         else

@@ -32,8 +32,15 @@ public sealed partial class RocHolidayDataSet
         var max = int.MinValue;
         foreach (var key in s_embedded.Keys)
         {
-            if (key.Year < min) min = key.Year;
-            if (key.Year > max) max = key.Year;
+            if (key.Year < min)
+            {
+                min = key.Year;
+            }
+
+            if (key.Year > max)
+            {
+                max = key.Year;
+            }
         }
         return (min, max);
     });
@@ -83,7 +90,9 @@ public sealed partial class RocHolidayDataSet
     public static bool ContainsYear(int year)
     {
         if (year >= EmbeddedMinYear && year <= EmbeddedMaxYear)
+        {
             return true;
+        }
 
         return s_cache.ContainsKey(year);
     }
@@ -134,7 +143,9 @@ public sealed partial class RocHolidayDataSet
         foreach (var year in neededYears)
         {
             if (s_cache.ContainsKey(year) || (year >= EmbeddedMinYear && year <= EmbeddedMaxYear))
+            {
                 continue;
+            }
 
             var holidays = await TryDownloadFromGovAsync(year, ct).ConfigureAwait(false);
             if (holidays.Count > 0)
@@ -153,7 +164,9 @@ public sealed partial class RocHolidayDataSet
     public static async Task UpdateFromAsync(string csvPath, CancellationToken ct = default)
     {
         if (!File.Exists(csvPath))
+        {
             throw new FileNotFoundException("找不到假日資料檔案", csvPath);
+        }
 
 #if NET8_0_OR_GREATER
         var content = await File.ReadAllTextAsync(csvPath, ct).ConfigureAwait(false);
@@ -209,7 +222,7 @@ public sealed partial class RocHolidayDataSet
 
     #region GitHub Release Download
 
-    private const string ReleaseUrl = "https://github.com/Orlys/TaiwanUtilities/releases/download/holidays-latest/holidays.csv";
+    private const string RELEASE_URL = "https://github.com/Orlys/TaiwanUtilities/releases/download/holidays-latest/holidays.csv";
 
     private static async Task TryDownloadFromReleaseAsync(CancellationToken ct)
     {
@@ -218,12 +231,14 @@ public sealed partial class RocHolidayDataSet
             var client = HttpClient;
 
 #if NET8_0_OR_GREATER
-            var response = await client.GetAsync(ReleaseUrl, ct).ConfigureAwait(false);
+            var response = await client.GetAsync(RELEASE_URL, ct).ConfigureAwait(false);
 #else
-            var response = await client.GetAsync(ReleaseUrl, ct).ConfigureAwait(false);
+            var response = await client.GetAsync(RELEASE_URL, ct).ConfigureAwait(false);
 #endif
             if (!response.IsSuccessStatusCode)
+            {
                 return;
+            }
 
 #if NET8_0_OR_GREATER
             var content = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
@@ -255,7 +270,7 @@ public sealed partial class RocHolidayDataSet
 
     #region data.gov.tw Download
 
-    private const string GovDatasetApiUrl = "https://data.gov.tw/api/v2/rest/dataset/14718";
+    private const string GOV_DATASET_API_URL = "https://data.gov.tw/api/v2/rest/dataset/14718";
     private static readonly Regex s_rocYearPattern = new(@"(\d{2,3})年", RegexOptions.Compiled);
     private static readonly Dictionary<int, string> s_weekdayNames = new()
     {
@@ -276,7 +291,9 @@ public sealed partial class RocHolidayDataSet
         {
             var csvUrl = await DiscoverGovCsvUrlAsync(year, ct).ConfigureAwait(false);
             if (csvUrl == null)
+            {
                 return result;
+            }
 
             var client = HttpClient;
 
@@ -286,7 +303,9 @@ public sealed partial class RocHolidayDataSet
             var response = await client.GetAsync(csvUrl, ct).ConfigureAwait(false);
 #endif
             if (!response.IsSuccessStatusCode)
+            {
                 return result;
+            }
 
 #if NET8_0_OR_GREATER
             var content = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
@@ -313,12 +332,14 @@ public sealed partial class RocHolidayDataSet
         var rocYear = year - 1911;
 
 #if NET8_0_OR_GREATER
-        var response = await client.GetAsync(GovDatasetApiUrl, ct).ConfigureAwait(false);
+        var response = await client.GetAsync(GOV_DATASET_API_URL, ct).ConfigureAwait(false);
 #else
-        var response = await client.GetAsync(GovDatasetApiUrl, ct).ConfigureAwait(false);
+        var response = await client.GetAsync(GOV_DATASET_API_URL, ct).ConfigureAwait(false);
 #endif
         if (!response.IsSuccessStatusCode)
+        {
             return null;
+        }
 
 #if NET8_0_OR_GREATER
         var json = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
@@ -338,24 +359,34 @@ public sealed partial class RocHolidayDataSet
         {
             var format = dist.TryGetProperty("resourceFormat", out var fmt) ? fmt.GetString() : "";
             if (!string.Equals(format, "CSV", StringComparison.OrdinalIgnoreCase))
+            {
                 continue;
+            }
 
             var desc = dist.TryGetProperty("resourceDescription", out var d) ? d.GetString() ?? "" : "";
             if (desc.Contains("Google") || desc.Contains("google"))
+            {
                 continue;
+            }
 
             var match = s_rocYearPattern.Match(desc);
             if (!match.Success)
+            {
                 continue;
+            }
 
             var csvRocYear = int.Parse(match.Groups[1].Value);
             if (csvRocYear + 1911 != year)
+            {
                 continue;
+            }
 
             var url = dist.TryGetProperty("resourceDownloadUrl", out var u) ? u.GetString() : null;
             url ??= dist.TryGetProperty("downloadUrl", out var u2) ? u2.GetString() : null;
             if (string.IsNullOrEmpty(url))
+            {
                 continue;
+            }
 
             var corrected = desc.Contains("修正");
             if (bestUrl == null || (corrected && !isCorrected))
@@ -389,26 +420,36 @@ public sealed partial class RocHolidayDataSet
             }
 
             if (string.IsNullOrWhiteSpace(line))
+            {
                 continue;
+            }
 
             var parts = line.Split(',');
             if (parts.Length < 4)
+            {
                 continue;
+            }
 
             var dateStr = parts[0].Trim();
             if (dateStr.Length != 8)
+            {
                 continue;
+            }
 
 #if NET8_0_OR_GREATER
             if (!int.TryParse(dateStr.AsSpan(0, 4), out var y) ||
                 !int.TryParse(dateStr.AsSpan(4, 2), out var m) ||
                 !int.TryParse(dateStr.AsSpan(6, 2), out var d))
+            {
                 continue;
+            }
 #else
             if (!int.TryParse(dateStr.Substring(0, 4), out var y) ||
                 !int.TryParse(dateStr.Substring(4, 2), out var m) ||
                 !int.TryParse(dateStr.Substring(6, 2), out var d))
+            {
                 continue;
+            }
 #endif
 
             DateTime dt;
@@ -431,21 +472,30 @@ public sealed partial class RocHolidayDataSet
             {
                 role = HolidayRole.Labor;
                 isHoliday = true;
-                if (string.IsNullOrEmpty(description)) description = "勞動節";
+                if (string.IsNullOrEmpty(description))
+                {
+                    description = "勞動節";
+                }
             }
             // 軍人節
             else if (dt.Month == 9 && dt.Day == 3)
             {
                 role = HolidayRole.Soldier;
                 isHoliday = true;
-                if (string.IsNullOrEmpty(description) || description == "工作日") description = "軍人節";
+                if (string.IsNullOrEmpty(description) || description == "工作日")
+                {
+                    description = "軍人節";
+                }
             }
             // 教師節（2025年起）
             else if (dt.Month == 9 && dt.Day == 28 && dt.Year >= 2025)
             {
                 role = HolidayRole.Teacher;
                 isHoliday = true;
-                if (string.IsNullOrEmpty(description) || description == "工作日") description = "教師節";
+                if (string.IsNullOrEmpty(description) || description == "工作日")
+                {
+                    description = "教師節";
+                }
             }
             else if (isHoliday)
             {
@@ -455,7 +505,9 @@ public sealed partial class RocHolidayDataSet
             if (string.IsNullOrEmpty(description))
             {
                 if (isHoliday)
+                {
                     s_weekdayNames.TryGetValue((int)dt.DayOfWeek, out description);
+                }
 
                 description ??= "工作日";
             }
@@ -489,27 +541,37 @@ public sealed partial class RocHolidayDataSet
             }
 
             if (string.IsNullOrWhiteSpace(line))
+            {
                 continue;
+            }
 
             // Format: "20250101, true , all     , 開國紀念日,"
             var parts = line.Split(',');
             if (parts.Length < 4)
+            {
                 continue;
+            }
 
             var dateStr = parts[0].Trim();
             if (dateStr.Length != 8)
+            {
                 continue;
+            }
 
 #if NET8_0_OR_GREATER
             if (!int.TryParse(dateStr.AsSpan(0, 4), out var y) ||
                 !int.TryParse(dateStr.AsSpan(4, 2), out var m) ||
                 !int.TryParse(dateStr.AsSpan(6, 2), out var d))
+            {
                 continue;
+            }
 #else
             if (!int.TryParse(dateStr.Substring(0, 4), out var y) ||
                 !int.TryParse(dateStr.Substring(4, 2), out var m) ||
                 !int.TryParse(dateStr.Substring(6, 2), out var d))
+            {
                 continue;
+            }
 #endif
 
             DateTime dt;

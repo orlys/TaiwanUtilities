@@ -18,7 +18,7 @@ using System.Threading;
 /// </summary>
 internal static class EmbeddedDatabaseHelper
 {
-    private static readonly object _extractLock = new object();
+    private static readonly object s_extractLock = new object();
 
     /// <summary>
     /// 從內嵌資源複製資料庫到臨時檔案
@@ -59,10 +59,12 @@ internal static class EmbeddedDatabaseHelper
         var tempDir = Path.GetDirectoryName(tempPath);
 
         if (!System.IO.Directory.Exists(tempDir))
+        {
             System.IO.Directory.CreateDirectory(tempDir!);
+        }
 
         // 使用鎖定確保只有一個執行緒/處理程序執行解壓縮
-        lock (_extractLock)
+        lock (s_extractLock)
         {
             // 如果臨時檔案已存在且大小和內容雜湊相同，直接使用
             if (File.Exists(tempPath))
@@ -110,7 +112,9 @@ internal static class EmbeddedDatabaseHelper
         foreach (var name in resourceNames)
         {
             if (name.EndsWith(resourceName, StringComparison.OrdinalIgnoreCase))
+            {
                 return true;
+            }
         }
 
         return false;
@@ -142,11 +146,17 @@ internal static class EmbeddedDatabaseHelper
             using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             var read2 = ReadFully(fileStream, buffer2);
 
-            if (read1 != read2) return false;
+            if (read1 != read2)
+            {
+                return false;
+            }
 
             for (int i = 0; i < read1; i++)
             {
-                if (buffer1[i] != buffer2[i]) return false;
+                if (buffer1[i] != buffer2[i])
+                {
+                    return false;
+                }
             }
 
             return true;

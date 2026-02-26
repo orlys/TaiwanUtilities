@@ -32,4 +32,3 @@ public static partial class ElectronicInvoiceMobileBarCode
 #endif
 
 }
-

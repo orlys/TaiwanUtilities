@@ -124,30 +124,45 @@ internal static class RoadRuleCompiler
 
         // 有巷限制 +1000
         if (rule.LaneStart.HasValue)
+        {
             score += 1000;
+        }
 
         // 有弄限制 +500
         if (rule.AlleyStart.HasValue)
+        {
             score += 500;
+        }
 
         // 有附號限制 +100
         if (rule.NumberStartSub.HasValue && rule.NumberStartSub.Value > 0)
+        {
             score += 100;
+        }
+
         if (rule.NumberEndSub.HasValue && rule.NumberEndSub.Value > 0 && rule.NumberEndSub.Value < int.MaxValue)
+        {
             score += 100;
+        }
 
         // 特定門牌號碼 +50
         if (rule.NumberStart.HasValue && rule.NumberEnd.HasValue &&
             rule.NumberStart.Value == rule.NumberEnd.Value)
+        {
             score += 50;
+        }
 
         // 門牌範圍 +20
         if (rule.NumberStart.HasValue || rule.NumberEnd.HasValue)
+        {
             score += 20;
+        }
 
         // 單雙號限制 +10
         if (rule.EvenOdd.HasValue && rule.EvenOdd.Value != 0)
+        {
             score += 10;
+        }
 
         return score;
     }
@@ -251,7 +266,9 @@ internal static class RoadRuleCompiler
 
         // 合併所有條件為 AND 鏈
         if (conditions.Count == 0)
+        {
             return Expression.Constant(true);
+        }
 
         var result = conditions[0];
         for (int i = 1; i < conditions.Count; i++)

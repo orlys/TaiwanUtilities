@@ -35,7 +35,9 @@ internal static class ProfanityAnalyzer
         for (var i = 0; i < text.Length; i++)
         {
             if (compoundCovered.Contains(i))
+            {
                 continue;
+            }
 
             // Try safe word first
             var safeLen = SafeWordDictionary.TryMatchSafeWord(text, i);
@@ -43,7 +45,10 @@ internal static class ProfanityAnalyzer
             {
                 // Mark safe range — skip compound matching here
                 for (var s = i; s < i + safeLen; s++)
+                {
                     compoundCovered.Add(s);
+                }
+
                 i += safeLen - 1;
                 continue;
             }
@@ -53,7 +58,10 @@ internal static class ProfanityAnalyzer
             {
                 matches.Add((i, compLen));
                 for (var c = i; c < i + compLen; c++)
+                {
                     compoundCovered.Add(c);
+                }
+
                 i += compLen - 1;
             }
         }
@@ -68,7 +76,9 @@ internal static class ProfanityAnalyzer
         foreach (var m in patternMatches)
         {
             if (!Overlaps(matches, m))
+            {
                 matches.Add(m);
+            }
         }
 
         // Sort by position
@@ -85,12 +95,16 @@ internal static class ProfanityAnalyzer
         {
             // Skip already covered positions (compound matches)
             if (covered.Contains(i))
+            {
                 continue;
+            }
 
             // Skip whitespace and punctuation
             var ch = text[i];
             if (char.IsWhiteSpace(ch) || IsPunctuation(ch))
+            {
                 continue;
+            }
 
             // Layer 1: Safe word check
             var safeLen = SafeWordDictionary.TryMatchSafeWord(text, i);
@@ -135,7 +149,9 @@ internal static class ProfanityAnalyzer
         for (var i = 0; i < tokens.Count; i++)
         {
             if (tokens[i].IsSafe)
+            {
                 continue;
+            }
 
             (int start, int length)? bestMatch = null;
 
@@ -178,7 +194,9 @@ internal static class ProfanityAnalyzer
             var eEnd = eStart + existing[i].length;
 
             if (cStart < eEnd && cEnd > eStart)
+            {
                 return true;
+            }
         }
 
         return false;

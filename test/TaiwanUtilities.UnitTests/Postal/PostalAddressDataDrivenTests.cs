@@ -220,23 +220,70 @@ public class PostalAddressDataDrivenTests
         {
             var components = PostalAddress.Parse(address);
 
-            if (!string.IsNullOrEmpty(components.City)) statsDict["HasCity"]++;
-            if (!string.IsNullOrEmpty(components.District)) statsDict["HasDistrict"]++;
-            if (!string.IsNullOrEmpty(components.Village)) statsDict["HasVillage"]++;
-            if (!string.IsNullOrEmpty(components.Neighborhood)) statsDict["HasNeighborhood"]++;
-            if (!string.IsNullOrEmpty(components.Road)) statsDict["HasRoad"]++;
-            if (!string.IsNullOrEmpty(components.Section)) statsDict["HasSection"]++;
-            if (!string.IsNullOrEmpty(components.Lane)) statsDict["HasLane"]++;
-            if (!string.IsNullOrEmpty(components.Alley)) statsDict["HasAlley"]++;
-            if (components.Number.HasValue) statsDict["HasNumber"]++;
-            if (components.SubNumbers != null && components.SubNumbers.Count > 0) statsDict["HasSubNumbers"]++;
-            if (!string.IsNullOrEmpty(components.Floor)) statsDict["HasFloor"]++;
+            if (!string.IsNullOrEmpty(components.City))
+            {
+                statsDict["HasCity"]++;
+            }
+
+            if (!string.IsNullOrEmpty(components.District))
+            {
+                statsDict["HasDistrict"]++;
+            }
+
+            if (!string.IsNullOrEmpty(components.Village))
+            {
+                statsDict["HasVillage"]++;
+            }
+
+            if (!string.IsNullOrEmpty(components.Neighborhood))
+            {
+                statsDict["HasNeighborhood"]++;
+            }
+
+            if (!string.IsNullOrEmpty(components.Road))
+            {
+                statsDict["HasRoad"]++;
+            }
+
+            if (!string.IsNullOrEmpty(components.Section))
+            {
+                statsDict["HasSection"]++;
+            }
+
+            if (!string.IsNullOrEmpty(components.Lane))
+            {
+                statsDict["HasLane"]++;
+            }
+
+            if (!string.IsNullOrEmpty(components.Alley))
+            {
+                statsDict["HasAlley"]++;
+            }
+
+            if (components.Number.HasValue)
+            {
+                statsDict["HasNumber"]++;
+            }
+
+            if (components.SubNumbers != null && components.SubNumbers.Count > 0)
+            {
+                statsDict["HasSubNumbers"]++;
+            }
+
+            if (!string.IsNullOrEmpty(components.Floor))
+            {
+                statsDict["HasFloor"]++;
+            }
         }
 
         _output.WriteLine("\n組件分布統計：");
         foreach (var kvp in statsDict.OrderByDescending(x => x.Value))
         {
-            if (kvp.Key == "Total") continue;
+            if (kvp.Key == "Total")
+            {
+                continue;
+            }
+
             var percentage = kvp.Value * 100.0 / addresses.Count;
             _output.WriteLine($"  {kvp.Key}: {kvp.Value} ({percentage:F2}%)");
         }

@@ -1,4 +1,5 @@
 namespace TaiwanUtilities.Internals;
+
 using System.Globalization;
 
 internal static class Constants

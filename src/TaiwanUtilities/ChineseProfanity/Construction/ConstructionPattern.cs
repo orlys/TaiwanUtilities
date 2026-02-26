@@ -7,7 +7,7 @@ internal abstract class ConstructionPattern
 {
     // Maximum gap between consecutive tokens in a pattern (in characters).
     // This prevents distant tokens from being matched across unrelated text.
-    protected const int MaxTokenGap = 2;
+    protected const int MAX_TOKEN_GAP = 2;
 
     internal abstract (int start, int length)? TryMatch(
         List<ProfanityAnalyzer.AnalyzedToken> tokens, int startIndex,
@@ -21,7 +21,10 @@ internal abstract class ConstructionPattern
     protected static bool IsBoundary(ReadOnlySpan<char> text, int index)
     {
         if (index < 0 || index >= text.Length)
+        {
             return true;
+        }
+
         var ch = text[index];
         return char.IsWhiteSpace(ch) || IsPunctuationChar(ch);
     }
@@ -42,7 +45,7 @@ internal abstract class ConstructionPattern
     protected static bool IsAdjacent(ProfanityAnalyzer.AnalyzedToken prev, ProfanityAnalyzer.AnalyzedToken next)
     {
         var prevEnd = prev.Index + prev.Length;
-        return next.Index - prevEnd <= MaxTokenGap;
+        return next.Index - prevEnd <= MAX_TOKEN_GAP;
     }
 
     /// <summary>
@@ -56,14 +59,21 @@ internal abstract class ConstructionPattern
         var prevEnd = prev.Index + prev.Length;
         var gap = next.Index - prevEnd;
         if (gap <= 0)
+        {
             return true;
-        if (gap > MaxTokenGap)
+        }
+
+        if (gap > MAX_TOKEN_GAP)
+        {
             return false;
+        }
         // Check that all characters in the gap are whitespace/punctuation
         for (var j = prevEnd; j < next.Index; j++)
         {
             if (!IsBoundary(text, j))
+            {
                 return false;
+            }
         }
         return true;
     }
@@ -82,7 +92,9 @@ internal sealed class VerbKinshipPattern : ConstructionPattern
     {
         var i = startIndex;
         if (i >= tokens.Count || !HasCategory(tokens[i], WordCategory.ProfaneVerb))
+        {
             return null;
+        }
 
         var startPos = tokens[i].Index;
         var endPos = tokens[i].Index + tokens[i].Length;
@@ -108,7 +120,10 @@ internal sealed class VerbKinshipPattern : ConstructionPattern
                 prevToken = tokens[i];
                 i++;
             }
-            else break;
+            else
+            {
+                break;
+            }
         }
 
         // optional: [Kinship] (but at least one of Pronoun/Kinship must be present)
@@ -123,7 +138,9 @@ internal sealed class VerbKinshipPattern : ConstructionPattern
 
         // Must have at least Pronoun or Kinship
         if (!hasPronoun && !hasKinship)
+        {
             return null;
+        }
 
         // optional: [Particle]
         if (i < tokens.Count && HasCategory(tokens[i], WordCategory.Particle) && IsAdjacent(prevToken, tokens[i]))
@@ -159,7 +176,9 @@ internal sealed class ExclamatoryPattern : ConstructionPattern
 
             // required: [Kinship] — must be adjacent to pronoun
             if (i >= tokens.Count || !HasCategory(tokens[i], WordCategory.Kinship) || !IsAdjacent(prevToken, tokens[i]))
+            {
                 return null;
+            }
         }
         else if (HasCategory(tokens[i], WordCategory.Kinship))
         {
@@ -178,7 +197,9 @@ internal sealed class ExclamatoryPattern : ConstructionPattern
         // This prevents "馬桶的" from matching as [Kinship(馬)][Particle(的)]
         if (i >= tokens.Count || !HasCategory(tokens[i], WordCategory.Particle) ||
             !IsStrictlyAdjacent(prevToken, tokens[i], originalText))
+        {
             return null;
+        }
 
         endPos = tokens[i].Index + tokens[i].Length;
 
@@ -197,7 +218,9 @@ internal sealed class PrefixedSlurPattern : ConstructionPattern
     {
         var i = startIndex;
         if (i >= tokens.Count || !HasCategory(tokens[i], WordCategory.PejorativePrefix))
+        {
             return null;
+        }
 
         var startPos = tokens[i].Index;
         var endPos = tokens[i].Index + tokens[i].Length;
@@ -214,7 +237,9 @@ internal sealed class PrefixedSlurPattern : ConstructionPattern
 
         // required: [Slur] or [BodyPart] or [Kinship]
         if (i >= tokens.Count || !IsAdjacent(prevToken, tokens[i]))
+        {
             return null;
+        }
 
         if (HasCategory(tokens[i], WordCategory.Slur) ||
             HasCategory(tokens[i], WordCategory.BodyPart) ||
@@ -239,10 +264,14 @@ internal sealed class StandaloneSlurPattern : ConstructionPattern
     {
         var i = startIndex;
         if (i >= tokens.Count || tokens[i].IsSafe)
+        {
             return null;
+        }
 
         if (!HasCategory(tokens[i], WordCategory.Slur))
+        {
             return null;
+        }
 
         return (tokens[i].Index, tokens[i].Length);
     }
@@ -259,7 +288,9 @@ internal sealed class BodyPartPattern : ConstructionPattern
     {
         var i = startIndex;
         if (i >= tokens.Count)
+        {
             return null;
+        }
 
         var startPos = tokens[i].Index;
 
@@ -269,11 +300,15 @@ internal sealed class BodyPartPattern : ConstructionPattern
             var prevToken = tokens[i];
             i++;
             if (i >= tokens.Count || !IsAdjacent(prevToken, tokens[i]))
+            {
                 return null;
+            }
         }
 
         if (i >= tokens.Count || !HasCategory(tokens[i], WordCategory.BodyPart))
+        {
             return null;
+        }
 
         var endPos = tokens[i].Index + tokens[i].Length;
         return (startPos, endPos - startPos);
@@ -354,21 +389,29 @@ internal sealed class IsolatedExpletivePattern : ConstructionPattern
     {
         var i = startIndex;
         if (i >= tokens.Count)
+        {
             return null;
+        }
 
         var token = tokens[i];
         if (token.IsSafe)
+        {
             return null;
+        }
 
         if (!HasCategory(token, WordCategory.ProfaneVerb) &&
             !HasCategory(token, WordCategory.MildExpletive))
+        {
             return null;
+        }
 
         // Must be surrounded by boundaries (punctuation/whitespace/start/end)
         // to avoid matching characters embedded in normal compound words (e.g. "熱身操")
         if (!IsBoundary(originalText, token.Index - 1) ||
             !IsBoundary(originalText, token.Index + token.Length))
+        {
             return null;
+        }
 
         return (token.Index, token.Length);
     }

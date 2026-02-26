@@ -1,4 +1,5 @@
 ﻿namespace TaiwanUtilities;
+
 using System;
 using System.Diagnostics.CodeAnalysis;
 partial struct ChineseNumeric :

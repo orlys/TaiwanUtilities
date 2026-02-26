@@ -1,4 +1,5 @@
 ﻿namespace TaiwanUtilities;
+
 using System;
 
 #if NET7_0_OR_GREATER
@@ -22,4 +23,3 @@ partial struct RocDateTime
     public static TimeSpan operator -(RocDateTime left, DateTime right) => left.GetRawValue() - right;
     public static TimeSpan operator -(RocDateTime left, DateTimeOffset right) => left.GetRawValue() - right;
 }
-
