@@ -13,7 +13,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Net.Http;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -79,8 +78,8 @@ public sealed class PostalDatabase : IDisposable
     private PostalDatabaseVersionInfo? _currentVersion;
     private readonly object _updateLock = new object();
 
-    private const string GITHUB_REPOSITORY = "orlys/TaiwanUtilities";
     private const string RELEASE_TAG = "database-latest";
+    private const string RELEASE_ASSET_NAME = "zipcode.db";
 
     /// <summary>
     /// 下載大小上限（100 MB），防止資源耗盡攻擊
@@ -245,46 +244,20 @@ public sealed class PostalDatabase : IDisposable
     {
         try
         {
-            var httpClient = Internals.SharedHttpClient.Instance;
+            var releaseInfo = await Internals.GitHubReleaseClient
+                .GetReleaseInfoAsync(RELEASE_TAG, RELEASE_ASSET_NAME, ct)
+                .ConfigureAwait(false);
 
-            var releaseUrl = $"https://api.github.com/repos/{GITHUB_REPOSITORY}/releases/tags/{RELEASE_TAG}";
-            var response = await httpClient.GetAsync(releaseUrl, ct).ConfigureAwait(false);
-
-            if (!response.IsSuccessStatusCode)
+            if (releaseInfo == null)
             {
                 return null;
             }
 
-            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-            // 使用 System.Text.Json 解析 GitHub API 回應
-            using var doc = JsonDocument.Parse(content);
-            var root = doc.RootElement;
-
-            var publishedAt = root.TryGetProperty("published_at", out var pat) ? pat.GetString() : null;
-
-            // 從 assets 陣列中找到下載 URL
-            string? downloadUrl = null;
-            if (root.TryGetProperty("assets", out var assets))
-            {
-                foreach (var asset in assets.EnumerateArray())
-                {
-                    if (asset.TryGetProperty("browser_download_url", out var urlProp))
-                    {
-                        downloadUrl = urlProp.GetString();
-                        break;
-                    }
-                }
-            }
-
-            if (string.IsNullOrEmpty(publishedAt) || string.IsNullOrEmpty(downloadUrl))
-            {
-                return null;
-            }
+            var (publishedAt, downloadUrl) = releaseInfo.Value;
 
             var remoteVersion = new PostalDatabaseVersionInfo
             {
-                Version = publishedAt.Substring(0, 10), // yyyy-MM-dd
+                Version = publishedAt[..10], // yyyy-MM-dd
                 CreatedAt = DateTime.Parse(publishedAt)
             };
 

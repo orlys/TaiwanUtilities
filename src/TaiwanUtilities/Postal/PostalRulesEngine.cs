@@ -200,7 +200,7 @@ public static class PostalRulesEngine
             return value;
         }
 #else
-        if (int.TryParse(field.Substring(0, end), out var value))
+        if (int.TryParse(field[..end], out var value))
         {
             return value;
         }

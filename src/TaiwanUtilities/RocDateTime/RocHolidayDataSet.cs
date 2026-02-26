@@ -218,22 +218,42 @@ public sealed partial class RocHolidayDataSet
     {
         s_overrides.Clear();
         s_cache.Clear();
+        s_lastPublishedAt = null;
     }
 
     #region GitHub Release Download
 
-    private const string RELEASE_URL = "https://github.com/Orlys/TaiwanUtilities/releases/download/holidays-latest/holidays.csv";
+    private const string RELEASE_TAG = "holidays-latest";
+    private const string RELEASE_ASSET_NAME = "holidays.csv";
+    private static string? s_lastPublishedAt;
 
     private static async Task TryDownloadFromReleaseAsync(CancellationToken ct)
     {
         try
         {
+            var releaseInfo = await Internals.GitHubReleaseClient
+                .GetReleaseInfoAsync(RELEASE_TAG, RELEASE_ASSET_NAME, ct)
+                .ConfigureAwait(false);
+
+            if (releaseInfo == null)
+            {
+                return;
+            }
+
+            var (publishedAt, downloadUrl) = releaseInfo.Value;
+
+            // 版本相同則跳過下載
+            if (s_lastPublishedAt != null && s_lastPublishedAt == publishedAt)
+            {
+                return;
+            }
+
             var client = HttpClient;
 
 #if NET8_0_OR_GREATER
-            var response = await client.GetAsync(RELEASE_URL, ct).ConfigureAwait(false);
+            var response = await client.GetAsync(downloadUrl, ct).ConfigureAwait(false);
 #else
-            var response = await client.GetAsync(RELEASE_URL, ct).ConfigureAwait(false);
+            var response = await client.GetAsync(downloadUrl, ct).ConfigureAwait(false);
 #endif
             if (!response.IsSuccessStatusCode)
             {
@@ -259,6 +279,9 @@ public sealed partial class RocHolidayDataSet
                 }
                 s_cache.TryAdd(group.Key, yearDict);
             }
+
+            // 更新版本標記
+            s_lastPublishedAt = publishedAt;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or OperationCanceledException)
         {
@@ -444,7 +467,7 @@ public sealed partial class RocHolidayDataSet
                 continue;
             }
 #else
-            if (!int.TryParse(dateStr.Substring(0, 4), out var y) ||
+            if (!int.TryParse(dateStr[..4], out var y) ||
                 !int.TryParse(dateStr.Substring(4, 2), out var m) ||
                 !int.TryParse(dateStr.Substring(6, 2), out var d))
             {
@@ -566,7 +589,7 @@ public sealed partial class RocHolidayDataSet
                 continue;
             }
 #else
-            if (!int.TryParse(dateStr.Substring(0, 4), out var y) ||
+            if (!int.TryParse(dateStr[..4], out var y) ||
                 !int.TryParse(dateStr.Substring(4, 2), out var m) ||
                 !int.TryParse(dateStr.Substring(6, 2), out var d))
             {

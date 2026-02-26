@@ -114,7 +114,7 @@ partial class PostalAddress
 
                     if (!string.IsNullOrEmpty(nextName) && nextName.StartsWith("之"))
                     {
-                        var subFloorStr = nextName.Substring(1);
+                        var subFloorStr = nextName[1..];
                         if (int.TryParse(subFloorStr, out var subFloor))
                         {
                             components.SubFloor = subFloor;

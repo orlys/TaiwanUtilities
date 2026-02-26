@@ -57,7 +57,7 @@ public record ZipCodeResult
                 return string.Empty;
             }
 
-            return ZipCode.Length >= 3 ? ZipCode.Substring(0, 3) : ZipCode;
+            return ZipCode.Length >= 3 ? ZipCode[..3] : ZipCode;
         }
     }
 

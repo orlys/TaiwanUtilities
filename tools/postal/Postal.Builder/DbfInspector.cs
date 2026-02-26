@@ -47,7 +47,7 @@ public class DbfInspector
                     var displayValue = value?.ToString()?.Trim() ?? "(null)";
                     if (displayValue.Length > 50)
                     {
-                        displayValue = displayValue.Substring(0, 50) + "...";
+                        displayValue = displayValue[..50] + "...";
                     }
 
                     Console.WriteLine($"  {columnName,-15}: {displayValue}");

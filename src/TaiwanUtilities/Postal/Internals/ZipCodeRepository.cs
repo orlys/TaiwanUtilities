@@ -159,26 +159,26 @@ internal class ZipCodeRepository : IDisposable
         // 避免產生 4 碼：如果共同前綴是 4 碼，截取到 3 碼
         if (i >= 6)
         {
-            return strA.Substring(0, 6);  // 完整 6 碼
+            return strA[..6];  // 完整 6 碼
         }
 
         if (i == 5)
         {
-            return strA.Substring(0, 5);  // 5 碼（標準）
+            return strA[..5];  // 5 碼（標準）
         }
 
         if (i == 4)
         {
-            return strA.Substring(0, 3);  // 4 碼 → 截取到 3 碼（避免不標準長度）
+            return strA[..3];  // 4 碼 → 截取到 3 碼（避免不標準長度）
         }
 
         if (i >= 3)
         {
-            return strA.Substring(0, 3);  // 3 碼（區域碼）
+            return strA[..3];  // 3 碼（區域碼）
         }
 
         // 共同前綴 < 3 碼（1或2碼），保留原樣以支持漸進式查詢（如："1"代表臺北）
-        return strA.Substring(0, i);
+        return strA[..i];
     }
 
     /// <summary>
@@ -1209,7 +1209,7 @@ internal class ZipCodeRepository : IDisposable
                 // 提取候選部分：從匹配地址中取得輸入之後的部分
                 if (matchedAddr.Length > normalizedInput.Length)
                 {
-                    var remainingPart = matchedAddr.Substring(normalizedInput.Length);
+                    var remainingPart = matchedAddr[normalizedInput.Length..];
                     var remainingAddr = new AddressTokenizer(remainingPart);
 
                     // 如果有剩餘 tokens，取第一個完整的 token 作為候選
