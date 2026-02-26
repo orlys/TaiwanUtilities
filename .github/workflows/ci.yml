@@ -170,12 +170,20 @@ jobs:
           --latest=false \
           "$NUPKG"
 
-        # 同時建立版本 tag 的正式 release
+        # 刪除舊版本 tag 的 release（僅保留最新版）
+        gh release list --repo "$GITHUB_REPOSITORY" --limit 100 \
+          | awk -F'\t' '{print $3}' \
+          | grep -E '^v[0-9]+\.' \
+          | while read -r old_tag; do
+              gh release delete "$old_tag" --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
+            done
+
+        # 建立最新版本 tag 的正式 release
         gh release create "${GITHUB_REF_NAME}" \
           --repo "$GITHUB_REPOSITORY" \
           --title "v${VERSION}" \
           --generate-notes \
-          "$NUPKG" 2>/dev/null || true
+          "$NUPKG"
 
   codeql:
     name: CodeQL Security Analysis
