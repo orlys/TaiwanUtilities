@@ -114,16 +114,17 @@ public sealed partial class RocHolidayDataSet
     }
 
     /// <summary>
-    /// 從遠端下載指定年份的假日資料
+    /// 從遠端更新假日資料（自動判斷所需年份）
     /// </summary>
     /// <remarks>
     /// 下載來源優先順序：
     /// <list type="number">
     /// <item>TaiwanUtilities GitHub Release（合併 CSV，含所有已知年份）</item>
-    /// <item>行政院人事行政總處 data.gov.tw（單一年份）</item>
+    /// <item>行政院人事行政總處 data.gov.tw（補充缺少的年份）</item>
     /// </list>
+    /// 自動下載當前年份與下一年份的資料（若尚未快取）。
     /// </remarks>
-    public static async Task DownloadAsync(int year, CancellationToken ct = default)
+    public static async Task UpdateAsync(CancellationToken ct = default)
     {
         // Primary: GitHub Release（僅首次嘗試，會快取所有年份）
         if (Interlocked.CompareExchange(ref s_releaseDownloadAttempted, 1, 0) == 0)
@@ -131,26 +132,86 @@ public sealed partial class RocHolidayDataSet
             await TryDownloadFromReleaseAsync(ct).ConfigureAwait(false);
         }
 
-        if (s_cache.ContainsKey(year))
-            return;
+        // 自動判斷需要的年份：當前年 + 下一年
+        var currentYear = DateTime.Today.Year;
+        var neededYears = new[] { currentYear, currentYear + 1 };
 
-        // Fallback: data.gov.tw
-        var holidays = await TryDownloadFromGovAsync(year, ct).ConfigureAwait(false);
-        if (holidays.Count > 0)
+        foreach (var year in neededYears)
         {
-            s_cache[year] = holidays;
+            if (s_cache.ContainsKey(year) || (year >= EmbeddedMinYear && year <= EmbeddedMaxYear))
+                continue;
+
+            // Fallback: data.gov.tw
+            var holidays = await TryDownloadFromGovAsync(year, ct).ConfigureAwait(false);
+            if (holidays.Count > 0)
+            {
+                s_cache[year] = holidays;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 從本地 CSV 檔案更新假日資料（使用本專案的 holidays.csv 格式）
+    /// </summary>
+    /// <param name="csvPath">CSV 檔案路徑</param>
+    /// <param name="ct">取消權杖</param>
+    /// <exception cref="FileNotFoundException">找不到指定的檔案</exception>
+    public static async Task UpdateFromAsync(string csvPath, CancellationToken ct = default)
+    {
+        if (!File.Exists(csvPath))
+            throw new FileNotFoundException("找不到假日資料檔案", csvPath);
+
+#if NET8_0_OR_GREATER
+        var content = await File.ReadAllTextAsync(csvPath, ct).ConfigureAwait(false);
+#else
+        var content = await Task.Run(() => File.ReadAllText(csvPath), ct).ConfigureAwait(false);
+#endif
+        MergeCsvToCache(content);
+    }
+
+    /// <summary>
+    /// 從串流更新假日資料（使用本專案的 holidays.csv 格式）
+    /// </summary>
+    /// <param name="stream">包含 CSV 內容的串流</param>
+    /// <param name="ct">取消權杖</param>
+    public static async Task UpdateFromStreamAsync(Stream stream, CancellationToken ct = default)
+    {
+        using var reader = new StreamReader(stream);
+#if NET8_0_OR_GREATER
+        var content = await reader.ReadToEndAsync(ct).ConfigureAwait(false);
+#else
+        var content = await reader.ReadToEndAsync().ConfigureAwait(false);
+#endif
+        MergeCsvToCache(content);
+    }
+
+    /// <summary>
+    /// 將 CSV 內容解析後合併到快取
+    /// </summary>
+    private static void MergeCsvToCache(string content)
+    {
+        var allData = new Dictionary<DateTime, RocHoliday>();
+        ParseCsv(content, allData);
+
+        foreach (var group in allData.GroupBy(kv => kv.Key.Year))
+        {
+            var yearDict = new Dictionary<DateTime, RocHoliday>();
+            foreach (var kv in group)
+            {
+                yearDict[kv.Key] = kv.Value;
+            }
+            s_cache[group.Key] = yearDict;
         }
     }
 
     /// <summary>
     /// 重置資料集（清除 Runtime 快取與使用者修改，回到嵌入資料）
     /// </summary>
-    public static Task ReloadAsync(CancellationToken ct = default)
+    public static void Reload()
     {
         s_overrides.Clear();
         s_cache.Clear();
         Interlocked.Exchange(ref s_releaseDownloadAttempted, 0);
-        return Task.CompletedTask;
     }
 
     #region GitHub Release Download

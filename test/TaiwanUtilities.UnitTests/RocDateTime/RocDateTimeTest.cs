@@ -148,7 +148,7 @@ public partial class RocDateTimeTest
         Assert.False(testDate.Holiday);
 
         // 清除 overrides
-        await RocHolidayDataSet.ReloadAsync();
+        RocHolidayDataSet.Reload();
     }
 
     [Fact]
@@ -166,6 +166,78 @@ public partial class RocDateTimeTest
         Assert.True(RocHolidayDataSet.ContainsYear(2026));
         Assert.False(RocHolidayDataSet.ContainsYear(1997));
         Assert.False(RocHolidayDataSet.ContainsYear(2027));
+    }
+
+    [Fact]
+    public static async System.Threading.Tasks.Task RocHolidayDataSet_UpdateFromAsync_載入本地CSV()
+    {
+        // 建立臨時 CSV 檔案
+        var tempFile = System.IO.Path.GetTempFileName();
+        try
+        {
+            System.IO.File.WriteAllText(tempFile,
+                "date,is_holiday,role,description\n" +
+                "20270101,true,all,測試元旦\n" +
+                "20270501,true,labor,測試勞動節\n" +
+                "20270502,false,none,工作日\n");
+
+            await RocHolidayDataSet.UpdateFromAsync(tempFile);
+
+            // 驗證載入的資料
+            Assert.True(RocHolidayDataSet.ContainsYear(2027));
+
+            var newYear = new RocDateTime(116, 1, 1).Holiday;
+            Assert.True(newYear);
+            Assert.Equal("測試元旦", newYear.Description);
+
+            var laborDay = new RocDateTime(116, 5, 1).Holiday;
+            Assert.True(laborDay);
+            Assert.True(laborDay.Role.HasFlag(HolidayRole.Labor));
+
+            var workDay = new RocDateTime(116, 5, 2).Holiday;
+            Assert.False(workDay);
+        }
+        finally
+        {
+            RocHolidayDataSet.Reload();
+            System.IO.File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public static async System.Threading.Tasks.Task RocHolidayDataSet_UpdateFromStreamAsync_載入串流()
+    {
+        var csv = "date,is_holiday,role,description\n" +
+                  "20280101,true,all,串流元旦\n" +
+                  "20280928,true,teacher,串流教師節\n";
+
+        using var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(csv));
+
+        try
+        {
+            await RocHolidayDataSet.UpdateFromStreamAsync(stream);
+
+            Assert.True(RocHolidayDataSet.ContainsYear(2028));
+
+            var newYear = new RocDateTime(117, 1, 1).Holiday;
+            Assert.True(newYear);
+            Assert.Equal("串流元旦", newYear.Description);
+
+            var teacherDay = new RocDateTime(117, 9, 28).Holiday;
+            Assert.True(teacherDay);
+            Assert.True(teacherDay.Role.HasFlag(HolidayRole.Teacher));
+        }
+        finally
+        {
+            RocHolidayDataSet.Reload();
+        }
+    }
+
+    [Fact]
+    public static async System.Threading.Tasks.Task RocHolidayDataSet_UpdateFromAsync_FileNotFound_拋出例外()
+    {
+        await Assert.ThrowsAsync<System.IO.FileNotFoundException>(async () =>
+            await RocHolidayDataSet.UpdateFromAsync("/nonexistent/path/holidays.csv"));
     }
 
     [Fact]

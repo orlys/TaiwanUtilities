@@ -100,8 +100,8 @@ RocHolidayDataSet.Add(
     new RocDateTime(114, 12, 25),
     new RocHoliday(true, HolidayRole.All, "聖誕節"));
 
-// 下載最新行事曆
-await RocHolidayDataSet.DownloadAsync(115);
+// 下載最新行事曆（自動判斷所需年份）
+await RocHolidayDataSet.UpdateAsync();
 ```
 
 <details>
