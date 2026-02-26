@@ -23,7 +23,6 @@ public sealed partial class RocHolidayDataSet
 {
     private static readonly ConcurrentDictionary<DateTime, RocHoliday?> s_overrides = new();
     private static readonly ConcurrentDictionary<int, Dictionary<DateTime, RocHoliday>> s_cache = new();
-    private static int s_releaseDownloadAttempted;
 
     private static HttpClient HttpClient => Internals.SharedHttpClient.Instance;
 
@@ -114,25 +113,21 @@ public sealed partial class RocHolidayDataSet
     }
 
     /// <summary>
-    /// 從遠端更新假日資料（自動判斷所需年份）
+    /// 從遠端更新假日資料
     /// </summary>
     /// <remarks>
-    /// 下載來源優先順序：
+    /// 每次呼叫皆會嘗試下載最新資料，下載來源優先順序：
     /// <list type="number">
     /// <item>TaiwanUtilities GitHub Release（合併 CSV，含所有已知年份）</item>
-    /// <item>行政院人事行政總處 data.gov.tw（補充缺少的年份）</item>
+    /// <item>行政院人事行政總處 data.gov.tw（補充當前年與下一年）</item>
     /// </list>
-    /// 自動下載當前年份與下一年份的資料（若尚未快取）。
     /// </remarks>
     public static async Task UpdateAsync(CancellationToken ct = default)
     {
-        // Primary: GitHub Release（僅首次嘗試，會快取所有年份）
-        if (Interlocked.CompareExchange(ref s_releaseDownloadAttempted, 1, 0) == 0)
-        {
-            await TryDownloadFromReleaseAsync(ct).ConfigureAwait(false);
-        }
+        // Primary: GitHub Release（包含所有已知年份）
+        await TryDownloadFromReleaseAsync(ct).ConfigureAwait(false);
 
-        // 自動判斷需要的年份：當前年 + 下一年
+        // Fallback: 若當前年或下一年仍缺少資料，從 data.gov.tw 補充
         var currentYear = DateTime.Today.Year;
         var neededYears = new[] { currentYear, currentYear + 1 };
 
@@ -141,7 +136,6 @@ public sealed partial class RocHolidayDataSet
             if (s_cache.ContainsKey(year) || (year >= EmbeddedMinYear && year <= EmbeddedMaxYear))
                 continue;
 
-            // Fallback: data.gov.tw
             var holidays = await TryDownloadFromGovAsync(year, ct).ConfigureAwait(false);
             if (holidays.Count > 0)
             {
@@ -211,7 +205,6 @@ public sealed partial class RocHolidayDataSet
     {
         s_overrides.Clear();
         s_cache.Clear();
-        Interlocked.Exchange(ref s_releaseDownloadAttempted, 0);
     }
 
     #region GitHub Release Download
