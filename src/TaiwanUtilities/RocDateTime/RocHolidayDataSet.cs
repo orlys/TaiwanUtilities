@@ -216,7 +216,7 @@ public sealed partial class RocHolidayDataSet
 
     #region GitHub Release Download
 
-    private const string ReleaseUrl = "https://github.com/Orlys/TaiwanUtilities/releases/latest/download/holidays.csv";
+    private const string ReleaseUrl = "https://github.com/Orlys/TaiwanUtilities/releases/download/holidays-latest/holidays.csv";
 
     private static async Task TryDownloadFromReleaseAsync(CancellationToken ct)
     {

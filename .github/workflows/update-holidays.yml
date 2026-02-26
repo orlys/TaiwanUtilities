@@ -162,15 +162,28 @@ jobs:
           print(f"Generated holidays.csv ({len(all_rows)} rows)")
           PYTHON_SCRIPT
 
-      - name: Create Release
+      - name: Update Release
         if: steps.changes.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v$(date -u +%Y%m%d)"
-          # Delete existing release/tag for today if re-run
-          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "$TAG" holidays.csv \
-            --title "辦公日曆表 $TAG" \
-            --notes "自動更新：包含所有已知年份的辦公日曆表合併 CSV" \
-            --latest
+          RELEASE_TAG="holidays-latest"
+          RELEASE_TITLE="辦公日曆表 ($(date -u +%Y-%m-%d))"
+          RELEASE_BODY="自動更新：包含所有已知年份的辦公日曆表合併 CSV
+
+          更新時間: $(date -u '+%Y-%m-%d %H:%M:%S') UTC
+
+          使用方式:
+          \`\`\`csharp
+          await RocHolidayDataSet.UpdateAsync();
+          \`\`\`"
+
+          # 刪除舊 release（如果存在）
+          gh release delete "$RELEASE_TAG" --yes 2>/dev/null || true
+          git push --delete origin "$RELEASE_TAG" 2>/dev/null || true
+
+          # 建立新 release（不標記為 latest，避免覆蓋版本 release）
+          gh release create "$RELEASE_TAG" holidays.csv \
+            --title "$RELEASE_TITLE" \
+            --notes "$RELEASE_BODY" \
+            --latest=false
