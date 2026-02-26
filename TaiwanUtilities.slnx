@@ -3,6 +3,7 @@
     <File Path=".editorconfig" />
     <File Path=".gitattributes" />
     <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/update-holidays.yml" />
     <File Path=".github/workflows/update-postal-database.yml" />
     <File Path=".gitignore" />
     <File Path="LICENSE" />

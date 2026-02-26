@@ -189,6 +189,46 @@ partial class ChineseNumericTest
     }
 
     [Theory]
+    [InlineData(1234.56, "壹仟貳佰參拾伍元整")]
+    [InlineData(1234, "壹仟貳佰參拾肆元整")]
+    [InlineData(0, "零元整")]
+    [InlineData(-1234.56, "負壹仟貳佰參拾伍元整")]
+    [InlineData(100000000, "壹億元整")]
+    [InlineData(10.05, "壹拾元整")]
+    [InlineData(1000, "壹仟元整")]
+    [InlineData(0.50, "壹元整")]
+    [InlineData(0.49, "零元整")]
+    public void 支票貨幣格式化(double feed, string expected)
+    {
+        var cn = new ChineseNumeric((decimal)feed);
+        Assert.Equal(expected, cn.ToString("TW$"));
+    }
+
+    [Theory]
+    [InlineData(1234.56, "壹仟貳佰參拾肆元伍角陸分")]
+    [InlineData(1234, "壹仟貳佰參拾肆元整")]
+    [InlineData(0, "零元整")]
+    [InlineData(1.01, "壹元壹分")]
+    [InlineData(1.10, "壹元壹角整")]
+    [InlineData(-1234.56, "負壹仟貳佰參拾肆元伍角陸分")]
+    [InlineData(1234.5, "壹仟貳佰參拾肆元伍角整")]
+    [InlineData(1234.567, "壹仟貳佰參拾肆元伍角陸分柒厘")]
+    [InlineData(1234.5678, "壹仟貳佰參拾肆元伍角陸分柒厘捌毫")]
+    [InlineData(1234.56789, "壹仟貳佰參拾肆元伍角陸分柒厘捌毫玖絲")]
+    [InlineData(100000000, "壹億元整")]
+    [InlineData(10.05, "壹拾元伍分")]
+    [InlineData(0.50, "零元伍角整")]
+    [InlineData(1000, "壹仟元整")]
+    [InlineData(0.001, "零元壹厘")]
+    [InlineData(0.0001, "零元壹毫")]
+    [InlineData(0.00001, "零元壹絲")]
+    public void 一般貨幣格式化(double feed, string expected)
+    {
+        var cn = new ChineseNumeric((decimal)feed);
+        Assert.Equal(expected, cn.ToString("tw$"));
+    }
+
+    [Theory]
     [InlineData(-42, "TW", "負肆拾貳")]
     [InlineData(-42, "cn", "负四十二")]
     [InlineData(-42, "CN", "负肆拾贰")]

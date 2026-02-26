@@ -31,6 +31,8 @@ partial struct ChineseNumeric : IFormattable
     ///   <item><term>CN</term><description>簡體大寫(例: 壹佰贰拾参)</description></item>
     ///   <item><term>HW</term><description>半形數字(例: 123)</description></item>
     ///   <item><term>FW</term><description>全形數字(例: １２３)</description></item>
+    ///   <item><term>TW$</term><description>支票大寫(例: 壹仟貳佰參拾肆元整)，遵循中央銀行規範，角分不計</description></item>
+    ///   <item><term>tw$</term><description>貨幣大寫(例: 壹仟貳佰參拾肆元伍角陸分)，精度自動偵測</description></item>
     ///   <item><description>遵照 <seealso langword="decimal"/> 的格式設定</description></item>
     /// </list>
     /// </param>
@@ -79,12 +81,16 @@ partial struct ChineseNumeric : IFormattable
     private class Formatter : ICustomFormatter
     {
 
+        private static readonly string[] s_currencySubUnits = ["角", "分", "厘", "毫", "絲", "忽", "微", "纖", "沙", "塵"];
+
         public string Format(string format, object arg, IFormatProvider formatProvider)
         {
             if (arg is ChineseNumeric cn)
             {
                 return format switch
                 {
+                    "TW$" => FormatCurrency(cn, checkMode: true),
+                    "tw$" => FormatCurrency(cn, checkMode: false),
                     "TW" or "zh-TW" => Format(cn, FormatterProfile.TraditionalUppercase),
                     "tw" or "zh-tw" => Format(cn, FormatterProfile.TraditionalLowercase),
                     "CN" or "zh-CN" => Format(cn, FormatterProfile.SimplifiedUppercase),
@@ -111,6 +117,90 @@ partial struct ChineseNumeric : IFormattable
             return profile.Mode.HasFlag(FormatterFlags.CrawlStack)
                 ? CrawlStack(input, profile)
                 : DirectTranslate(input, profile);
+        }
+
+        /// <param name="checkMode">
+        /// true: 支票模式（TW$），遵循中央銀行規範，強制到元整，角分不計。
+        /// false: 一般貨幣模式（tw$），自動偵測精度，角後無分時補「整」。
+        /// </param>
+        private static string FormatCurrency(ChineseNumeric input, bool checkMode)
+        {
+            var profile = FormatterProfile.TraditionalUppercase;
+            var value = input.GetRawValue();
+
+            var sb = new StringBuilder();
+
+            var isNegative = value < 0;
+            if (isNegative)
+            {
+                value = -value;
+                sb.Append(profile.NegativeSign);
+            }
+
+            if (checkMode)
+            {
+                // 支票模式：四捨五入到元
+                value = Math.Round(value, 0, MidpointRounding.AwayFromZero);
+            }
+
+            var integerPart = Math.Truncate(value);
+            var fractionalPart = value - integerPart;
+
+            // 整數部分
+            if (integerPart == 0)
+            {
+                sb.Append(profile.Digits[0]);
+            }
+            else
+            {
+                var integerStr = new Builder().ToString(integerPart, profile);
+
+                // 貨幣格式要求「壹拾」而非「拾」
+                if (integerStr.StartsWith(profile.GroupTinyUnits[1], StringComparison.Ordinal))
+                {
+                    integerStr = profile.Digits[1] + integerStr;
+                }
+
+                sb.Append(integerStr);
+            }
+
+            sb.Append("元");
+
+            if (checkMode || fractionalPart == 0)
+            {
+                sb.Append("整");
+                return sb.ToString();
+            }
+
+            // 小數部分：逐位取出，自動偵測精度
+            var remaining = fractionalPart;
+            var lastUnitIndex = -1;
+            for (var i = 0; i < s_currencySubUnits.Length; i++)
+            {
+                remaining *= 10;
+                var digit = (int)Math.Truncate(remaining);
+                remaining -= digit;
+
+                if (digit > 0)
+                {
+                    sb.Append(profile.Digits[digit]);
+                    sb.Append(s_currencySubUnits[i]);
+                    lastUnitIndex = i;
+                }
+
+                if (remaining == 0)
+                {
+                    break;
+                }
+            }
+
+            // 角後無分時補「整」（最後輸出的單位是「角」）
+            if (lastUnitIndex == 0)
+            {
+                sb.Append("整");
+            }
+
+            return sb.ToString();
         }
 
         private static string DirectTranslate(ChineseNumeric input, FormatterProfile profile)
