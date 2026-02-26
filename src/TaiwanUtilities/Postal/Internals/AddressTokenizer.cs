@@ -68,7 +68,7 @@ internal class AddressTokenizer
     /// 必須以數字字元（非位數字元如十/拾/百/千）結尾，避免匹配路名中的「二十路」等
     /// </summary>
     private static readonly Regex ToReplaceRegex = new Regex(
-        @"[ 　,，台~-]|[０-９]|[一二三四五六七八九十壹貳參叁肆伍陸柒捌玖拾佰仟百千]*[一二三四五六七八九壹貳參叁肆伍陸柒捌玖](?=[段路街巷弄號樓層])",
+        @"[ 　,，台~-]|[０-９]|[一二三四五六七八九十壹貳參叁肆伍陸柒捌玖拾佰仟百千]*[一二三四五六七八九壹貳參叁肆伍陸柒捌玖](?=[段路街巷弄號樓層室])",
         RegexOptions.Compiled,
         TimeSpan.FromSeconds(1));
 

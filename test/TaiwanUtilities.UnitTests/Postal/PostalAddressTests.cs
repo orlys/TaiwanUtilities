@@ -601,4 +601,52 @@ public class PostalAddressTests
         // 驗證正規化結果
         Assert.Equal("宜蘭縣大同鄉太平村宜專1線中間1號", normalized);
     }
+
+    [Fact]
+    public void Parse_BasementWithFloorUnit_ExtractsCorrectly()
+    {
+        // 「地下二樓」應與「地下二層」一樣能解析
+        var comp = PostalAddress.Parse("臺北市信義區市府路1號地下二樓");
+
+        Assert.Equal("臺北市", comp.City);
+        Assert.Equal("信義區", comp.District);
+        Assert.Equal("市府路", comp.Road);
+        Assert.Equal(1, comp.Number);
+        Assert.Equal("地下2樓", comp.Floor);
+        Assert.True(comp.IsBasement);
+    }
+
+    [Fact]
+    public void Parse_BasementWithChineseRoomNumber_ExtractsCorrectly()
+    {
+        // 「地下四層三室」中文數字室號應能解析
+        var comp = PostalAddress.Parse("臺北市信義區市府路1號地下四層三室");
+
+        Assert.Equal(1, comp.Number);
+        Assert.Equal("地下4層", comp.Floor);
+        Assert.True(comp.IsBasement);
+        Assert.Equal("3室", comp.Room);
+    }
+
+    [Fact]
+    public void Parse_BasementFloorWithArabicRoom_ExtractsCorrectly()
+    {
+        // 「地下四層3室」混合數字
+        var comp = PostalAddress.Parse("臺北市信義區市府路1號地下四層3室");
+
+        Assert.Equal("地下4層", comp.Floor);
+        Assert.True(comp.IsBasement);
+        Assert.Equal("3室", comp.Room);
+    }
+
+    [Fact]
+    public void Parse_BasementFloorWithFloorUnit_ChineseRoom_ExtractsCorrectly()
+    {
+        // 「地下二樓三室」樓+中文室號
+        var comp = PostalAddress.Parse("臺北市信義區市府路1號地下二樓三室");
+
+        Assert.Equal("地下2樓", comp.Floor);
+        Assert.True(comp.IsBasement);
+        Assert.Equal("3室", comp.Room);
+    }
 }

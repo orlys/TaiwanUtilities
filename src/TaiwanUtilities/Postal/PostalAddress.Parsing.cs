@@ -92,7 +92,15 @@ partial class PostalAddress
             // 解析樓層
             if (!string.IsNullOrEmpty(no) && unit == "樓")
             {
-                components.Floor = no + "樓";
+                if (i >= 1 && tokens[i - 1][AddressTokenizer.NAME] == "地下")
+                {
+                    components.Floor = "地下" + no + "樓";
+                    components.IsBasement = true;
+                }
+                else
+                {
+                    components.Floor = no + "樓";
+                }
 
                 // 檢查下一個 token 是否為「之N」格式（如：5樓之3）
                 if (i + 1 < tokens.Count)
