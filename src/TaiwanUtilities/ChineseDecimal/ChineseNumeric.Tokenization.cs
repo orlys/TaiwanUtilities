@@ -162,6 +162,21 @@ partial struct ChineseNumeric
         /// </summary>
         public bool IsNegative => Character.IsKindOf(CharacterKind.Negative);
 
+        /// <summary>
+        /// 判斷是否為貨幣單位（元/圓）。
+        /// </summary>
+        public bool IsCurrencyUnit => Character.IsKindOf(CharacterKind.CurrencyUnit);
+
+        /// <summary>
+        /// 判斷是否為貨幣子單位（角）。
+        /// </summary>
+        public bool IsCurrencySubUnit => Character.IsKindOf(CharacterKind.CurrencySubUnit);
+
+        /// <summary>
+        /// 判斷是否為貨幣終止符（整）。
+        /// </summary>
+        public bool IsCurrencyTerminator => Character.IsKindOf(CharacterKind.CurrencyTerminator);
+
         public override string ToString()
         {
             return $"[{Index}] = '{Value}'";
@@ -258,6 +273,10 @@ partial struct ChineseNumeric
 
             NegativeSign = new(CharacterKind.Negative, 0m, '負', '负');
 
+            Yuan = new(CharacterKind.CurrencyUnit, 1m, '元', '圓');
+            Jiao = new(CharacterKind.CurrencySubUnit, 1m, '角');
+            Zheng = new(CharacterKind.CurrencyTerminator, 0m, '整');
+
             Unknown.Previous = Unknown;
             Unknown.Next = Unknown;
 
@@ -340,6 +359,9 @@ partial struct ChineseNumeric
                 TenThousandth,
                 HundredThousandth,
                 NegativeSign,
+                Yuan,
+                Jiao,
+                Zheng,
             ];
             var numericTokens = new Dictionary<char, Character>();
             foreach (var token in List)
@@ -492,6 +514,21 @@ partial struct ChineseNumeric
         /// </summary>
         public static Character NegativeSign { get; }
 
+        /// <summary>
+        /// 元/圓（貨幣單位）
+        /// </summary>
+        public static Character Yuan { get; }
+
+        /// <summary>
+        /// 角（貨幣子單位）
+        /// </summary>
+        public static Character Jiao { get; }
+
+        /// <summary>
+        /// 整（貨幣終止符）
+        /// </summary>
+        public static Character Zheng { get; }
+
         public static Character Get(char character)
         {
             return s_numericTokens.GetValueOrDefault(character, Unknown);
@@ -576,6 +613,15 @@ partial struct ChineseNumeric
 
         /// <summary> 負號 </summary>
         Negative = 131072,
+
+        /// <summary> 貨幣單位（元/圓） </summary>
+        CurrencyUnit = 262144,
+
+        /// <summary> 貨幣子單位（角） </summary>
+        CurrencySubUnit = 524288,
+
+        /// <summary> 貨幣終止符（整） </summary>
+        CurrencyTerminator = 1048576,
     }
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]

@@ -47,6 +47,19 @@ partial struct ChineseNumeric
             }
         }
 
+        // 貨幣格式（含「元/圓」）應使用 ChineseCurrency.Parse
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            if (tokens[i].IsCurrencyUnit || tokens[i].IsCurrencyTerminator || tokens[i].IsCurrencySubUnit)
+            {
+                if (throwError)
+                {
+                    throw new FormatException($"Currency format detected. Use {nameof(ChineseCurrency)}.Parse() instead.");
+                }
+                return false;
+            }
+        }
+
         // 尋找小數分隔符（點/又）或小數位量詞（分/釐/毫）的位置
         var floatPointIndex = -1;
         var hasDecimalMultiplier = false;
@@ -229,7 +242,7 @@ partial struct ChineseNumeric
         return true;
     }
 
-    private static bool ParseIntegerTokens(List<Token> tokens, out ChineseNumeric result, bool throwError)
+    internal static bool ParseIntegerTokens(List<Token> tokens, out ChineseNumeric result, bool throwError)
     {
         result = Zero;
 

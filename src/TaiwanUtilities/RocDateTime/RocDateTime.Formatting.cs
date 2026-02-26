@@ -77,19 +77,19 @@ partial struct RocDateTime : IFormattable
 
             return format switch
             {
-                "民國年" => rdt.BeforeEra
-                    ? $"民國前{ChineseNumeric.ToString(rdt.Year, "tw")}年"
-                    : $"民國{ChineseNumeric.ToString(rdt.Year, "tw")}年",
+                RocDateTimeFormats.EraYear => rdt.BeforeEra
+                    ? $"民國前{ChineseNumeric.ToString(rdt.Year, ChineseNumericFormats.TraditionalLowercase)}年"
+                    : $"民國{ChineseNumeric.ToString(rdt.Year, ChineseNumericFormats.TraditionalLowercase)}年",
 
-                "年" => rdt.BeforeEra
-                    ? $"民前{ChineseNumeric.ToString(rdt.Year, "tw")}年"
-                    : $"{ChineseNumeric.ToString(rdt.Year, "tw")}年",
+                RocDateTimeFormats.Year => rdt.BeforeEra
+                    ? $"民前{ChineseNumeric.ToString(rdt.Year, ChineseNumericFormats.TraditionalLowercase)}年"
+                    : $"{ChineseNumeric.ToString(rdt.Year, ChineseNumericFormats.TraditionalLowercase)}年",
 
-                "月" => $"{ChineseNumeric.ToString(rdt.Month, "tw")}月",
-                "時" => $"{ChineseNumeric.ToString(rdt.Hour, "tw")}時",
-                "日" => $"{ChineseNumeric.ToString(rdt.Day, "tw")}日",
-                "分" => $"{ChineseNumeric.ToString(rdt.Minute, "tw")}分",
-                "秒" => $"{ChineseNumeric.ToString(rdt.Second, "tw")}秒",
+                RocDateTimeFormats.Month => $"{ChineseNumeric.ToString(rdt.Month, ChineseNumericFormats.TraditionalLowercase)}月",
+                RocDateTimeFormats.Hour => $"{ChineseNumeric.ToString(rdt.Hour, ChineseNumericFormats.TraditionalLowercase)}時",
+                RocDateTimeFormats.Day => $"{ChineseNumeric.ToString(rdt.Day, ChineseNumericFormats.TraditionalLowercase)}日",
+                RocDateTimeFormats.Minute => $"{ChineseNumeric.ToString(rdt.Minute, ChineseNumericFormats.TraditionalLowercase)}分",
+                RocDateTimeFormats.Second => $"{ChineseNumeric.ToString(rdt.Second, ChineseNumericFormats.TraditionalLowercase)}秒",
 
                 "yyy" or "year" => rdt.BeforeEra
                     ? $"{BEFORE_ERA_SYMBOL}{rdt.Year:D3}"
@@ -102,45 +102,45 @@ partial struct RocDateTime : IFormattable
                 "ss" or "sec" or "second" => rdt.Second.ToString("D2"),
 
                 // 年月模式
-                "m" => $"{(rdt.BeforeEra ? BEFORE_ERA_SYMBOL : null)}{rdt.Year:D}/{rdt.Month:D2}",
+                RocDateTimeFormats.ShortYearMonth => $"{(rdt.BeforeEra ? BEFORE_ERA_SYMBOL : null)}{rdt.Year:D}/{rdt.Month:D2}",
                 // 年月模式
-                "M" => $"{(rdt.BeforeEra ? BEFORE_ERA_SYMBOL : null)}{rdt.Year:D}年{rdt.Month:D2}月",
+                RocDateTimeFormats.LongYearMonth => $"{(rdt.BeforeEra ? BEFORE_ERA_SYMBOL : null)}{rdt.Year:D}年{rdt.Month:D2}月",
 
                 // 簡短日期模式
-                "d" or "date" => $"{(rdt.BeforeEra ? BEFORE_ERA_SYMBOL : null)}{rdt.Year:D}/{rdt.Month:D2}/{rdt.Day:D2}",
+                RocDateTimeFormats.ShortDate or "date" => $"{(rdt.BeforeEra ? BEFORE_ERA_SYMBOL : null)}{rdt.Year:D}/{rdt.Month:D2}/{rdt.Day:D2}",
 
                 // 完整日期模式
-                "D" or "DATE" => $"{(rdt.BeforeEra ? "民前" : null)}{rdt.Year:D}年{rdt.Month:D}月{rdt.Day:D}日",
+                RocDateTimeFormats.LongDate or "DATE" => $"{(rdt.BeforeEra ? "民前" : null)}{rdt.Year:D}年{rdt.Month:D}月{rdt.Day:D}日",
 
                 // 簡短時間模式
-                "t" or "time" => $"{rdt.Hour:D2}:{rdt.Minute:D2}:{rdt.Second:D2}",
+                RocDateTimeFormats.ShortTime or "time" => $"{rdt.Hour:D2}:{rdt.Minute:D2}:{rdt.Second:D2}",
 
                 // 完整時間模式
-                "T" or "TIME" => $"{rdt.Hour:D}時{rdt.Minute:D}分{rdt.Second:D}秒",
+                RocDateTimeFormats.LongTime or "TIME" => $"{rdt.Hour:D}時{rdt.Minute:D}分{rdt.Second:D}秒",
 
                 // 完整日期/時間模式 (簡短時間)
-                "f" or "full" => string.Format(fp, "{0:date} {0:time}", rdt),
+                RocDateTimeFormats.ShortFull or "full" => string.Format(fp, "{0:date} {0:time}", rdt),
 
                 // 完整日期/時間模式 (完整時間)
-                "F" or "FULL" => string.Format(fp, "{0:DATE}{0:TIME}", rdt),
+                RocDateTimeFormats.LongFull or "FULL" => string.Format(fp, "{0:DATE}{0:TIME}", rdt),
 
                 // 簡短通用模式
-                "g" => (rdt.Year, rdt.Month, rdt.Day, rdt.Hour, rdt.Minute, rdt.Second) switch
+                RocDateTimeFormats.ShortGeneral => (rdt.Year, rdt.Month, rdt.Day, rdt.Hour, rdt.Minute, rdt.Second) switch
                 {
                     (_, _, _, 0, 0, 0) => string.Format(fp, "{0:date}", rdt),
                     _ => string.Format(fp, "{0:date} {0:time}", rdt)
                 },
 
                 // 完整通用模式
-                "G" => (rdt.Year, rdt.Month, rdt.Day, rdt.Hour, rdt.Minute, rdt.Second) switch
+                RocDateTimeFormats.LongGeneral => (rdt.Year, rdt.Month, rdt.Day, rdt.Hour, rdt.Minute, rdt.Second) switch
                 {
                     (_, _, _, 0, 0, 0) => string.Format(fp, "{0:DATE}", rdt),
                     _ => string.Format(fp, "{0:DATE} {0:TIME}", rdt)
                 },
 
-                "民國日期" => string.Format(fp, "{0:民國年}{0:月}{0:日}", rdt),
-                "日期" => string.Format(fp, "{0:年}{0:月}{0:日}", rdt),
-                "時間" => string.Format(fp, "{0:時}{0:分}{0:秒}", rdt),
+                RocDateTimeFormats.EraDate => string.Format(fp, "{0:民國年}{0:月}{0:日}", rdt),
+                RocDateTimeFormats.Date => string.Format(fp, "{0:年}{0:月}{0:日}", rdt),
+                RocDateTimeFormats.Time => string.Format(fp, "{0:時}{0:分}{0:秒}", rdt),
 
                 //var formats when !string.IsNullOrWhiteSpace(formats) && GetFormatPattern().Replace(formats, x=>)
                 //    .Matches(formats) is { Count: > 0 } m

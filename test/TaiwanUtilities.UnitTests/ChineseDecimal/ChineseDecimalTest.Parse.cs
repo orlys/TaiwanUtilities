@@ -169,4 +169,15 @@ partial class ChineseNumericTest
     {
         Assert.Throws<FormatException>(() => ChineseNumeric.Parse("負"));
     }
+
+    [Theory]
+    [InlineData("一百元整")]
+    [InlineData("五元三角")]
+    [InlineData("壹佰貳拾參元壹角整")]
+    [InlineData("一元")]
+    [InlineData("伍圓參角")]
+    public static void 貨幣格式應拋出例外_請使用ChineseCurrency(string input)
+    {
+        Assert.Throws<FormatException>(() => ChineseNumeric.Parse(input));
+    }
 }
