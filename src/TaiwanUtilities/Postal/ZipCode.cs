@@ -30,6 +30,8 @@ public static class ZipCode
 
         var addr = PostalAddress.Parse(address);
         var result = PostalRulesEngine.Find(addr);
+        if (result == null && !string.IsNullOrEmpty(addr.NormalizedAddress))
+            result = FindByExactTextMatch(addr.NormalizedAddress);
         return result ?? ZipCodeResult.NotFound(address);
     }
 
@@ -45,53 +47,36 @@ public static class ZipCode
 
         if (addr == null || string.IsNullOrEmpty(addr.City))
         {
-            return Fail(PostalValidationFailureReason.InvalidFormat, normalized, "地址格式無效");
+            var msg = string.IsNullOrWhiteSpace(address) ? "地址不能為空" : "地址格式無效";
+            return Fail(PostalValidationFailureReason.InvalidFormat, normalized, msg);
         }
 
-        var key = $"{addr.City}|{addr.District}|{addr.Road}";
+        // Build key with section (same logic as PostalRulesEngine.Find)
+        var road = addr.Road ?? string.Empty;
+        if (!string.IsNullOrEmpty(addr.Section))
+            road = road + PostalRulesEngine.ToChineseSection(addr.Section);
 
-        if (!PostalData.Rules.TryGetValue(key, out var ruleSet))
+        var key = $"{addr.City}|{addr.District}|{road}";
+        bool found = PostalData.Rules.TryGetValue(key, out var ruleSet);
+        if (!found && !string.IsNullOrEmpty(road))
         {
-            // 逐步檢查縣市→行政區→街道
-            bool hasCity = false;
-            bool hasDistrict = false;
-            var cityPrefix = addr.City + "|";
-            var districtPrefix = $"{addr.City}|{addr.District}|";
+            var chineseRoad = PostalRulesEngine.ArabicToChineseInRoad(road);
+            if (!ReferenceEquals(chineseRoad, road))
+                found = PostalData.Rules.TryGetValue($"{addr.City}|{addr.District}|{chineseRoad}", out ruleSet);
+        }
 
-            foreach (var k in PostalData.Rules.Keys)
-            {
-                if (k.StartsWith(cityPrefix, StringComparison.Ordinal))
-                {
-                    hasCity = true;
-                    if (k.StartsWith(districtPrefix, StringComparison.Ordinal))
-                    {
-                        hasDistrict = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!hasCity)
-            {
+        if (!found)
+        {
+            if (!PostalRulesEngine.CityExists(addr.City!))
                 return Fail(PostalValidationFailureReason.AddressNotFound, normalized, "找不到此地址");
-            }
-
-            if (!hasDistrict)
-            {
+            if (!string.IsNullOrEmpty(addr.District) && !PostalRulesEngine.DistrictExists(addr.City!, addr.District!))
                 return Fail(PostalValidationFailureReason.DistrictNotFound, normalized, "找不到此行政區");
-            }
-
             return Fail(PostalValidationFailureReason.StreetNotFound, normalized, "找不到此街道");
         }
 
         if (!addr.Number.HasValue)
         {
-            return new PostalValidationResult
-            {
-                IsValid = true,
-                ZipCode = PostalData.ZipCodePool[ruleSet.ZipCodeIndices[0]],
-                NormalizedAddress = normalized
-            };
+            return Fail(PostalValidationFailureReason.NumberRuleMismatch, normalized, "地址缺少門牌號碼");
         }
 
         int lane      = PostalRulesEngine.ParseNumericPrefix(addr.Lane);
@@ -190,6 +175,28 @@ public static class ZipCode
         }
 
         return results;
+    }
+
+    // Handles special territories (南海諸, 釣魚臺) where the tokenizer can't parse
+    // City|District|Road from text like "南海諸東沙東沙". Returns match only when
+    // the concatenated key address exactly equals the normalized input.
+    private static ZipCodeResult? FindByExactTextMatch(string normalized)
+    {
+        foreach (var kvp in PostalData.Rules)
+        {
+            var key = kvp.Key;
+            var p1 = key.IndexOf('|');
+            if (p1 < 0) continue;
+            var p2 = key.IndexOf('|', p1 + 1);
+            if (p2 < 0) continue;
+            var fullAddr = key[..p1] + key[(p1 + 1)..p2] + key[(p2 + 1)..];
+            if (string.Equals(fullAddr, normalized, StringComparison.Ordinal))
+            {
+                var zipCode = PostalData.ZipCodePool[kvp.Value.ZipCodeIndices[0]];
+                return ZipCodeResult.ExactMatch(normalized, zipCode, fullAddr);
+            }
+        }
+        return null;
     }
 
     private static PostalValidationResult Fail(PostalValidationFailureReason reason, string normalized, string message)

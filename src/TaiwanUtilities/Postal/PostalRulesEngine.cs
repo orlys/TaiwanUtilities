@@ -46,32 +46,40 @@ public static class PostalRulesEngine
     {
         if (string.IsNullOrEmpty(addr.City) ||
             string.IsNullOrEmpty(addr.District) ||
-            string.IsNullOrEmpty(addr.Road) ||
             !addr.Number.HasValue)
         {
             return null;
         }
 
-        var road = addr.Road;
+        var road = addr.Road ?? string.Empty;
         if (!string.IsNullOrEmpty(addr.Section))
-        {
             road = road + ToChineseSection(addr.Section);
-        }
 
-        var key = string.Concat(addr.City, "|", addr.District, "|", road);
-
-        bool found = PostalData.Rules.TryGetValue(key, out var ruleSet);
-        if (!found)
+        bool found = PostalData.Rules.TryGetValue(
+            string.Concat(addr.City, "|", addr.District, "|", road), out var ruleSet);
+        if (!found && !string.IsNullOrEmpty(road))
         {
             // Road may contain Arabic digits where DBF stores Chinese ordinals (e.g., "四維3路" → "四維三路")
             var chineseRoad = ArabicToChineseInRoad(road);
             if (!ReferenceEquals(chineseRoad, road))
-            {
                 found = PostalData.Rules.TryGetValue(
                     string.Concat(addr.City, "|", addr.District, "|", chineseRoad),
                     out ruleSet);
-            }
         }
+
+        // Fallback: when Road is unparsed, try Locality or Village+Locality
+        // e.g., "花蓮縣秀林鄉富世村富世291號" → Locality="富世" → key "花蓮縣|秀林鄉|富世"
+        // e.g., "彰化縣永靖鄉一村巷1號" → Village="一村" + Locality="巷" → key "彰化縣|永靖鄉|一村巷"
+        if (!found && string.IsNullOrEmpty(addr.Road))
+        {
+            if (!string.IsNullOrEmpty(addr.Locality))
+                found = PostalData.Rules.TryGetValue(
+                    string.Concat(addr.City, "|", addr.District, "|", addr.Locality), out ruleSet);
+            if (!found && !string.IsNullOrEmpty(addr.Village) && !string.IsNullOrEmpty(addr.Locality))
+                found = PostalData.Rules.TryGetValue(
+                    string.Concat(addr.City, "|", addr.District, "|", addr.Village + addr.Locality), out ruleSet);
+        }
+
         if (!found) return null;
 
         int lane      = ParseNumericPrefix(addr.Lane);
@@ -164,7 +172,7 @@ public static class PostalRulesEngine
         return 0;
     }
 
-    private static string ArabicToChineseInRoad(string road)
+    internal static string ArabicToChineseInRoad(string road)
     {
         // Convert single Arabic digits before 路/街/巷/弄 to Chinese ordinals
         // "四維3路" → "四維三路", "龍岡路3段" already handled by ToChineseSection
@@ -183,7 +191,7 @@ public static class PostalRulesEngine
         return road;
     }
 
-    private static string ToChineseSection(string section)
+    internal static string ToChineseSection(string section)
     {
         // "1段" → "一段", "2段" → "二段", ...  (DBF keys use Chinese ordinals)
         if (section.Length >= 2 && section[section.Length - 1] == '段'
