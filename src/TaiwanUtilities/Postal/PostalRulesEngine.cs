@@ -55,16 +55,31 @@ public static class PostalRulesEngine
         if (!string.IsNullOrEmpty(addr.Section))
             road = road + ToChineseSection(addr.Section);
 
-        bool found = PostalData.Rules.TryGetValue(
-            string.Concat(addr.City, "|", addr.District, "|", road), out var ruleSet);
+        // Fast path: nested-switch lookup (no string concat, no hash computation)
+        // Falls through to dictionary when PostalLookup.g.cs is the stub (always returns false).
+        bool found = PostalLookup.TryFind(addr.City, addr.District, road, out var ruleSet);
         if (!found && !string.IsNullOrEmpty(road))
         {
             // Road may contain Arabic digits where DBF stores Chinese ordinals (e.g., "四維3路" → "四維三路")
             var chineseRoad = ArabicToChineseInRoad(road);
             if (!ReferenceEquals(chineseRoad, road))
-                found = PostalData.Rules.TryGetValue(
-                    string.Concat(addr.City, "|", addr.District, "|", chineseRoad),
-                    out ruleSet);
+                found = PostalLookup.TryFind(addr.City, addr.District, chineseRoad, out ruleSet);
+        }
+
+        // Dictionary fallback: handles entries missing from PostalLookup (stub or partial populate),
+        // and Locality/Village+Locality fallbacks that PostalLookup doesn't cover.
+        if (!found)
+        {
+            found = PostalData.Rules.TryGetValue(
+                string.Concat(addr.City, "|", addr.District, "|", road), out ruleSet);
+            if (!found && !string.IsNullOrEmpty(road))
+            {
+                var chineseRoad = ArabicToChineseInRoad(road);
+                if (!ReferenceEquals(chineseRoad, road))
+                    found = PostalData.Rules.TryGetValue(
+                        string.Concat(addr.City, "|", addr.District, "|", chineseRoad),
+                        out ruleSet);
+            }
         }
 
         // Fallback: when Road is unparsed, try Locality or Village+Locality
