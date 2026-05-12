@@ -362,8 +362,9 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# Postal database (downloaded at build time from GitHub Release)
+# Postal database (legacy - no longer used; static data is in PostalData.g.cs)
 src/TaiwanUtilities/Postal/zipcode.db
+src/TaiwanUtilities/zipcode.db
 
 # Temp files from postal database build
 temp/

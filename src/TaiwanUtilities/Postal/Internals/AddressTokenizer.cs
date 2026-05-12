@@ -11,6 +11,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
+using TaiwanUtilities.Internals;
+
 
 /// <summary>
 /// 台灣地址的分詞器（Tokenizer）
@@ -126,7 +128,7 @@ internal class AddressTokenizer
 
             try
             {
-                s_specialRoadNames = PostalDatabase.LoadSpecialRoadNames();
+                s_specialRoadNames = PostalData.SpecialRoadNames;
                 s_specialRoadNamesInitialized = true;
             }
             catch
