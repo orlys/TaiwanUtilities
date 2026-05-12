@@ -27,6 +27,12 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Install T4 Text Template Tool
+        run: dotnet tool install -g dotnet-t4
+
+      - name: Generate holiday data
+        run: t4 ${{ github.workspace }}/src/TaiwanUtilities/RocDateTime/RocHolidayDataSet.tt
+
       - name: Download rall1.dbf from Postal Service
         id: download
         shell: pwsh
