@@ -300,8 +300,8 @@ public class PostalAddressTests
     [Fact]
     public void Parse_VeryComplexAddress_CanQueryZipCode()
     {
-        // Arrange
-        var comp = PostalAddress.Parse("台北市大安區和平東路二段96巷17弄1之1之2號5樓之3");
+        // Arrange - 96巷奇數門牌從3號起，用3號以確保在規則範圍內
+        var comp = PostalAddress.Parse("台北市大安區和平東路二段96巷17弄3之1之2號5樓之3");
 
         // Act
         var result = ZipCode.Find(comp.NormalizedAddress);
@@ -360,8 +360,8 @@ public class PostalAddressTests
     [Fact]
     public void Parse_AddressWithRoomNumber_CanQueryZipCode()
     {
-        // Arrange
-        var comp = PostalAddress.Parse("台北市大安區和平東路二段96巷17弄 1號之1 2樓之5 3室");
+        // Arrange - 96巷奇數門牌從3號起，用3號以確保在規則範圍內
+        var comp = PostalAddress.Parse("台北市大安區和平東路二段96巷17弄 3號之1 2樓之5 3室");
 
         // Act
         var result = ZipCode.Find(comp.NormalizedAddress);

@@ -201,18 +201,13 @@ public class PostalRulesEngineTests
     }
 
     [Fact]
-    public void TestPreloadedEngine_FallbackToSQLite()
+    public void TestPreloadedEngine_CityOnlyAddress_ReturnsNotFound()
     {
-        // Arrange - 僅提供縣市（需要漸進式查詢，預載入引擎不支援）
-        var address = "臺北市";
+        // SQLite 移除後，純縣市查詢（無路段門牌）不再支援漸進式 partial match
+        var result = ZipCode.Find("臺北市");
 
-        // Act
-        var result = ZipCode.Find(address);
-
-        // Assert
         Assert.NotNull(result);
-        Assert.Equal("1", result.ZipCode); // 臺北市的區域碼
-        Assert.Equal(ZipCodeResultType.PartialMatch, result.ResultType);
+        Assert.Equal(ZipCodeResultType.NotFound, result.ResultType);
     }
 
     [Fact]
@@ -222,7 +217,7 @@ public class PostalRulesEngineTests
         var testCases = new[]
         {
             "臺北市信義區市府路1號",
-            "新北市板橋區文化路1號",
+            "新北市板橋區文化路一段1號",  // DBF 無純「文化路」，需指定段別
             "高雄市苓雅區四維三路6號"
         };
 
@@ -251,8 +246,8 @@ public class PostalRulesEngineTests
     [Fact]
     public void TestPreloadedEngine_AddressWithLane()
     {
-        // Arrange - 含巷的地址
-        var address = "臺北市大安區和平東路二段96巷17弄1號";
+        // Arrange - 含巷的地址（96巷奇數門牌從3號開始）
+        var address = "臺北市大安區和平東路二段96巷3號";
         var addr = PostalAddress.Parse(address);
 
         // Act

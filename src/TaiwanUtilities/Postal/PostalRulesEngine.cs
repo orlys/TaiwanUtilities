@@ -52,12 +52,27 @@ public static class PostalRulesEngine
             return null;
         }
 
-        var key = string.Concat(addr.City, "|", addr.District, "|", addr.Road);
-
-        if (!PostalData.Rules.TryGetValue(key, out var ruleSet))
+        var road = addr.Road;
+        if (!string.IsNullOrEmpty(addr.Section))
         {
-            return null;
+            road = road + ToChineseSection(addr.Section);
         }
+
+        var key = string.Concat(addr.City, "|", addr.District, "|", road);
+
+        bool found = PostalData.Rules.TryGetValue(key, out var ruleSet);
+        if (!found)
+        {
+            // Road may contain Arabic digits where DBF stores Chinese ordinals (e.g., "四維3路" → "四維三路")
+            var chineseRoad = ArabicToChineseInRoad(road);
+            if (!ReferenceEquals(chineseRoad, road))
+            {
+                found = PostalData.Rules.TryGetValue(
+                    string.Concat(addr.City, "|", addr.District, "|", chineseRoad),
+                    out ruleSet);
+            }
+        }
+        if (!found) return null;
 
         int lane      = ParseNumericPrefix(addr.Lane);
         int alley     = ParseNumericPrefix(addr.Alley);
@@ -78,6 +93,39 @@ public static class PostalRulesEngine
         result.Department = deptIdx > 0 ? PostalData.Departments[deptIdx] : null;
         result.Office     = officeIdx > 0 ? PostalData.Offices[officeIdx] : null;
         return result;
+    }
+
+    internal static bool CityExists(string city)
+    {
+        var prefix = city + "|";
+        foreach (var k in PostalData.Rules.Keys)
+            if (k.StartsWith(prefix, StringComparison.Ordinal)) return true;
+        return false;
+    }
+
+    internal static bool DistrictExists(string city, string district)
+    {
+        var prefix = city + "|" + district + "|";
+        foreach (var k in PostalData.Rules.Keys)
+            if (k.StartsWith(prefix, StringComparison.Ordinal)) return true;
+        return false;
+    }
+
+    /// <summary>
+    /// 檢查路街是否在資料庫中存在（不需門牌）
+    /// </summary>
+    internal static bool RoadExists(string city, string district, string road, string? section)
+    {
+        var r = road;
+        if (!string.IsNullOrEmpty(section))
+            r = r + ToChineseSection(section);
+
+        var key = string.Concat(city, "|", district, "|", r);
+        if (PostalData.Rules.ContainsKey(key)) return true;
+
+        var chineseR = ArabicToChineseInRoad(r);
+        return !ReferenceEquals(chineseR, r) &&
+               PostalData.Rules.ContainsKey(string.Concat(city, "|", district, "|", chineseR));
     }
 
     /// <summary>
@@ -114,6 +162,41 @@ public static class PostalRulesEngine
 #endif
 
         return 0;
+    }
+
+    private static string ArabicToChineseInRoad(string road)
+    {
+        // Convert single Arabic digits before 路/街/巷/弄 to Chinese ordinals
+        // "四維3路" → "四維三路", "龍岡路3段" already handled by ToChineseSection
+        for (int i = 1; i < road.Length; i++)
+        {
+            char unit = road[i];
+            if ((unit == '路' || unit == '街' || unit == '巷' || unit == '弄') && char.IsDigit(road[i - 1]))
+            {
+                var sb = new System.Text.StringBuilder(road.Length);
+                sb.Append(road, 0, i - 1);
+                sb.Append("○一二三四五六七八九"[road[i - 1] - '0']);
+                sb.Append(road, i, road.Length - i);
+                return sb.ToString();
+            }
+        }
+        return road;
+    }
+
+    private static string ToChineseSection(string section)
+    {
+        // "1段" → "一段", "2段" → "二段", ...  (DBF keys use Chinese ordinals)
+        if (section.Length >= 2 && section[section.Length - 1] == '段'
+            && int.TryParse(section.Substring(0, section.Length - 1), out var n))
+        {
+            return n switch
+            {
+                1 => "一段", 2 => "二段", 3 => "三段", 4 => "四段", 5 => "五段",
+                6 => "六段", 7 => "七段", 8 => "八段", 9 => "九段", 10 => "十段",
+                _ => section
+            };
+        }
+        return section;
     }
 
     private static string BuildRuleDescription(PostalAddress addr, string? scope)

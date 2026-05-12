@@ -126,14 +126,10 @@ internal readonly struct PostalRuleSet
             return false;
         }
 
-        // Alley
+        // Alley: no constraint means rule covers whole lane (any alley allowed)
         if (HasAlleyConstraint[i] != 0)
         {
             if (alley < AlleyStarts[i] || alley > AlleyEnds[i]) return false;
-        }
-        else if (alley != 0)
-        {
-            return false;
         }
 
         // Number range (needed for scalar-only path)

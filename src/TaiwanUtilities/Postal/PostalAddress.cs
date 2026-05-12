@@ -198,8 +198,7 @@ public partial class PostalAddress
             // 驗證縣市
             if (!string.IsNullOrEmpty(address.City))
             {
-                var cityResult = ZipCode.Find(address.City!).ZipCode;
-                validation.IsValidCity = !string.IsNullOrEmpty(cityResult);
+                validation.IsValidCity = PostalRulesEngine.CityExists(address.City!);
                 if (!validation.IsValidCity)
                 {
                     validation.Messages.Add($"縣市「{address.City}」不存在");
@@ -209,8 +208,7 @@ public partial class PostalAddress
             // 驗證縣市+行政區
             if (!string.IsNullOrEmpty(address.City) && !string.IsNullOrEmpty(address.District))
             {
-                var districtResult = ZipCode.Find(address.City! + address.District!).ZipCode;
-                validation.IsValidDistrict = !string.IsNullOrEmpty(districtResult);
+                validation.IsValidDistrict = PostalRulesEngine.DistrictExists(address.City!, address.District!);
                 if (!validation.IsValidDistrict)
                 {
                     validation.Messages.Add($"行政區「{address.District}」在「{address.City}」中不存在");
@@ -220,8 +218,8 @@ public partial class PostalAddress
             // 驗證路街
             if (!string.IsNullOrEmpty(address.City) && !string.IsNullOrEmpty(address.District) && !string.IsNullOrEmpty(address.Road))
             {
-                var roadResult = ZipCode.Find(address.City! + address.District! + address.Road!).ZipCode;
-                validation.IsValidRoad = !string.IsNullOrEmpty(roadResult);
+                validation.IsValidRoad = PostalRulesEngine.RoadExists(
+                    address.City!, address.District!, address.Road!, address.Section);
                 if (!validation.IsValidRoad)
                 {
                     validation.Messages.Add($"路街「{address.Road}」在「{address.City}{address.District}」中不存在");
