@@ -134,7 +134,21 @@ public static class ZipCode
             var scopeStr = ruleSet.ScopeIndex(i) > 0 ? PostalData.Scopes[ruleSet.ScopeIndex(i)] : "全";
             try
             {
-                result.Add(new ZipCodeDeliveryRule(zipCode, PostalDeliveryRule.Parse(scopeStr)));
+                var parsed = PostalDeliveryRule.Parse(scopeStr);
+
+                // 巷弄從結構化欄位填入（scope 文字解析不含巷弄）
+                if (ruleSet.HasLane(i))
+                {
+                    parsed.LaneStart = ruleSet.LaneStart(i);
+                    parsed.LaneEnd   = ruleSet.LaneEnd(i);
+                }
+                if (ruleSet.HasAlley(i))
+                {
+                    parsed.AlleyStart = ruleSet.AlleyStart(i);
+                    parsed.AlleyEnd   = ruleSet.AlleyEnd(i);
+                }
+
+                result.Add(new ZipCodeDeliveryRule(zipCode, parsed));
             }
             catch
             {

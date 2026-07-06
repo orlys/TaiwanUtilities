@@ -210,6 +210,16 @@ public static class PostalRulesEngine
     }
 
     /// <summary>
+    /// 取得當前資料版本資訊
+    /// </summary>
+    public static PostalDatabaseVersionInfo CurrentVersion { get; } = new()
+    {
+        Version = PostalData.GeneratedDate,
+        RecordCount = PostalData.RecordCount,
+        BuilderVersion = "2.0.0"
+    };
+
+    /// <summary>
     /// 取得引擎統計資訊（除錯用）
     /// </summary>
     public static (int TotalKeys, int TotalRules, long MemoryBytes) GetStats()
@@ -220,4 +230,28 @@ public static class PostalRulesEngine
         long mem = rules * 26L + PostalData.RoadBlob.Length * 2L + (keys + 1) * 8L;
         return (keys, rules, mem);
     }
+}
+
+/// <summary>
+/// 郵遞資料版本資訊
+/// </summary>
+public record PostalDatabaseVersionInfo
+{
+    /// <summary>版本號（yyyy-MM-dd 格式）</summary>
+    public string Version { get; internal set; } = string.Empty;
+
+    /// <summary>建立時間（ISO 8601 格式）</summary>
+    public DateTime CreatedAt { get; internal set; }
+
+    /// <summary>來源檔案名稱</summary>
+    public string SourceFile { get; internal set; } = string.Empty;
+
+    /// <summary>記錄數量</summary>
+    public int RecordCount { get; internal set; }
+
+    /// <summary>建置工具版本</summary>
+    public string BuilderVersion { get; internal set; } = string.Empty;
+
+    /// <summary>Git commit SHA</summary>
+    public string CommitSha { get; internal set; } = string.Empty;
 }

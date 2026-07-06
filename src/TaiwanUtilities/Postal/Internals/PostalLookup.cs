@@ -96,6 +96,40 @@ internal static class PostalLookup
         }
     }
 
+    /// <summary>
+    /// 查詢結構化投遞規則
+    /// </summary>
+    internal static List<PostalRule> QueryPostalRules(string city, string area, string road)
+    {
+        if (!TryFind(city, area, road, out var ruleSet))
+        {
+            return new List<PostalRule>();
+        }
+
+        var result = new List<PostalRule>(ruleSet.Count);
+        for (int i = 0; i < ruleSet.Count; i++)
+        {
+            result.Add(new PostalRule
+            {
+                ZipCode    = PostalData.ZipCodePool[ruleSet.ZipCodeIndex(i)],
+                LaneStart  = ruleSet.HasLane(i)  ? ruleSet.LaneStart(i)  : (int?)null,
+                LaneEnd    = ruleSet.HasLane(i)  ? ruleSet.LaneEnd(i)    : (int?)null,
+                AlleyStart = ruleSet.HasAlley(i) ? ruleSet.AlleyStart(i) : (int?)null,
+                AlleyEnd   = ruleSet.HasAlley(i) ? ruleSet.AlleyEnd(i)   : (int?)null,
+                NumberStart    = ruleSet.NumberStart(i) > 0            ? ruleSet.NumberStart(i) : (int?)null,
+                NumberEnd      = ruleSet.NumberEnd(i) < int.MaxValue   ? ruleSet.NumberEnd(i)   : (int?)null,
+                NumberStartSub = ruleSet.SubStart(i) > 0               ? ruleSet.SubStart(i)    : (int?)null,
+                NumberEndSub   = ruleSet.SubEnd(i) < int.MaxValue      ? ruleSet.SubEnd(i)      : (int?)null,
+                EvenOdd    = ruleSet.EvenOdd(i) != 0 ? (int?)ruleSet.EvenOdd(i) : null,
+                Scope      = ruleSet.ScopeIndex(i)  > 0 ? PostalData.Scopes[ruleSet.ScopeIndex(i)]        : null,
+                Department = ruleSet.DeptIndex(i)   > 0 ? PostalData.Departments[ruleSet.DeptIndex(i)]    : null,
+                Office     = ruleSet.OfficeIndex(i) > 0 ? PostalData.Offices[ruleSet.OfficeIndex(i)]      : null,
+            });
+        }
+
+        return result;
+    }
+
     // ── 二分搜尋（ordinal 序，與 Builder 的排序一致）──────────────────
 
     private static int FindName(string[] names, int lo, int hi, string key)

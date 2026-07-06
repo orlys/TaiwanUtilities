@@ -695,9 +695,6 @@ class Program
             Console.WriteLine($"生成數量: {count}");
             Console.WriteLine();
 
-            // 重要：在任何查詢之前設置資料庫路徑
-            PostalDatabase.UseExternalDatabase(dbPath);
-
             var generator = new AddressGenerator(dbPath);
 
             // 顯示資料庫統計資訊

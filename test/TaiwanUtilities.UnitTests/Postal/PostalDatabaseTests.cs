@@ -33,7 +33,7 @@ public class DatabaseTests
     [Fact]
     public void TestCurrentVersion_ShouldReturnVersionInfo()
     {
-        var version = PostalDatabase.CurrentVersion;
+        var version = PostalRulesEngine.CurrentVersion;
 
         Assert.NotNull(version);
         Assert.NotEmpty(version.Version);
@@ -106,64 +106,16 @@ public class DatabaseTests
 
     #endregion
 
-    #region 更新測試（no-op 驗證）
-
-    [Fact]
-    public async Task TestUpdateFromAsync_AlwaysReturnsFalse()
-    {
-        var result = await PostalDatabase.UpdateFromAsync("/any/path.db");
-        Assert.False(result);
-    }
-
-    [Fact]
-    public async Task TestUpdateFromAsync_WithInvalidPath()
-    {
-        var result = await PostalDatabase.UpdateFromAsync("/path/does/not/exist.db");
-        Assert.False(result);
-    }
-
-    [Fact]
-    public async Task TestUpdateFromStreamAsync_AlwaysReturnsFalse()
-    {
-        using var stream = new System.IO.MemoryStream(new byte[] { 1, 2, 3 });
-        var result = await PostalDatabase.UpdateFromStreamAsync(stream, "zipcode.db");
-        Assert.False(result);
-    }
-
-    [Fact]
-    public async Task TestCheckForUpdatesAsync_AlwaysReturnsNull()
-    {
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        var updateInfo = await PostalDatabase.CheckForUpdatesAsync(cts.Token);
-        Assert.Null(updateInfo);
-    }
-
-    #endregion
-
     #region 熱更新測試（no-op 驗證）
 
     [Fact]
     public void TestReload_IsNoOp()
     {
         // 呼叫 Reload 不應拋出例外
-        PostalDatabase.Reload();
+        PostalRulesEngine.Reload();
 
         var result = ZipCode.Find("臺北市信義區市府路1號");
         Assert.NotNull(result);
-    }
-
-    #endregion
-
-    #region 版本檢查測試
-
-    [Fact]
-    public async Task TestCheckForUpdatesAsync_WithCancellation()
-    {
-        using var cts = new CancellationTokenSource();
-        cts.Cancel();
-
-        var updateInfo = await PostalDatabase.CheckForUpdatesAsync(cts.Token);
-        Assert.Null(updateInfo);
     }
 
     #endregion

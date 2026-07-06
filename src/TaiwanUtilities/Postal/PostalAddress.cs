@@ -10,6 +10,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+using TaiwanUtilities.Internals;
+
 /// <summary>
 /// 代表結構化的台灣郵政地址
 /// </summary>
@@ -296,7 +298,7 @@ public partial class PostalAddress
         try
         {
             // 查詢匹配的 postal_rules
-            var rules = PostalDatabase.QueryPostalRules(address.City!, address.District!, address.Road!);
+            var rules = PostalLookup.QueryPostalRules(address.City!, address.District!, address.Road!);
 
             if (rules == null || rules.Count == 0)
             {

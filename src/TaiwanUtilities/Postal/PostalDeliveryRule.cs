@@ -102,6 +102,26 @@ public class PostalDeliveryRule
     public int? SpecificSubNumber { get; set; }
 
     /// <summary>
+    /// 巷（起）；null 表示規則不限定巷
+    /// </summary>
+    public int? LaneStart { get; set; }
+
+    /// <summary>
+    /// 巷（迄）；單一巷時與 <see cref="LaneStart"/> 相同
+    /// </summary>
+    public int? LaneEnd { get; set; }
+
+    /// <summary>
+    /// 弄（起）；null 表示規則不限定弄
+    /// </summary>
+    public int? AlleyStart { get; set; }
+
+    /// <summary>
+    /// 弄（迄）；單一弄時與 <see cref="AlleyStart"/> 相同
+    /// </summary>
+    public int? AlleyEnd { get; set; }
+
+    /// <summary>
     /// 原始規則字串
     /// </summary>
     public string RawRule { get; set; } = string.Empty;
@@ -278,6 +298,21 @@ public class PostalDeliveryRule
     public string GetDescription()
     {
         var parts = new List<string>();
+
+        // 巷弄限定放最前面（如「57巷」「182巷3弄」）
+        if (LaneStart.HasValue)
+        {
+            parts.Add(LaneEnd.HasValue && LaneEnd.Value != LaneStart.Value
+                ? $"{LaneStart}巷至{LaneEnd}巷"
+                : $"{LaneStart}巷");
+        }
+
+        if (AlleyStart.HasValue)
+        {
+            parts.Add(AlleyEnd.HasValue && AlleyEnd.Value != AlleyStart.Value
+                ? $"{AlleyStart}弄至{AlleyEnd}弄"
+                : $"{AlleyStart}弄");
+        }
 
         // 添加單雙號描述 - 當類型是 Odd/Even 時總是添加
         if (Type == PostalRuleType.Odd)

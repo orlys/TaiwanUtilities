@@ -18,19 +18,6 @@ public class IntegrationTests
     {
         // 嘗試找到資料庫檔案
         _dbPath = FindDatabasePath();
-
-        // 設定外部資料庫路徑給 PostalDatabase 單例使用
-        if (IsDatabaseAvailable())
-        {
-            try
-            {
-                PostalDatabase.UseExternalDatabase(_dbPath);
-            }
-            catch (InvalidOperationException)
-            {
-                // PostalDatabase 單例已經初始化，忽略錯誤
-            }
-        }
     }
 
     private string FindDatabasePath()
