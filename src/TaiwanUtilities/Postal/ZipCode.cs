@@ -111,9 +111,20 @@ public static class ZipCode
             return new List<ZipCodeDeliveryRule>();
         }
 
-        if (!PostalLookup.TryFind(addr.City, addr.District, addr.Road, out var ruleSet))
+        // Same road normalization as Find/ValidateAddress: append section,
+        // fall back to Chinese ordinals (Parse normalizes "四維三路" → "四維3路" but DBF stores Chinese)
+        var road = addr.Road!;
+        if (!string.IsNullOrEmpty(addr.Section))
+            road += PostalRulesEngine.ToChineseSection(addr.Section!);
+
+        if (!PostalLookup.TryFind(addr.City, addr.District, road, out var ruleSet))
         {
-            return new List<ZipCodeDeliveryRule>();
+            var chineseRoad = PostalRulesEngine.ArabicToChineseInRoad(road);
+            if (ReferenceEquals(chineseRoad, road) ||
+                !PostalLookup.TryFind(addr.City, addr.District, chineseRoad, out ruleSet))
+            {
+                return new List<ZipCodeDeliveryRule>();
+            }
         }
 
         var result = new List<ZipCodeDeliveryRule>(ruleSet.Count);
