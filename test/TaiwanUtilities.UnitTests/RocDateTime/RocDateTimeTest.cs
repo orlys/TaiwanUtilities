@@ -155,7 +155,8 @@ public partial class RocDateTimeTest
     public static void RocHolidayDataSet_嵌入年份範圍()
     {
         Assert.Equal(1998, RocHolidayDataSet.EmbeddedMinYear);
-        Assert.Equal(2026, RocHolidayDataSet.EmbeddedMaxYear);
+        // 上限不可寫死：政府每年年中發佈隔年行事曆，update-holidays bot 會自動加入新年度 CSV
+        Assert.InRange(RocHolidayDataSet.EmbeddedMaxYear, 2026, DateTime.UtcNow.Year + 1);
     }
 
     [Fact]
@@ -165,7 +166,7 @@ public partial class RocDateTimeTest
         Assert.True(RocHolidayDataSet.ContainsYear(2025));
         Assert.True(RocHolidayDataSet.ContainsYear(2026));
         Assert.False(RocHolidayDataSet.ContainsYear(1997));
-        Assert.False(RocHolidayDataSet.ContainsYear(2027));
+        Assert.False(RocHolidayDataSet.ContainsYear(RocHolidayDataSet.EmbeddedMaxYear + 1));
     }
 
     [Fact]
