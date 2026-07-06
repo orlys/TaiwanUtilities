@@ -41,12 +41,9 @@ Console.WriteLine(addr.GetFullNumber());  // 1之2號
 ## 地址正規化
 
 ```csharp
-// 自動處理繁簡、全半形、標點
-string n1 = PostalAddressUtils.Normalize("台北市，信義區，市府路１號");
-// "臺北市信義區市府路1號"
-
-string n2 = PostalAddressUtils.Normalize("信義路一段");
-// "信義路1段"
+// Parse 會自動處理繁簡、全半形、標點，正規化結果在 NormalizedAddress
+var addr = PostalAddress.Parse("台北市，信義區，市府路１號");
+Console.WriteLine(addr.NormalizedAddress);  // "臺北市信義區市府路1號"
 ```
 
 ## 地址驗證

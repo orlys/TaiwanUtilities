@@ -21,49 +21,16 @@ public class PostalAddressDataDrivenTests
 
     private static List<string> LoadTestAddresses()
     {
-        // 找到資料庫路徑
-        var dbPath = FindDatabasePath();
-        if (dbPath == null)
-        {
-            return new List<string>();
-        }
-
-        // 從資料庫隨機抽取 10% 的地址（使用固定 seed 確保可重現）
-        return TestDataGenerator.GetRandomAddresses(dbPath, percentage: 0.1, seed: 42);
-    }
-
-    private static string? FindDatabasePath()
-    {
-        // 嘗試多個可能的資料庫路徑
-        var possiblePaths = new[]
-        {
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "zipcode.db"),
-            Path.Combine(System.IO.Directory.GetCurrentDirectory(), "zipcode.db"),
-            Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "..", "..", "..", "..", "src", "TaiwanUtilities", "Postal", "zipcode.db"),
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "..", "src", "TaiwanUtilities", "Postal", "zipcode.db")
-        };
-
-        foreach (var path in possiblePaths)
-        {
-            var fullPath = Path.GetFullPath(path);
-            if (File.Exists(fullPath))
-            {
-                return fullPath;
-            }
-        }
-
-        return null;
+        // 從編譯進 binary 的規則資料生成測試地址（免外部資料庫）
+        var generator = new PostalAddressGenerator();
+        return generator.Generate(2000).Select(g => g.FullAddress).ToList();
     }
 
     [Fact]
     public void TestDatabaseSampling()
     {
         var addresses = _testAddresses.Value;
-        if (addresses.Count == 0)
-        {
-            _output.WriteLine("警告：無法載入測試資料（zipcode.db 不存在），跳過此測試");
-            return;
-        }
+        Assert.NotEmpty(addresses);
 
         _output.WriteLine($"成功載入 {addresses.Count} 筆測試地址");
 
@@ -79,11 +46,7 @@ public class PostalAddressDataDrivenTests
     public void TestParseAllSampledAddresses()
     {
         var addresses = _testAddresses.Value;
-        if (addresses.Count == 0)
-        {
-            _output.WriteLine("警告：無法載入測試資料，跳過此測試");
-            return;
-        }
+        Assert.NotEmpty(addresses);
 
         var failedCount = 0;
         var failedAddresses = new List<(string address, string error)>();
@@ -139,11 +102,7 @@ public class PostalAddressDataDrivenTests
     public void TestToStringReconstructsAddress()
     {
         var addresses = _testAddresses.Value;
-        if (addresses.Count == 0)
-        {
-            _output.WriteLine("警告：無法載入測試資料，跳過此測試");
-            return;
-        }
+        Assert.NotEmpty(addresses);
 
         var failedCount = 0;
         var sampleSize = Math.Min(100, addresses.Count); // 測試前 100 筆
@@ -197,11 +156,7 @@ public class PostalAddressDataDrivenTests
     public void TestComponentDistribution()
     {
         var addresses = _testAddresses.Value;
-        if (addresses.Count == 0)
-        {
-            _output.WriteLine("警告：無法載入測試資料，跳過此測試");
-            return;
-        }
+        Assert.NotEmpty(addresses);
 
         var statsDict = new Dictionary<string, int>
         {

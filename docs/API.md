@@ -8,12 +8,11 @@
 
 1. [ZipCode](#zipcode-類別) — 郵遞區號查詢
 2. [PostalAddress](#postaladdress-類別) — 地址解析
-3. [PostalAddressUtils](#addressutils-類別) — 地址正規化
-4. [ZipCodeResult](#zipcoderesult-類別) — 查詢結果
-5. [PostalValidationResult](#addressvalidationresult-類別) — 驗證結果
-6. [PostalDeliveryRule](#deliveryrule-類別) — 投遞規則
-7. [PostalAddressSuggestion](#postaladdresssuggestion-類別) — 地址候選
-8. [PostalDatabase](#database-類別) — 資料庫管理
+3. [ZipCodeResult](#zipcoderesult-類別) — 查詢結果
+4. [PostalValidationResult](#addressvalidationresult-類別) — 驗證結果
+5. [PostalDeliveryRule](#deliveryrule-類別) — 投遞規則
+6. [PostalAddressSuggestion](#postaladdresssuggestion-類別) — 地址候選
+7. [PostalRulesEngine](#postalrulesengine-類別) — 引擎與資料版本
 
 ---
 
@@ -184,27 +183,6 @@ public record PostalAddressValidation
 
 ---
 
-## PostalAddressUtils 類別
-
-```csharp
-public static class PostalAddressUtils
-```
-
-### Normalize
-
-```csharp
-public static string Normalize(string address)
-```
-
-正規化地址：統一「台」→「臺」、全形→半形、移除標點、中文數字轉阿拉伯數字。
-
-```csharp
-PostalAddressUtils.Normalize("台北市，信義區，市府路１號");
-// "臺北市信義區市府路1號"
-```
-
----
-
 ## ZipCodeResult 類別
 
 ```csharp
@@ -324,54 +302,19 @@ public record PostalAddressSuggestion(string AddressText, string ZipCode, Postal
 
 ---
 
-## PostalDatabase 類別
+## PostalRulesEngine 類別
 
-資料庫管理（進階用法）。
+規則引擎（資料已編譯進 binary，執行期零讀檔）。
 
 ```csharp
-public sealed class PostalDatabase
+public static class PostalRulesEngine
 ```
 
 ### 靜態屬性
 
 | 屬性 | 型別 | 說明 |
 |------|------|------|
-| `CurrentVersion` | `PostalDatabaseVersionInfo?` | 目前資料庫版本 |
-
-### 靜態方法
-
-#### CheckForUpdatesAsync
-
-```csharp
-public static Task<PostalDatabaseUpdateInfo?> CheckForUpdatesAsync(CancellationToken ct = default)
-```
-
-檢查 GitHub Release 是否有新版本資料庫。
-
-#### UpdateAsync
-
-```csharp
-public static Task<bool> UpdateAsync(CancellationToken ct = default)
-```
-
-從 GitHub Release 下載最新資料庫。
-
-#### UpdateFromAsync / UpdateFromStreamAsync
-
-```csharp
-public static Task<bool> UpdateFromAsync(string dbPath, CancellationToken ct = default)
-public static Task<bool> UpdateFromStreamAsync(Stream stream, string fileName, CancellationToken ct = default)
-```
-
-從指定路徑或 Stream 更新資料庫。
-
-#### Reload
-
-```csharp
-public static void Reload()
-```
-
-強制重新載入資料庫（清除所有快取）。
+| `CurrentVersion` | `PostalDatabaseVersionInfo` | 目前資料版本 |
 
 ### PostalDatabaseVersionInfo
 
@@ -379,31 +322,17 @@ public static void Reload()
 public record PostalDatabaseVersionInfo
 ```
 
-| 屬性 | 型別 |
-|------|------|
-| `Version` | `string` |
-| `CreatedAt` | `DateTime` |
-| `SourceFile` | `string` |
-| `RecordCount` | `int` |
-| `BuilderVersion` | `string` |
-| `CommitSha` | `string` |
-
-### PostalDatabaseUpdateInfo
-
-```csharp
-public record PostalDatabaseUpdateInfo(
-    PostalDatabaseVersionInfo RemoteVersion,
-    PostalDatabaseVersionInfo? LocalVersion,
-    bool HasUpdate,
-    string DownloadUrl)
-```
+| 屬性 | 型別 | 說明 |
+|------|------|------|
+| `Version` | `string` | 資料生成日期（yyyy-MM-dd） |
+| `RecordCount` | `int` | 規則筆數 |
+| `BuilderVersion` | `string` | 建置工具版本 |
 
 ---
 
 ## 執行緒安全性
 
-- `ZipCode` — 所有方法執行緒安全
-- `PostalDatabase` — 單例模式，執行緒安全
+- `ZipCode`、`PostalRulesEngine` — 靜態唯讀資料，所有方法執行緒安全
 - `PostalAddress`、`PostalDeliveryRule` — 不可變物件，可安全共享
 - `ZipCodeResult`、`PostalValidationResult` — record 型別，不可變
 

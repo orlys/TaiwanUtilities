@@ -149,8 +149,7 @@ public class PostalRulesEngineTests
     [Fact]
     public void TestPreloadedEngine_Stats()
     {
-        // Arrange & Act
-        PostalRulesEngine.Warmup(); // 確保已初始化
+        // Act
         var (keys, rules, bytes) = PostalRulesEngine.GetStats();
 
         // Assert
@@ -158,31 +157,6 @@ public class PostalRulesEngineTests
         Assert.True(rules > 0, "規則總數應大於 0");
         Assert.True(bytes > 0, "記憶體占用應大於 0");
         Assert.True(bytes < 50_000_000, "記憶體占用應小於 50 MB"); // 預期約 6 MB
-    }
-
-    [Fact]
-    public void TestPreloadedEngine_Warmup()
-    {
-        // Act
-        PostalRulesEngine.Warmup();
-
-        // Assert
-        Assert.True(PostalRulesEngine.IsInitialized);
-    }
-
-    [Fact]
-    public void TestPreloadedEngine_Reload()
-    {
-        // Arrange
-        PostalRulesEngine.Warmup();
-        var (_, rulesBefore, _) = PostalRulesEngine.GetStats();
-
-        // Act
-        PostalRulesEngine.Reload();
-        var (_, rulesAfter, _) = PostalRulesEngine.GetStats();
-
-        // Assert
-        Assert.Equal(rulesBefore, rulesAfter); // 重新載入後規則數應相同
     }
 
     [Fact]

@@ -106,20 +106,6 @@ public class DatabaseTests
 
     #endregion
 
-    #region 熱更新測試（no-op 驗證）
-
-    [Fact]
-    public void TestReload_IsNoOp()
-    {
-        // 呼叫 Reload 不應拋出例外
-        PostalRulesEngine.Reload();
-
-        var result = ZipCode.Find("臺北市信義區市府路1號");
-        Assert.NotNull(result);
-    }
-
-    #endregion
-
     #region 效能測試
 
     [Fact]

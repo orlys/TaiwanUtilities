@@ -1,6 +1,6 @@
 # TaiwanUtilities 工具腳本
 
-此目錄包含 TaiwanUtilities 專案的輔助工具腳本。
+此目錄包含 TaiwanUtilities 郵遞區號資料管線的工具。
 
 ## Download-PostalDatabase.ps1
 
@@ -9,14 +9,14 @@
 ### 系統需求
 
 - **作業系統**: Windows（安裝檔為 Windows 專用）
-- **7-Zip**: 必須安裝（用於解壓縮 .rar 檔案）
+- **7-Zip**: 必須安裝（用於解壓縮 .rar 檔案；自動偵測標準路徑、註冊表與 PATH）
   - 下載: https://www.7-zip.org/
 - **PowerShell**: 5.1 或更高版本
 
 ### 使用方式
 
 ```powershell
-# 基本使用（輸出到 data/rall1.dbf）
+# 基本使用（輸出到 temp/rall1.dbf）
 .\tools\postal\Download-PostalDatabase.ps1
 
 # 指定輸出路徑
@@ -35,54 +35,26 @@
 5. **複製資料庫** - 從 `C:\Zip33U\DBF\rall1.dbf` 複製到指定位置
 6. **清理暫存** - 刪除暫存檔案
 
-## Build-PostalDatabase.ps1
+## Postal.Builder
 
-從 rall1.dbf 建立 SQLite 資料庫的包裝腳本。
+.NET 工具專案，將 DBF 展開為靜態 C# 資料（`PostalData.g.cs`），編譯進函式庫、執行期零讀檔。
 
-### 使用方式
-
-```powershell
-# 基本使用（預設路徑）
-.\tools\postal\Build-PostalDatabase.ps1
-
-# 指定輸入和輸出路徑
-.\tools\postal\Build-PostalDatabase.ps1 -DbfPath "data\rall1.dbf" -OutputPath "src\TaiwanUtilities\Postal\zipcode.db"
-```
-
-## Ensure-Database.ps1
-
-確保 zipcode.db 存在，不存在時自動下載。用於 CI 環境。
-
-```powershell
-.\tools\postal\Ensure-Database.ps1
-```
-
-## Create-DatabaseRelease.ps1
-
-建立資料庫 GitHub Release 的腳本。
-
-```powershell
-.\tools\postal\Create-DatabaseRelease.ps1
-```
+詳細說明請參閱：[Postal.Builder/README.md](Postal.Builder/README.md)
 
 ## 完整工作流程
 
 ```powershell
-# 1. 下載最新資料庫
+# 1. 下載最新資料
 .\tools\postal\Download-PostalDatabase.ps1
 
-# 2. 建立 SQLite 資料庫
-.\tools\postal\Build-PostalDatabase.ps1
+# 2. 生成靜態 C# 資料
+dotnet run --project tools/postal/Postal.Builder --framework net10.0 -- codegen temp\rall1.dbf src\TaiwanUtilities\Postal\PostalData.g.cs
 
-# 3. 重新建置專案（內嵌新資料庫）
+# 3. 重新建置專案
 dotnet build src\TaiwanUtilities\
 ```
 
-## Postal.Builder
-
-.NET 工具專案，實際執行 DBF 到 SQLite 的轉換。
-
-詳細說明請參閱：[Postal.Builder/README.md](Postal.Builder/README.md)
+CI 端由 `.github/workflows/update-postal-database.yml` 每季自動執行同樣流程並 commit 生成物。
 
 ## 授權
 

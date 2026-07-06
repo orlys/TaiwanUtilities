@@ -9,7 +9,7 @@ namespace TaiwanUtilities;
 using System;
 
 /// <summary>
-/// 結構化投遞規則（從資料庫讀取）
+/// 結構化投遞規則
 /// </summary>
 public class PostalRule
 {

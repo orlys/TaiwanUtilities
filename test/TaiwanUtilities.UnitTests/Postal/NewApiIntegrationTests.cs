@@ -236,7 +236,7 @@ public class NewApiIntegrationTests
         var zipcode = ZipCode.Find("臺北市信義區市府路1號").ZipCode;
         Assert.NotEmpty(zipcode);
 
-        var normalized = PostalAddressUtils.Normalize("台北市信義區");
+        var normalized = AddressTokenizer.Normalize("台北市信義區");
         Assert.NotEmpty(normalized);
 
         var validation = ZipCode.ValidateAddress("臺北市中正區杭州南路1段1號");

@@ -23,21 +23,6 @@ using TaiwanUtilities.Internals;
 public static class PostalRulesEngine
 {
     /// <summary>
-    /// 預熱引擎（no-op：資料已編譯進 binary）
-    /// </summary>
-    public static void Warmup() { }
-
-    /// <summary>
-    /// 重新載入規則（no-op：資料已編譯進 binary）
-    /// </summary>
-    public static void Reload() { }
-
-    /// <summary>
-    /// 引擎是否已初始化（靜態資料永遠 true）
-    /// </summary>
-    public static bool IsInitialized => true;
-
-    /// <summary>
     /// 查詢郵遞區號
     /// </summary>
     /// <param name="addr">結構化地址</param>
@@ -237,21 +222,12 @@ public static class PostalRulesEngine
 /// </summary>
 public record PostalDatabaseVersionInfo
 {
-    /// <summary>版本號（yyyy-MM-dd 格式）</summary>
+    /// <summary>版本號（yyyy-MM-dd 格式，即資料生成日期）</summary>
     public string Version { get; internal set; } = string.Empty;
-
-    /// <summary>建立時間（ISO 8601 格式）</summary>
-    public DateTime CreatedAt { get; internal set; }
-
-    /// <summary>來源檔案名稱</summary>
-    public string SourceFile { get; internal set; } = string.Empty;
 
     /// <summary>記錄數量</summary>
     public int RecordCount { get; internal set; }
 
     /// <summary>建置工具版本</summary>
     public string BuilderVersion { get; internal set; } = string.Empty;
-
-    /// <summary>Git commit SHA</summary>
-    public string CommitSha { get; internal set; } = string.Empty;
 }
