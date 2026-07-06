@@ -6,7 +6,6 @@
 
 namespace TaiwanUtilities.Internals;
 
-using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
@@ -14,51 +13,42 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 #endif
 
+/// <summary>
+/// 一組投遞規則的視圖（8 bytes）：指向 PostalData 全域 SoA 陣列的切片。
+/// 規則資料本體存放於 PE .rdata（primitive array initializer → RVA blob），
+/// 此結構不持有任何陣列。
+/// </summary>
 internal readonly struct PostalRuleSet
 {
+    public readonly int Offset;
     public readonly int Count;
-    public readonly int[] NumberStarts;
-    public readonly int[] NumberEnds;
-    public readonly byte[] HasLaneConstraint;
-    public readonly int[] LaneStarts;
-    public readonly int[] LaneEnds;
-    public readonly byte[] HasAlleyConstraint;
-    public readonly int[] AlleyStarts;
-    public readonly int[] AlleyEnds;
-    public readonly byte[] EvenOdds;
-    public readonly int[] NumberStartSubs;
-    public readonly int[] NumberEndSubs;
-    public readonly int[] ZipCodeIndices;
-    public readonly int[] DeptIndices;
-    public readonly int[] OfficeIndices;
-    public readonly int[] ScopeIndices;
 
-    public PostalRuleSet(
-        int count,
-        int[] numberStarts, int[] numberEnds,
-        byte[] hasLaneConstraint, int[] laneStarts, int[] laneEnds,
-        byte[] hasAlleyConstraint, int[] alleyStarts, int[] alleyEnds,
-        byte[] evenOdds,
-        int[] numberStartSubs, int[] numberEndSubs,
-        int[] zipCodeIndices, int[] deptIndices, int[] officeIndices, int[] scopeIndices)
+    public PostalRuleSet(int offset, int count)
     {
+        Offset = offset;
         Count = count;
-        NumberStarts = numberStarts;
-        NumberEnds = numberEnds;
-        HasLaneConstraint = hasLaneConstraint;
-        LaneStarts = laneStarts;
-        LaneEnds = laneEnds;
-        HasAlleyConstraint = hasAlleyConstraint;
-        AlleyStarts = alleyStarts;
-        AlleyEnds = alleyEnds;
-        EvenOdds = evenOdds;
-        NumberStartSubs = numberStartSubs;
-        NumberEndSubs = numberEndSubs;
-        ZipCodeIndices = zipCodeIndices;
-        DeptIndices = deptIndices;
-        OfficeIndices = officeIndices;
-        ScopeIndices = scopeIndices;
     }
+
+    // RuleFlags 位元佈局：bit0 = HasLane, bit1 = HasAlley, bits2-3 = EvenOdd(0=不限,1=單,2=雙)
+    private const byte FlagLane  = 1;
+    private const byte FlagAlley = 2;
+    private const int  EvenOddShift = 2;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public bool HasLane(int i)      => (PostalData.RuleFlags[Offset + i] & FlagLane) != 0;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public bool HasAlley(int i)     => (PostalData.RuleFlags[Offset + i] & FlagAlley) != 0;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public int  EvenOdd(int i)      => PostalData.RuleFlags[Offset + i] >> EvenOddShift;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public int  NumberStart(int i)  => PostalData.NumberStarts[Offset + i];
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public int  NumberEnd(int i)    => PostalData.NumberEnds[Offset + i];
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public int  LaneStart(int i)    => PostalData.LaneStarts[Offset + i];
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public int  LaneEnd(int i)      => PostalData.LaneEnds[Offset + i];
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public int  AlleyStart(int i)   => PostalData.AlleyStarts[Offset + i];
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public int  AlleyEnd(int i)     => PostalData.AlleyEnds[Offset + i];
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public int  SubStart(int i)     => PostalData.SubStarts[Offset + i];
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public int  SubEnd(int i)       => PostalData.SubEnds[Offset + i];
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public int  ZipCodeIndex(int i) => PostalData.ZipIdx[Offset + i];
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public int  DeptIndex(int i)    => PostalData.DeptIdx[Offset + i];
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public int  OfficeIndex(int i)  => PostalData.OfficeIdx[Offset + i];
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public int  ScopeIndex(int i)   => PostalData.ScopeIdx[Offset + i];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal bool TryMatch(int number, int subNumber, int lane, int alley,
@@ -73,8 +63,8 @@ internal readonly struct PostalRuleSet
             var vNum = Vector256.Create(number);
             for (; i <= count - 8; i += 8)
             {
-                var starts = Vector256.LoadUnsafe(ref NumberStarts[i]);
-                var ends   = Vector256.LoadUnsafe(ref NumberEnds[i]);
+                var starts = Vector256.LoadUnsafe(ref PostalData.NumberStarts[Offset + i]);
+                var ends   = Vector256.LoadUnsafe(ref PostalData.NumberEnds[Offset + i]);
                 uint mask  = (uint)(Vector256.GreaterThanOrEqual(vNum, starts)
                                   & Vector256.LessThanOrEqual(vNum, ends))
                                   .ExtractMostSignificantBits();
@@ -85,10 +75,10 @@ internal readonly struct PostalRuleSet
                     int idx = i + bit;
                     if (ScalarVerify(idx, number, subNumber, lane, alley))
                     {
-                        zipCodeIdx = ZipCodeIndices[idx];
-                        deptIdx    = DeptIndices[idx];
-                        officeIdx  = OfficeIndices[idx];
-                        scopeIdx   = ScopeIndices[idx];
+                        zipCodeIdx = ZipCodeIndex(idx);
+                        deptIdx    = DeptIndex(idx);
+                        officeIdx  = OfficeIndex(idx);
+                        scopeIdx   = ScopeIndex(idx);
                         return true;
                     }
                     mask &= mask - 1;
@@ -101,10 +91,10 @@ internal readonly struct PostalRuleSet
         {
             if (ScalarVerify(i, number, subNumber, lane, alley))
             {
-                zipCodeIdx = ZipCodeIndices[i];
-                deptIdx    = DeptIndices[i];
-                officeIdx  = OfficeIndices[i];
-                scopeIdx   = ScopeIndices[i];
+                zipCodeIdx = ZipCodeIndex(i);
+                deptIdx    = DeptIndex(i);
+                officeIdx  = OfficeIndex(i);
+                scopeIdx   = ScopeIndex(i);
                 return true;
             }
         }
@@ -116,10 +106,12 @@ internal readonly struct PostalRuleSet
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool ScalarVerify(int i, int number, int subNumber, int lane, int alley)
     {
+        byte flags = PostalData.RuleFlags[Offset + i];
+
         // Lane
-        if (HasLaneConstraint[i] != 0)
+        if ((flags & FlagLane) != 0)
         {
-            if (lane < LaneStarts[i] || lane > LaneEnds[i]) return false;
+            if (lane < LaneStart(i) || lane > LaneEnd(i)) return false;
         }
         else if (lane != 0)
         {
@@ -127,21 +119,21 @@ internal readonly struct PostalRuleSet
         }
 
         // Alley: no constraint means rule covers whole lane (any alley allowed)
-        if (HasAlleyConstraint[i] != 0)
+        if ((flags & FlagAlley) != 0)
         {
-            if (alley < AlleyStarts[i] || alley > AlleyEnds[i]) return false;
+            if (alley < AlleyStart(i) || alley > AlleyEnd(i)) return false;
         }
 
         // Number range (needed for scalar-only path)
-        if (number < NumberStarts[i] || number > NumberEnds[i]) return false;
+        if (number < NumberStart(i) || number > NumberEnd(i)) return false;
 
         // EvenOdd
-        byte eo = EvenOdds[i];
+        int eo = flags >> EvenOddShift;
         if (eo != 0 && (number & 1) != (eo == 1 ? 1 : 0)) return false;
 
         // SubNumber
-        if (NumberStartSubs[i] > 0 && subNumber < NumberStartSubs[i]) return false;
-        if (NumberEndSubs[i] < int.MaxValue && subNumber > NumberEndSubs[i]) return false;
+        if (SubStart(i) > 0 && subNumber < SubStart(i)) return false;
+        if (SubEnd(i) < int.MaxValue && subNumber > SubEnd(i)) return false;
 
         return true;
     }

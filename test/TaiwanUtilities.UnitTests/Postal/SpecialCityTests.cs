@@ -121,22 +121,18 @@ public class SpecialCityTests
     public void TestSpecialCityPostalRules()
     {
         // Act - 從 PostalData 查詢所有南海諸島和釣魚臺的投遞規則
-        var specialKeys = TaiwanUtilities.Internals.PostalData.Rules.Keys
-            .Where(k => k.StartsWith("南海諸") || k.StartsWith("釣魚臺"))
+        var specialGroups = TaiwanUtilities.Internals.PostalLookup.EnumerateGroups()
+            .Where(g => g.City.StartsWith("南海諸") || g.City.StartsWith("釣魚臺"))
             .ToList();
 
-        _output.WriteLine($"總路索引鍵數: {TaiwanUtilities.Internals.PostalData.Rules.Count:N0}");
-        _output.WriteLine($"特殊地名鍵數: {specialKeys.Count}");
+        _output.WriteLine($"總路索引鍵數: {TaiwanUtilities.Internals.PostalLookup.GroupCount:N0}");
+        _output.WriteLine($"特殊地名鍵數: {specialGroups.Count}");
         _output.WriteLine("");
 
-        foreach (var key in specialKeys)
+        foreach (var g in specialGroups)
         {
-            var parts = key.Split('|');
-            _output.WriteLine($"Key: {key}");
-            if (parts.Length >= 3)
-            {
-                _output.WriteLine($"  完整地址: {parts[0]}{parts[1]}{parts[2]}");
-            }
+            _output.WriteLine($"Key: {g.City}|{g.District}|{g.Road}");
+            _output.WriteLine($"  完整地址: {g.City}{g.District}{g.Road}");
             _output.WriteLine("");
         }
 

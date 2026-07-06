@@ -56,13 +56,12 @@ public static class ZipCode
         if (!string.IsNullOrEmpty(addr.Section))
             road = road + PostalRulesEngine.ToChineseSection(addr.Section);
 
-        var key = $"{addr.City}|{addr.District}|{road}";
-        bool found = PostalData.Rules.TryGetValue(key, out var ruleSet);
+        bool found = PostalLookup.TryFind(addr.City, addr.District, road, out var ruleSet);
         if (!found && !string.IsNullOrEmpty(road))
         {
             var chineseRoad = PostalRulesEngine.ArabicToChineseInRoad(road);
             if (!ReferenceEquals(chineseRoad, road))
-                found = PostalData.Rules.TryGetValue($"{addr.City}|{addr.District}|{chineseRoad}", out ruleSet);
+                found = PostalLookup.TryFind(addr.City, addr.District, chineseRoad, out ruleSet);
         }
 
         if (!found)
@@ -112,8 +111,7 @@ public static class ZipCode
             return new List<ZipCodeDeliveryRule>();
         }
 
-        var key = $"{addr.City}|{addr.District}|{addr.Road}";
-        if (!PostalData.Rules.TryGetValue(key, out var ruleSet))
+        if (!PostalLookup.TryFind(addr.City, addr.District, addr.Road, out var ruleSet))
         {
             return new List<ZipCodeDeliveryRule>();
         }
@@ -121,8 +119,8 @@ public static class ZipCode
         var result = new List<ZipCodeDeliveryRule>(ruleSet.Count);
         for (int i = 0; i < ruleSet.Count; i++)
         {
-            var zipCode  = PostalData.ZipCodePool[ruleSet.ZipCodeIndices[i]];
-            var scopeStr = ruleSet.ScopeIndices[i] > 0 ? PostalData.Scopes[ruleSet.ScopeIndices[i]] : "全";
+            var zipCode  = PostalData.ZipCodePool[ruleSet.ZipCodeIndex(i)];
+            var scopeStr = ruleSet.ScopeIndex(i) > 0 ? PostalData.Scopes[ruleSet.ScopeIndex(i)] : "全";
             try
             {
                 result.Add(new ZipCodeDeliveryRule(zipCode, PostalDeliveryRule.Parse(scopeStr)));
@@ -152,24 +150,18 @@ public static class ZipCode
         var normalized = AddressTokenizer.Normalize(partialAddress);
         var results = new List<PostalAddressSuggestion>();
 
-        foreach (var kvp in PostalData.Rules)
+        foreach (var (city, district, road, group) in PostalLookup.EnumerateGroups())
         {
             if (results.Count >= maxResults)
             {
                 break;
             }
 
-            var parts = kvp.Key.Split('|');
-            if (parts.Length < 3)
-            {
-                continue;
-            }
-
-            var fullAddr = parts[0] + parts[1] + parts[2];
+            var fullAddr = city + district + road;
             if (fullAddr.StartsWith(normalized, StringComparison.Ordinal) ||
                 normalized.StartsWith(fullAddr, StringComparison.Ordinal))
             {
-                var zipCode = PostalData.ZipCodePool[kvp.Value.ZipCodeIndices[0]];
+                var zipCode = PostalData.ZipCodePool[PostalLookup.GetRuleSet(group).ZipCodeIndex(0)];
                 results.Add(new PostalAddressSuggestion(fullAddr, zipCode, PostalAddress.Parse(fullAddr)));
             }
         }
@@ -182,17 +174,12 @@ public static class ZipCode
     // the concatenated key address exactly equals the normalized input.
     private static ZipCodeResult? FindByExactTextMatch(string normalized)
     {
-        foreach (var kvp in PostalData.Rules)
+        foreach (var (city, district, road, group) in PostalLookup.EnumerateGroups())
         {
-            var key = kvp.Key;
-            var p1 = key.IndexOf('|');
-            if (p1 < 0) continue;
-            var p2 = key.IndexOf('|', p1 + 1);
-            if (p2 < 0) continue;
-            var fullAddr = key[..p1] + key[(p1 + 1)..p2] + key[(p2 + 1)..];
+            var fullAddr = city + district + road;
             if (string.Equals(fullAddr, normalized, StringComparison.Ordinal))
             {
-                var zipCode = PostalData.ZipCodePool[kvp.Value.ZipCodeIndices[0]];
+                var zipCode = PostalData.ZipCodePool[PostalLookup.GetRuleSet(group).ZipCodeIndex(0)];
                 return ZipCodeResult.ExactMatch(normalized, zipCode, fullAddr);
             }
         }

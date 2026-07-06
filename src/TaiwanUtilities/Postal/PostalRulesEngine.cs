@@ -55,8 +55,7 @@ public static class PostalRulesEngine
         if (!string.IsNullOrEmpty(addr.Section))
             road = road + ToChineseSection(addr.Section);
 
-        // Fast path: nested-switch lookup (no string concat, no hash computation)
-        // Falls through to dictionary when PostalLookup.g.cs is the stub (always returns false).
+        // 零配置查詢：三層二分搜尋（不串接鍵、不算 hash、不配置字串）
         bool found = PostalLookup.TryFind(addr.City, addr.District, road, out var ruleSet);
         if (!found && !string.IsNullOrEmpty(road))
         {
@@ -66,33 +65,15 @@ public static class PostalRulesEngine
                 found = PostalLookup.TryFind(addr.City, addr.District, chineseRoad, out ruleSet);
         }
 
-        // Dictionary fallback: handles entries missing from PostalLookup (stub or partial populate),
-        // and Locality/Village+Locality fallbacks that PostalLookup doesn't cover.
-        if (!found)
-        {
-            found = PostalData.Rules.TryGetValue(
-                string.Concat(addr.City, "|", addr.District, "|", road), out ruleSet);
-            if (!found && !string.IsNullOrEmpty(road))
-            {
-                var chineseRoad = ArabicToChineseInRoad(road);
-                if (!ReferenceEquals(chineseRoad, road))
-                    found = PostalData.Rules.TryGetValue(
-                        string.Concat(addr.City, "|", addr.District, "|", chineseRoad),
-                        out ruleSet);
-            }
-        }
-
         // Fallback: when Road is unparsed, try Locality or Village+Locality
-        // e.g., "花蓮縣秀林鄉富世村富世291號" → Locality="富世" → key "花蓮縣|秀林鄉|富世"
-        // e.g., "彰化縣永靖鄉一村巷1號" → Village="一村" + Locality="巷" → key "彰化縣|永靖鄉|一村巷"
+        // e.g., "花蓮縣秀林鄉富世村富世291號" → Locality="富世"
+        // e.g., "彰化縣永靖鄉一村巷1號" → Village="一村" + Locality="巷" → "一村巷"
         if (!found && string.IsNullOrEmpty(addr.Road))
         {
             if (!string.IsNullOrEmpty(addr.Locality))
-                found = PostalData.Rules.TryGetValue(
-                    string.Concat(addr.City, "|", addr.District, "|", addr.Locality), out ruleSet);
+                found = PostalLookup.TryFind(addr.City, addr.District, addr.Locality, out ruleSet);
             if (!found && !string.IsNullOrEmpty(addr.Village) && !string.IsNullOrEmpty(addr.Locality))
-                found = PostalData.Rules.TryGetValue(
-                    string.Concat(addr.City, "|", addr.District, "|", addr.Village + addr.Locality), out ruleSet);
+                found = PostalLookup.TryFind(addr.City, addr.District, addr.Village + addr.Locality, out ruleSet);
         }
 
         if (!found) return null;
@@ -119,20 +100,10 @@ public static class PostalRulesEngine
     }
 
     internal static bool CityExists(string city)
-    {
-        var prefix = city + "|";
-        foreach (var k in PostalData.Rules.Keys)
-            if (k.StartsWith(prefix, StringComparison.Ordinal)) return true;
-        return false;
-    }
+        => PostalLookup.CityExists(city);
 
     internal static bool DistrictExists(string city, string district)
-    {
-        var prefix = city + "|" + district + "|";
-        foreach (var k in PostalData.Rules.Keys)
-            if (k.StartsWith(prefix, StringComparison.Ordinal)) return true;
-        return false;
-    }
+        => PostalLookup.DistrictExists(city, district);
 
     /// <summary>
     /// 檢查路街是否在資料庫中存在（不需門牌）
@@ -143,12 +114,11 @@ public static class PostalRulesEngine
         if (!string.IsNullOrEmpty(section))
             r = r + ToChineseSection(section);
 
-        var key = string.Concat(city, "|", district, "|", r);
-        if (PostalData.Rules.ContainsKey(key)) return true;
+        if (PostalLookup.FindGroup(city, district, r) >= 0) return true;
 
         var chineseR = ArabicToChineseInRoad(r);
         return !ReferenceEquals(chineseR, r) &&
-               PostalData.Rules.ContainsKey(string.Concat(city, "|", district, "|", chineseR));
+               PostalLookup.FindGroup(city, district, chineseR) >= 0;
     }
 
     /// <summary>
@@ -244,13 +214,10 @@ public static class PostalRulesEngine
     /// </summary>
     public static (int TotalKeys, int TotalRules, long MemoryBytes) GetStats()
     {
-        int keys = PostalData.Rules.Count;
-        int rules = 0;
-        foreach (var rs in PostalData.Rules.Values)
-        {
-            rules += rs.Count;
-        }
-        long mem = rules * 60L + keys * 50L;
+        int keys  = PostalLookup.GroupCount;
+        int rules = PostalData.RecordCount;
+        // SoA 每筆 ~26 bytes + 路名 blob + 偏移陣列
+        long mem = rules * 26L + PostalData.RoadBlob.Length * 2L + (keys + 1) * 8L;
         return (keys, rules, mem);
     }
 }

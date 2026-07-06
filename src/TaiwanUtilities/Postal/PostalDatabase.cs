@@ -113,8 +113,7 @@ public sealed class PostalDatabase : IDisposable
     /// </summary>
     internal static List<PostalRule> QueryPostalRules(string city, string area, string road)
     {
-        var key = $"{city}|{area}|{road}";
-        if (!PostalData.Rules.TryGetValue(key, out var ruleSet))
+        if (!PostalLookup.TryFind(city, area, road, out var ruleSet))
         {
             return new List<PostalRule>();
         }
@@ -135,19 +134,19 @@ public sealed class PostalDatabase : IDisposable
         {
             result.Add(new PostalRule
             {
-                ZipCode    = PostalData.ZipCodePool[ruleSet.ZipCodeIndices[i]],
-                LaneStart  = ruleSet.HasLaneConstraint[i] != 0 ? ruleSet.LaneStarts[i]   : (int?)null,
-                LaneEnd    = ruleSet.HasLaneConstraint[i] != 0 ? ruleSet.LaneEnds[i]     : (int?)null,
-                AlleyStart = ruleSet.HasAlleyConstraint[i] != 0 ? ruleSet.AlleyStarts[i] : (int?)null,
-                AlleyEnd   = ruleSet.HasAlleyConstraint[i] != 0 ? ruleSet.AlleyEnds[i]   : (int?)null,
-                NumberStart    = ruleSet.NumberStarts[i] > 0          ? ruleSet.NumberStarts[i] : (int?)null,
-                NumberEnd      = ruleSet.NumberEnds[i] < int.MaxValue  ? ruleSet.NumberEnds[i]   : (int?)null,
-                NumberStartSub = ruleSet.NumberStartSubs[i] > 0        ? ruleSet.NumberStartSubs[i] : (int?)null,
-                NumberEndSub   = ruleSet.NumberEndSubs[i] < int.MaxValue ? ruleSet.NumberEndSubs[i]   : (int?)null,
-                EvenOdd    = ruleSet.EvenOdds[i] != 0 ? (int?)ruleSet.EvenOdds[i] : null,
-                Scope      = ruleSet.ScopeIndices[i] > 0 ? PostalData.Scopes[ruleSet.ScopeIndices[i]]       : null,
-                Department = ruleSet.DeptIndices[i]  > 0 ? PostalData.Departments[ruleSet.DeptIndices[i]]   : null,
-                Office     = ruleSet.OfficeIndices[i] > 0 ? PostalData.Offices[ruleSet.OfficeIndices[i]]    : null,
+                ZipCode    = PostalData.ZipCodePool[ruleSet.ZipCodeIndex(i)],
+                LaneStart  = ruleSet.HasLane(i)  ? ruleSet.LaneStart(i)  : (int?)null,
+                LaneEnd    = ruleSet.HasLane(i)  ? ruleSet.LaneEnd(i)    : (int?)null,
+                AlleyStart = ruleSet.HasAlley(i) ? ruleSet.AlleyStart(i) : (int?)null,
+                AlleyEnd   = ruleSet.HasAlley(i) ? ruleSet.AlleyEnd(i)   : (int?)null,
+                NumberStart    = ruleSet.NumberStart(i) > 0            ? ruleSet.NumberStart(i) : (int?)null,
+                NumberEnd      = ruleSet.NumberEnd(i) < int.MaxValue   ? ruleSet.NumberEnd(i)   : (int?)null,
+                NumberStartSub = ruleSet.SubStart(i) > 0               ? ruleSet.SubStart(i)    : (int?)null,
+                NumberEndSub   = ruleSet.SubEnd(i) < int.MaxValue      ? ruleSet.SubEnd(i)      : (int?)null,
+                EvenOdd    = ruleSet.EvenOdd(i) != 0 ? (int?)ruleSet.EvenOdd(i) : null,
+                Scope      = ruleSet.ScopeIndex(i)  > 0 ? PostalData.Scopes[ruleSet.ScopeIndex(i)]        : null,
+                Department = ruleSet.DeptIndex(i)   > 0 ? PostalData.Departments[ruleSet.DeptIndex(i)]    : null,
+                Office     = ruleSet.OfficeIndex(i) > 0 ? PostalData.Offices[ruleSet.OfficeIndex(i)]      : null,
             });
         }
 

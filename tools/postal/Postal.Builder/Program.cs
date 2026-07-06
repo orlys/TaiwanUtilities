@@ -818,8 +818,7 @@ class Program
             return 1;
         }
 
-        var nested = args.Contains("--nested");
-        Console.WriteLine(nested ? "=== 生成 PostalLookup.g.cs（nested-switch 模式）===" : "=== 生成 PostalData.g.cs ===");
+        Console.WriteLine("=== 生成 PostalData.g.cs ===");
         Console.WriteLine($"輸入: {inputPath}");
         Console.WriteLine($"輸出: {outputPath}");
         Console.WriteLine();
@@ -891,54 +890,93 @@ class Program
                 kvp.Value.Sort((a, b) => GetSpecificity(b).CompareTo(GetSpecificity(a)));
             }
 
-            // 5. Build per-group arrays and prefetch indices
-            var groupKeys = groups.Keys.OrderBy(k => k, StringComparer.Ordinal).ToList();
-            var groupData = new List<(string key, int count,
-                int[] ns, int[] ne, byte[] hlc, int[] ls, int[] le,
-                byte[] hac, int[] als, int[] ale,
-                byte[] eo, int[] nss, int[] nse,
-                int[] zi, int[] di, int[] oi, int[] sci)>();
-
-            foreach (var key in groupKeys)
-            {
-                var group = groups[key];
-                int n = group.Count;
-                var ns  = new int[n]; var ne  = new int[n];
-                var hlc = new byte[n]; var ls = new int[n]; var le = new int[n];
-                var hac = new byte[n]; var als= new int[n]; var ale= new int[n];
-                var eo  = new byte[n];
-                var nss = new int[n]; var nse = new int[n];
-                var zi  = new int[n]; var di = new int[n];
-                var oi  = new int[n]; var sci= new int[n];
-
-                for (int i = 0; i < n; i++)
+            // 5. 階層排序（縣市 → 行政區 → 路名，各層 Ordinal，需與 PostalLookup 的二分搜尋一致）
+            //    並攤平為階層索引 + 全域 SoA（primitive initializer → RVA blob，啟動零配置）
+            var flatGroups = groups
+                .Select(kvp =>
                 {
-                    var r = group[i];
-                    ns[i]  = r.NumberStart ?? 0;
-                    ne[i]  = r.NumberEnd ?? int.MaxValue;
-                    if (r.LaneStart.HasValue)
-                    {
-                        hlc[i] = 1;
-                        ls[i]  = r.LaneStart.Value;
-                        le[i]  = r.LaneEnd ?? r.LaneStart.Value;
-                    }
-                    if (r.AlleyStart.HasValue)
-                    {
-                        hac[i] = 1;
-                        als[i] = r.AlleyStart.Value;
-                        ale[i] = r.AlleyEnd ?? r.AlleyStart.Value;
-                    }
-                    eo[i]  = (byte)(r.EvenOdd ?? 0);
-                    nss[i] = r.NumberStartSub ?? 0;
-                    nse[i] = r.NumberEndSub ?? int.MaxValue;
-                    zi[i]  = GetOrAddZip(r.ZipCode);
-                    di[i]  = GetOrAddPool(departments, deptIndex, r.Department);
-                    oi[i]  = GetOrAddPool(offices, officeIndex, r.Office);
-                    sci[i] = GetOrAddPool(scopes, scopeIndex, r.Scope);
-                }
+                    var k  = kvp.Key;
+                    var p1 = k.IndexOf('|');
+                    var p2 = k.IndexOf('|', p1 + 1);
+                    return (city: k[..p1], district: k[(p1 + 1)..p2], road: k[(p2 + 1)..], rules: kvp.Value);
+                })
+                .OrderBy(e => e.city, StringComparer.Ordinal)
+                .ThenBy(e => e.district, StringComparer.Ordinal)
+                .ThenBy(e => e.road, StringComparer.Ordinal)
+                .ToList();
 
-                groupData.Add((key, n, ns, ne, hlc, ls, le, hac, als, ale, eo, nss, nse, zi, di, oi, sci));
+            var cityNames            = new List<string>();
+            var cityDistrictOffsets  = new List<int> { 0 };
+            var districtNames        = new List<string>();
+            var districtGroupOffsets = new List<int> { 0 };
+            var roadBlob             = new StringBuilder();
+            var roadOffsets          = new List<int> { 0 };
+            var groupRuleOffsets     = new List<int> { 0 };
+
+            int total = rules.Count;
+            var ns  = new List<int>(total); var ne  = new List<int>(total);
+            var ls  = new List<int>(total); var le  = new List<int>(total);
+            var als = new List<int>(total); var ale = new List<int>(total);
+            var nss = new List<int>(total); var nse = new List<int>(total);
+            var ruleFlags = new List<int>(total);
+            var zi  = new List<int>(total); var di  = new List<int>(total);
+            var oi  = new List<int>(total); var sci = new List<int>(total);
+
+            foreach (var cityGroup in flatGroups.GroupBy(e => e.city))
+            {
+                cityNames.Add(cityGroup.Key);
+                foreach (var distGroup in cityGroup.GroupBy(e => e.district))
+                {
+                    districtNames.Add(distGroup.Key);
+                    foreach (var entry in distGroup)
+                    {
+                        roadBlob.Append(entry.road);
+                        roadOffsets.Add(roadBlob.Length);
+
+                        foreach (var r in entry.rules)
+                        {
+                            ns.Add(r.NumberStart ?? 0);
+                            ne.Add(r.NumberEnd ?? int.MaxValue);
+
+                            // RuleFlags 位元佈局：bit0 HasLane, bit1 HasAlley, bits2-3 EvenOdd
+                            int f = 0;
+                            if (r.LaneStart.HasValue)
+                            {
+                                f |= 1;
+                                ls.Add(r.LaneStart.Value);
+                                le.Add(r.LaneEnd ?? r.LaneStart.Value);
+                            }
+                            else { ls.Add(0); le.Add(0); }
+
+                            if (r.AlleyStart.HasValue)
+                            {
+                                f |= 2;
+                                als.Add(r.AlleyStart.Value);
+                                ale.Add(r.AlleyEnd ?? r.AlleyStart.Value);
+                            }
+                            else { als.Add(0); ale.Add(0); }
+
+                            int eoVal = r.EvenOdd ?? 0;
+                            if (eoVal < 0 || eoVal > 2)
+                                throw new InvalidOperationException($"EvenOdd 值 {eoVal} 超出 flags 編碼範圍（0-2）");
+                            f |= eoVal << 2;
+                            ruleFlags.Add(f);
+
+                            nss.Add(r.NumberStartSub ?? 0);
+                            nse.Add(r.NumberEndSub ?? int.MaxValue);
+                            zi.Add(GetOrAddZip(r.ZipCode));
+                            di.Add(GetOrAddPool(departments, deptIndex, r.Department));
+                            oi.Add(GetOrAddPool(offices, officeIndex, r.Office));
+                            sci.Add(GetOrAddPool(scopes, scopeIndex, r.Scope));
+                        }
+                        groupRuleOffsets.Add(ns.Count);
+                    }
+                    districtGroupOffsets.Add(roadOffsets.Count - 1);
+                }
+                cityDistrictOffsets.Add(districtNames.Count);
             }
+
+            int groupCount = roadOffsets.Count - 1;
 
             // 6. Write the generated file
             Console.Write("生成 C# 原始碼...");
@@ -951,36 +989,16 @@ class Program
 
             using var sw = new StreamWriter(outputPath, false, Encoding.UTF8);
 
-            if (nested)
-            {
-                WriteNestedSwitchFile(sw, groupData, generatedDate, rules.Count);
-                Console.WriteLine(" 完成！");
-                var nfi = new FileInfo(outputPath);
-                Console.WriteLine($"輸出大小: {nfi.Length / 1024.0 / 1024.0:F2} MB");
-                Console.WriteLine($"路索引鍵數: {groupData.Count:N0}");
-                return 0;
-            }
-
-            const int ENTRIES_PER_METHOD = 80;
-            int methodCount = (groupData.Count + ENTRIES_PER_METHOD - 1) / ENTRIES_PER_METHOD;
-
             sw.WriteLine("// <auto-generated/>");
             sw.WriteLine("// SPDX-License-Identifier: MIT");
             sw.WriteLine("// Postal code data from Chunghwa Post under OGDL-Taiwan-1.0");
             sw.WriteLine("// This file is generated by: dotnet run --project tools/postal/Postal.Builder -- codegen [dbf] [output]");
             sw.WriteLine("// DO NOT EDIT MANUALLY.");
-            sw.WriteLine($"// Generated: {generatedDate} | Records: {rules.Count:N0}");
+            sw.WriteLine($"// Generated: {generatedDate} | Records: {rules.Count:N0} | Groups: {groupCount:N0}");
             sw.WriteLine();
             sw.WriteLine("#nullable enable");
             sw.WriteLine();
             sw.WriteLine("namespace TaiwanUtilities.Internals;");
-            sw.WriteLine();
-            sw.WriteLine("using System;");
-            sw.WriteLine("using System.Collections.Generic;");
-            sw.WriteLine();
-            sw.WriteLine("#if NET8_0_OR_GREATER");
-            sw.WriteLine("using System.Collections.Frozen;");
-            sw.WriteLine("#endif");
             sw.WriteLine();
             sw.WriteLine("internal static class PostalData");
             sw.WriteLine("{");
@@ -1020,61 +1038,29 @@ class Program
             sw.WriteLine(" };");
             sw.WriteLine();
 
-            // CreateRules
-            sw.WriteLine("    private static System.Collections.Generic.Dictionary<string, PostalRuleSet> CreateRules()");
-            sw.WriteLine("    {");
-            sw.WriteLine($"        var d = new System.Collections.Generic.Dictionary<string, PostalRuleSet>({groupData.Count}, System.StringComparer.Ordinal);");
-            for (int m = 0; m < methodCount; m++)
-            {
-                sw.WriteLine($"        InitRules{m}(d);");
-            }
-            sw.WriteLine("        return d;");
-            sw.WriteLine("    }");
-            sw.WriteLine();
+            // ── 階層索引（ordinal 排序，供 PostalLookup 二分搜尋）──
+            WriteStringArray(sw, "CityNames", cityNames);
+            WriteNumericArray(sw, "int", "CityDistrictOffsets", cityDistrictOffsets);
+            WriteStringArray(sw, "DistrictNames", districtNames);
+            WriteNumericArray(sw, "int", "DistrictGroupOffsets", districtGroupOffsets);
+            WriteRoadBlob(sw, roadBlob.ToString());
+            WriteNumericArray(sw, "int", "RoadOffsets", roadOffsets);
+            WriteNumericArray(sw, "int", "GroupRuleOffsets", groupRuleOffsets);
 
-            // Rules field
-            sw.WriteLine("#if NET8_0_OR_GREATER");
-            sw.WriteLine("    internal static readonly System.Collections.Frozen.FrozenDictionary<string, PostalRuleSet> Rules =");
-            sw.WriteLine("        CreateRules().ToFrozenDictionary(System.StringComparer.Ordinal);");
-            sw.WriteLine("#else");
-            sw.WriteLine("    internal static readonly System.Collections.Generic.Dictionary<string, PostalRuleSet> Rules = CreateRules();");
-            sw.WriteLine("#endif");
-            sw.WriteLine();
-
-            // InitRulesN methods
-            for (int m = 0; m < methodCount; m++)
-            {
-                sw.WriteLine($"    private static void InitRules{m}(System.Collections.Generic.Dictionary<string, PostalRuleSet> d)");
-                sw.WriteLine("    {");
-                int start = m * ENTRIES_PER_METHOD;
-                int end   = Math.Min(start + ENTRIES_PER_METHOD, groupData.Count);
-
-                for (int gi = start; gi < end; gi++)
-                {
-                    var (key, cnt, ns, ne, hlc, ls, le, hac, als, ale, eo, nss, nse, zi, di, oi, sci) = groupData[gi];
-                    sw.WriteLine($"        d[\"{EscapeString(key)}\"] = new PostalRuleSet(");
-                    sw.WriteLine($"            {cnt},");
-                    sw.WriteLine($"            new int[] {{ {IntArray(ns)} }},");
-                    sw.WriteLine($"            new int[] {{ {IntArrayMaxValue(ne)} }},");
-                    sw.WriteLine($"            new byte[] {{ {ByteArray(hlc)} }},");
-                    sw.WriteLine($"            new int[] {{ {IntArray(ls)} }},");
-                    sw.WriteLine($"            new int[] {{ {IntArray(le)} }},");
-                    sw.WriteLine($"            new byte[] {{ {ByteArray(hac)} }},");
-                    sw.WriteLine($"            new int[] {{ {IntArray(als)} }},");
-                    sw.WriteLine($"            new int[] {{ {IntArray(ale)} }},");
-                    sw.WriteLine($"            new byte[] {{ {ByteArray(eo)} }},");
-                    sw.WriteLine($"            new int[] {{ {IntArray(nss)} }},");
-                    sw.WriteLine($"            new int[] {{ {IntArrayMaxValue(nse)} }},");
-                    sw.WriteLine($"            new int[] {{ {IntArray(zi)} }},");
-                    sw.WriteLine($"            new int[] {{ {IntArray(di)} }},");
-                    sw.WriteLine($"            new int[] {{ {IntArray(oi)} }},");
-                    sw.WriteLine($"            new int[] {{ {IntArray(sci)} }}");
-                    sw.WriteLine("        );");
-                }
-
-                sw.WriteLine("    }");
-                sw.WriteLine();
-            }
+            // ── 規則 SoA（全域陣列，PostalRuleSet 以 Offset/Count 切片檢視）──
+            WriteNumericArray(sw, "int", "NumberStarts", ns);
+            WriteNumericArray(sw, "int", "NumberEnds", ne);
+            WriteNumericArray(sw, PickType(ls),  "LaneStarts", ls);
+            WriteNumericArray(sw, PickType(le),  "LaneEnds", le);
+            WriteNumericArray(sw, PickType(als), "AlleyStarts", als);
+            WriteNumericArray(sw, PickType(ale), "AlleyEnds", ale);
+            WriteNumericArray(sw, PickType(nss), "SubStarts", nss);
+            WriteNumericArray(sw, "int", "SubEnds", nse);
+            WriteNumericArray(sw, "byte", "RuleFlags", ruleFlags);
+            WriteNumericArray(sw, PickType(zi),  "ZipIdx", zi);
+            WriteNumericArray(sw, PickType(di),  "DeptIdx", di);
+            WriteNumericArray(sw, PickType(oi),  "OfficeIdx", oi);
+            WriteNumericArray(sw, PickType(sci), "ScopeIdx", sci);
 
             sw.WriteLine("}");
 
@@ -1082,7 +1068,7 @@ class Program
 
             var fi = new FileInfo(outputPath);
             Console.WriteLine($"輸出大小: {fi.Length / 1024.0 / 1024.0:F2} MB");
-            Console.WriteLine($"路索引鍵數: {groupData.Count:N0}");
+            Console.WriteLine($"路索引鍵數: {groupCount:N0}");
             Console.WriteLine($"ZipCode pool: {zipCodePool.Count:N0}");
 
             return 0;
@@ -1111,14 +1097,68 @@ class Program
     static string EscapeString(string s) =>
         s.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
-    static string IntArray(int[] arr) =>
-        string.Join(", ", arr.Select(v => v.ToString()));
+    /// <summary>依最大值選擇最小可容納的元素型別（RVA blob 尺寸最佳化）。</summary>
+    static string PickType(List<int> values)
+    {
+        int max = 0;
+        foreach (var v in values) if (v > max) max = v;
+        return max <= ushort.MaxValue ? "ushort" : "int";
+    }
 
-    static string IntArrayMaxValue(int[] arr) =>
-        string.Join(", ", arr.Select(v => v == int.MaxValue ? "int.MaxValue" : v.ToString()));
+    static void WriteNumericArray(StreamWriter sw, string type, string name, List<int> values)
+    {
+        const int PER_LINE = 120;
+        sw.WriteLine($"    internal static readonly {type}[] {name} = new {type}[]");
+        sw.WriteLine("    {");
+        var sb = new StringBuilder(1024);
+        for (int i = 0; i < values.Count; i += PER_LINE)
+        {
+            sb.Clear();
+            sb.Append("        ");
+            int end = Math.Min(i + PER_LINE, values.Count);
+            for (int j = i; j < end; j++)
+            {
+                if (type == "int" && values[j] == int.MaxValue) sb.Append("int.MaxValue");
+                else sb.Append(values[j]);
+                sb.Append(", ");
+            }
+            sw.WriteLine(sb.ToString());
+        }
+        sw.WriteLine("    };");
+        sw.WriteLine();
+    }
 
-    static string ByteArray(byte[] arr) =>
-        string.Join(", ", arr.Select(v => v.ToString()));
+    static void WriteStringArray(StreamWriter sw, string name, List<string> values)
+    {
+        const int PER_LINE = 20;
+        sw.WriteLine($"    internal static readonly string[] {name} = new string[]");
+        sw.WriteLine("    {");
+        for (int i = 0; i < values.Count; i += PER_LINE)
+        {
+            int end = Math.Min(i + PER_LINE, values.Count);
+            sw.WriteLine("        " + string.Join(", ", values.Skip(i).Take(end - i).Select(v => $"\"{EscapeString(v)}\"")) + ",");
+        }
+        sw.WriteLine("    };");
+        sw.WriteLine();
+    }
+
+    static void WriteRoadBlob(StreamWriter sw, string blob)
+    {
+        // 相鄰字面值以 + 串接，由編譯器常數折疊為單一 US-heap 條目
+        const int CHUNK = 4000;
+        sw.WriteLine("    internal static readonly string RoadBlob =");
+        int i = 0;
+        while (true)
+        {
+            int len = Math.Min(CHUNK, blob.Length - i);
+            if (i + len < blob.Length && char.IsHighSurrogate(blob[i + len - 1])) len++;
+            var piece = blob.Substring(i, len);
+            i += len;
+            sw.WriteLine($"        \"{EscapeString(piece)}\"{(i < blob.Length ? " +" : ";")}");
+            if (i >= blob.Length) break;
+        }
+        sw.WriteLine();
+    }
 
     static List<string[]> ReadDbfFile(string dbfPath)
     {
@@ -1436,150 +1476,6 @@ class Program
         {
             return "unknown";
         }
-    }
-
-    // ── Nested-switch codegen ────────────────────────────────────────────────
-
-    static void WriteNestedSwitchFile(
-        StreamWriter sw,
-        List<(string key, int count,
-            int[] ns, int[] ne, byte[] hlc, int[] ls, int[] le,
-            byte[] hac, int[] als, int[] ale,
-            byte[] eo, int[] nss, int[] nse,
-            int[] zi, int[] di, int[] oi, int[] sci)> groupData,
-        string generatedDate, int recordCount)
-    {
-        // Build city → district → road hierarchy from flat groupData
-        var entries = groupData.Select((g, i) => {
-            var k  = g.key;
-            var p1 = k.IndexOf('|');
-            var p2 = k.IndexOf('|', p1 + 1);
-            return (idx: i, city: k[..p1], district: k[(p1 + 1)..p2], road: k[(p2 + 1)..]);
-        }).ToList();
-
-        var cities = entries
-            .GroupBy(e => e.city, StringComparer.Ordinal)
-            .OrderBy(g => g.Key, StringComparer.Ordinal)
-            .Select((g, ci) => (ci, name: g.Key,
-                districts: g
-                    .GroupBy(e => e.district, StringComparer.Ordinal)
-                    .OrderBy(d => d.Key, StringComparer.Ordinal)
-                    .Select((d, di) => (di, name: d.Key,
-                        roads: d.OrderBy(r => r.road, StringComparer.Ordinal).ToList()))
-                    .ToList()))
-            .ToList();
-
-        // Header
-        sw.WriteLine("// <auto-generated/>");
-        sw.WriteLine("// SPDX-License-Identifier: MIT");
-        sw.WriteLine("// Postal code data from Chunghwa Post under OGDL-Taiwan-1.0");
-        sw.WriteLine("// This file is generated by: dotnet run --project tools/postal/Postal.Builder -- codegen [dbf] [output] --nested");
-        sw.WriteLine("// DO NOT EDIT MANUALLY.");
-        sw.WriteLine($"// Generated: {generatedDate} | Records: {recordCount:N0}");
-        sw.WriteLine();
-        sw.WriteLine("#nullable enable");
-        sw.WriteLine();
-        sw.WriteLine("namespace TaiwanUtilities.Internals;");
-        sw.WriteLine();
-        sw.WriteLine("internal static class PostalLookup");
-        sw.WriteLine("{");
-
-        // s_Rules array backed by split InitSets methods (same split trick as InitRulesN)
-        const int SETS_PER_METHOD = 80;
-        int setMethodCount = (groupData.Count + SETS_PER_METHOD - 1) / SETS_PER_METHOD;
-
-        sw.WriteLine($"    private static readonly PostalRuleSet[] s_Rules = CreateRuleSets();");
-        sw.WriteLine();
-        sw.WriteLine("    private static PostalRuleSet[] CreateRuleSets()");
-        sw.WriteLine("    {");
-        sw.WriteLine($"        var r = new PostalRuleSet[{groupData.Count}];");
-        for (int m = 0; m < setMethodCount; m++)
-            sw.WriteLine($"        InitSets{m}(r);");
-        sw.WriteLine("        return r;");
-        sw.WriteLine("    }");
-        sw.WriteLine();
-
-        for (int m = 0; m < setMethodCount; m++)
-        {
-            sw.WriteLine($"    private static void InitSets{m}(PostalRuleSet[] r)");
-            sw.WriteLine("    {");
-            int start = m * SETS_PER_METHOD;
-            int end   = Math.Min(start + SETS_PER_METHOD, groupData.Count);
-            for (int gi = start; gi < end; gi++)
-            {
-                var (_, cnt, ns, ne, hlc, ls, le, hac, als, ale, eo, nss, nse, zi, di, oi, sci) = groupData[gi];
-                sw.WriteLine($"        r[{gi}] = new PostalRuleSet(");
-                sw.WriteLine($"            {cnt},");
-                sw.WriteLine($"            new int[] {{ {IntArray(ns)} }},");
-                sw.WriteLine($"            new int[] {{ {IntArrayMaxValue(ne)} }},");
-                sw.WriteLine($"            new byte[] {{ {ByteArray(hlc)} }},");
-                sw.WriteLine($"            new int[] {{ {IntArray(ls)} }},");
-                sw.WriteLine($"            new int[] {{ {IntArray(le)} }},");
-                sw.WriteLine($"            new byte[] {{ {ByteArray(hac)} }},");
-                sw.WriteLine($"            new int[] {{ {IntArray(als)} }},");
-                sw.WriteLine($"            new int[] {{ {IntArray(ale)} }},");
-                sw.WriteLine($"            new byte[] {{ {ByteArray(eo)} }},");
-                sw.WriteLine($"            new int[] {{ {IntArray(nss)} }},");
-                sw.WriteLine($"            new int[] {{ {IntArrayMaxValue(nse)} }},");
-                sw.WriteLine($"            new int[] {{ {IntArray(zi)} }},");
-                sw.WriteLine($"            new int[] {{ {IntArray(di)} }},");
-                sw.WriteLine($"            new int[] {{ {IntArray(oi)} }},");
-                sw.WriteLine($"            new int[] {{ {IntArray(sci)} }}");
-                sw.WriteLine("        );");
-            }
-            sw.WriteLine("    }");
-            sw.WriteLine();
-        }
-
-        // TryFind entry point (city switch)
-        sw.WriteLine("    internal static bool TryFind(string? city, string? district, string? road, out PostalRuleSet ruleSet)");
-        sw.WriteLine("    {");
-        sw.WriteLine("        switch (city)");
-        sw.WriteLine("        {");
-        foreach (var (ci, cityName, _) in cities)
-            sw.WriteLine($"            case \"{EscapeString(cityName)}\": return TryFind_C{ci}(district, road, out ruleSet);");
-        sw.WriteLine("        }");
-        sw.WriteLine("        ruleSet = default;");
-        sw.WriteLine("        return false;");
-        sw.WriteLine("    }");
-        sw.WriteLine();
-
-        // Per-city methods (district switch)
-        foreach (var (ci, cityName, districts) in cities)
-        {
-            sw.WriteLine($"    private static bool TryFind_C{ci}(string? district, string? road, out PostalRuleSet ruleSet)");
-            sw.WriteLine("    {");
-            sw.WriteLine("        switch (district)");
-            sw.WriteLine("        {");
-            foreach (var (di, distName, _) in districts)
-                sw.WriteLine($"            case \"{EscapeString(distName)}\": return TryFind_C{ci}_D{di}(road, out ruleSet);");
-            sw.WriteLine("        }");
-            sw.WriteLine("        ruleSet = default;");
-            sw.WriteLine("        return false;");
-            sw.WriteLine("    }");
-            sw.WriteLine();
-        }
-
-        // Per-city-district methods (road switch → leaf)
-        foreach (var (ci, _, districts) in cities)
-        {
-            foreach (var (di, _, roads) in districts)
-            {
-                sw.WriteLine($"    private static bool TryFind_C{ci}_D{di}(string? road, out PostalRuleSet ruleSet)");
-                sw.WriteLine("    {");
-                sw.WriteLine("        switch (road)");
-                sw.WriteLine("        {");
-                foreach (var (idx, _, _, roadName) in roads)
-                    sw.WriteLine($"            case \"{EscapeString(roadName)}\": ruleSet = s_Rules[{idx}]; return true;");
-                sw.WriteLine("        }");
-                sw.WriteLine("        ruleSet = default;");
-                sw.WriteLine("        return false;");
-                sw.WriteLine("    }");
-                sw.WriteLine();
-            }
-        }
-
-        sw.WriteLine("}");
     }
 
     static void WriteDatabaseInfo(string dbPath, int recordCount, string sourceFile)

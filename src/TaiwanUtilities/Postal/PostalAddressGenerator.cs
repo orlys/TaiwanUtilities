@@ -74,28 +74,27 @@ public class PostalAddressGenerator
     /// </summary>
     private static List<PostalRule> GetRandomPostalRules(int maxCount)
     {
-        var result = new List<PostalRule>(Math.Min(maxCount, PostalData.Rules.Count * 10));
-        foreach (var kvp in PostalData.Rules)
+        var result = new List<PostalRule>(Math.Min(maxCount, PostalLookup.GroupCount * 10));
+        foreach (var (city, area, road, group) in PostalLookup.EnumerateGroups())
         {
-            var parts = kvp.Key.Split('|');
-            if (parts.Length < 3) continue;
-            for (int i = 0; i < kvp.Value.Count && result.Count < maxCount; i++)
+            var ruleSet = PostalLookup.GetRuleSet(group);
+            for (int i = 0; i < ruleSet.Count && result.Count < maxCount; i++)
             {
                 result.Add(new PostalRule
                 {
-                    ZipCode    = PostalData.ZipCodePool[kvp.Value.ZipCodeIndices[i]],
-                    City       = parts[0],
-                    Area       = parts[1],
-                    Road       = parts[2],
-                    LaneStart  = kvp.Value.HasLaneConstraint[i] != 0 ? kvp.Value.LaneStarts[i]   : (int?)null,
-                    LaneEnd    = kvp.Value.HasLaneConstraint[i] != 0 ? kvp.Value.LaneEnds[i]     : (int?)null,
-                    AlleyStart = kvp.Value.HasAlleyConstraint[i] != 0 ? kvp.Value.AlleyStarts[i] : (int?)null,
-                    AlleyEnd   = kvp.Value.HasAlleyConstraint[i] != 0 ? kvp.Value.AlleyEnds[i]   : (int?)null,
-                    NumberStart    = kvp.Value.NumberStarts[i] > 0          ? kvp.Value.NumberStarts[i] : (int?)null,
-                    NumberEnd      = kvp.Value.NumberEnds[i] < int.MaxValue  ? kvp.Value.NumberEnds[i]   : (int?)null,
-                    NumberStartSub = kvp.Value.NumberStartSubs[i] > 0        ? kvp.Value.NumberStartSubs[i] : (int?)null,
-                    NumberEndSub   = kvp.Value.NumberEndSubs[i] < int.MaxValue ? kvp.Value.NumberEndSubs[i]   : (int?)null,
-                    EvenOdd = kvp.Value.EvenOdds[i] != 0 ? (int?)kvp.Value.EvenOdds[i] : null,
+                    ZipCode    = PostalData.ZipCodePool[ruleSet.ZipCodeIndex(i)],
+                    City       = city,
+                    Area       = area,
+                    Road       = road,
+                    LaneStart  = ruleSet.HasLane(i)  ? ruleSet.LaneStart(i)  : (int?)null,
+                    LaneEnd    = ruleSet.HasLane(i)  ? ruleSet.LaneEnd(i)    : (int?)null,
+                    AlleyStart = ruleSet.HasAlley(i) ? ruleSet.AlleyStart(i) : (int?)null,
+                    AlleyEnd   = ruleSet.HasAlley(i) ? ruleSet.AlleyEnd(i)   : (int?)null,
+                    NumberStart    = ruleSet.NumberStart(i) > 0          ? ruleSet.NumberStart(i) : (int?)null,
+                    NumberEnd      = ruleSet.NumberEnd(i) < int.MaxValue ? ruleSet.NumberEnd(i)   : (int?)null,
+                    NumberStartSub = ruleSet.SubStart(i) > 0             ? ruleSet.SubStart(i)    : (int?)null,
+                    NumberEndSub   = ruleSet.SubEnd(i) < int.MaxValue    ? ruleSet.SubEnd(i)      : (int?)null,
+                    EvenOdd = ruleSet.EvenOdd(i) != 0 ? (int?)ruleSet.EvenOdd(i) : null,
                 });
             }
         }
