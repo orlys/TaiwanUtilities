@@ -10,6 +10,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+using TaiwanUtilities.Internals;
+
 /// <summary>
 /// 台灣郵政地址生成器
 /// 從資料庫中隨機生成符合投遞規則的真實地址
@@ -39,11 +41,10 @@ public class PostalAddressGenerator
     {
         var addresses = new List<GeneratedPostalAddress>();
 
-        // 嘗試從 postal_rules 生成
+        // 從 PostalData 靜態資料生成
         try
         {
-            // 查詢所有規則（不限制數量），然後重複使用它們
-            var rules = PostalDatabase.ExecuteQuery(repo => repo.QueryRandomPostalRules(100_000));
+            var rules = GetRandomPostalRules(100_000);
 
             if (rules.Count > 0)
             {
@@ -52,10 +53,10 @@ public class PostalAddressGenerator
         }
         catch
         {
-            // postal_rules 不存在或查詢失敗，使用後備方案
+            // 生成失敗，使用後備方案
         }
 
-        // 如果還需要更多地址，從 PostalDatabase 查詢補充
+        // 如果還需要更多地址，從靜態資料補充
         if (addresses.Count < count)
         {
             var remaining = count - addresses.Count;
@@ -67,6 +68,38 @@ public class PostalAddressGenerator
     }
 
     #region 私有方法
+
+    /// <summary>
+    /// 從 PostalData 靜態資料取得隨機規則清單
+    /// </summary>
+    private static List<PostalRule> GetRandomPostalRules(int maxCount)
+    {
+        var result = new List<PostalRule>(Math.Min(maxCount, PostalLookup.GroupCount * 10));
+        foreach (var (city, area, road, group) in PostalLookup.EnumerateGroups())
+        {
+            var ruleSet = PostalLookup.GetRuleSet(group);
+            for (int i = 0; i < ruleSet.Count && result.Count < maxCount; i++)
+            {
+                result.Add(new PostalRule
+                {
+                    ZipCode    = PostalData.ZipCodePool[ruleSet.ZipCodeIndex(i)],
+                    City       = city,
+                    Area       = area,
+                    Road       = road,
+                    LaneStart  = ruleSet.HasLane(i)  ? ruleSet.LaneStart(i)  : (int?)null,
+                    LaneEnd    = ruleSet.HasLane(i)  ? ruleSet.LaneEnd(i)    : (int?)null,
+                    AlleyStart = ruleSet.HasAlley(i) ? ruleSet.AlleyStart(i) : (int?)null,
+                    AlleyEnd   = ruleSet.HasAlley(i) ? ruleSet.AlleyEnd(i)   : (int?)null,
+                    NumberStart    = ruleSet.NumberStart(i) > 0          ? ruleSet.NumberStart(i) : (int?)null,
+                    NumberEnd      = ruleSet.NumberEnd(i) < int.MaxValue ? ruleSet.NumberEnd(i)   : (int?)null,
+                    NumberStartSub = ruleSet.SubStart(i) > 0             ? ruleSet.SubStart(i)    : (int?)null,
+                    NumberEndSub   = ruleSet.SubEnd(i) < int.MaxValue    ? ruleSet.SubEnd(i)      : (int?)null,
+                    EvenOdd = ruleSet.EvenOdd(i) != 0 ? (int?)ruleSet.EvenOdd(i) : null,
+                });
+            }
+        }
+        return result;
+    }
 
     /// <summary>
     /// 從 postal_rules 生成地址

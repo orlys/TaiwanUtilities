@@ -1,6 +1,7 @@
 namespace TaiwanUtilities.Builder;
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -52,10 +53,13 @@ class Program
                 case "gen":
                     return GenerateAddressesCommand(args);
 
+                case "codegen":
+                    return CodegenCommand(args);
+
                 case "build":
-                    // 移除 "build" 參數，繼續執行建立資料庫
-                    args = args.Skip(1).ToArray();
-                    break;
+                    Console.WriteLine("⚠ 'build' 命令已移除。請改用 'codegen' 命令生成靜態 C# 資料：");
+                    Console.WriteLine("  dotnet run -- codegen <input.dbf> <output.g.cs>");
+                    return 1;
 
                 case "help":
                 case "--help":
@@ -64,119 +68,34 @@ class Program
                     return 0;
 
                 default:
-                    // 如果不是命令，當作檔案路徑處理
-                    break;
+                    // 如果不是命令，當作 codegen 的輸入路徑處理
+                    Console.WriteLine($"未知命令: {command}");
+                    Console.WriteLine("使用 'help' 查看可用命令。");
+                    return 1;
             }
         }
 
-        // 決定輸入檔案路徑：優先使用 /data (本機開發)，否則使用 dataset (GitHub Action)
-        var inputPath = args.Length > 0 ? args[0] : DetermineInputPath();
-        var dbPath = args.Length > 1 ? args[1] : "../../src/TaiwanUtilities/Postal/zipcode.db";
-
-        Console.WriteLine("=== 台灣郵遞區號索引建立工具 ===");
-        Console.WriteLine($"輸入檔案: {inputPath}");
-        Console.WriteLine($"輸出資料庫: {dbPath}");
-        Console.WriteLine();
-
-        if (!File.Exists(inputPath))
-        {
-            Console.WriteLine($"錯誤：找不到輸入檔案 '{inputPath}'");
-            return 1;
-        }
-
-        try
-        {
-            // 刪除舊的資料庫檔案
-            if (File.Exists(dbPath))
-            {
-                Console.WriteLine("刪除舊的資料庫檔案...");
-                File.Delete(dbPath);
-            }
-
-            List<string[]> rows;
-            List<PostalRuleData>? structuredRules = null;
-
-            // 根據副檔名決定讀取方式
-            if (inputPath.EndsWith(".dbf", StringComparison.OrdinalIgnoreCase))
-            {
-                Console.Write("正在讀取 DBF 資料（傳統格式）...");
-                rows = ReadDbfFile(inputPath);
-                Console.WriteLine($" 完成！讀取了 {rows.Count} 筆資料");
-
-                Console.Write("正在讀取 DBF 資料（結構化格式）...");
-                structuredRules = ReadDbfFileStructured(inputPath);
-                Console.WriteLine($" 完成！讀取了 {structuredRules.Count} 筆資料");
-            }
-            else if (inputPath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
-            {
-                Console.Write("正在讀取 JSON 資料...");
-                rows = ReadJsonFile(inputPath);
-                Console.WriteLine($" 完成！讀取了 {rows.Count} 筆資料");
-            }
-            else
-            {
-                Console.Write("正在讀取 CSV 資料...");
-                rows = ReadCsvFile(inputPath);
-                Console.WriteLine($" 完成！讀取了 {rows.Count} 筆資料");
-            }
-
-            Console.Write("正在建立索引...");
-            var startTime = DateTime.Now;
-
-            var directory = new TaiwanUtilities.ZipCodeRepository(dbPath, keepAlive: true);
-
-            // 如果有結構化資料，使用新方法；否則使用舊方法（向後相容）
-            if (structuredRules != null)
-            {
-                directory.LoadFromStructuredData(structuredRules, rows);
-            }
-            else
-            {
-                directory.LoadFromCsv(rows);
-            }
-
-            // 寫入資料庫版本資訊
-            WriteDatabaseInfo(dbPath, rows.Count, inputPath);
-
-            directory.Dispose();
-
-            var elapsed = DateTime.Now - startTime;
-            Console.WriteLine($" 完成！耗時 {elapsed.TotalSeconds:F2} 秒");
-
-            // 顯示資料庫大小
-            var fileInfo = new FileInfo(dbPath);
-            Console.WriteLine($"資料庫大小: {fileInfo.Length / 1024.0 / 1024.0:F2} MB");
-            Console.WriteLine();
-            Console.WriteLine("索引建立完成！");
-
-            return 0;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"錯誤：{ex.Message}");
-            Console.WriteLine(ex.StackTrace);
-            return 1;
-        }
+        ShowHelp();
+        return 0;
     }
 
     static void ShowHelp()
     {
-        Console.WriteLine("=== TaiwanUtilities.Builder - 郵遞區號資料庫建立與管理工具 ===\n");
+        Console.WriteLine("=== TaiwanUtilities.Builder - 郵遞區號資料工具 ===\n");
         Console.WriteLine("用法: dotnet run -- [command] [options]\n");
         Console.WriteLine("命令:");
-        Console.WriteLine("  build [input] [output]  建立資料庫（預設）");
+        Console.WriteLine("  codegen <dbf> <output>  生成靜態 C# 資料（PostalData.g.cs）");
         Console.WriteLine("  inspect <dbf>           檢查 .dbf 檔案結構");
         Console.WriteLine("  validate <json>         驗證 JSON 資料集");
         Console.WriteLine("  stats <json>            顯示資料集統計");
         Console.WriteLine("  analyze-department      分析 DEPARTMENT 欄位（別名: dept）");
         Console.WriteLine("  export-all [input] [output]  匯出所有欄位到 SQLite（別名: lab）");
-        Console.WriteLine("  generate [count]        從資料庫隨機生成測試地址（別名: gen）");
+        Console.WriteLine("  generate [count] [db]   從 SQLite 資料庫隨機生成測試地址（別名: gen）");
         Console.WriteLine("  help                    顯示此說明\n");
         Console.WriteLine("選項:");
         Console.WriteLine("  --verbose, -v           顯示詳細資訊\n");
         Console.WriteLine("範例:");
-        Console.WriteLine("  dotnet run                                    # 建立資料庫（預設）");
-        Console.WriteLine("  dotnet run -- build ../../dataset/rall1.dbf   # 指定輸入檔");
+        Console.WriteLine("  dotnet run -- codegen temp/rall1.dbf src/TaiwanUtilities/Postal/PostalData.g.cs");
         Console.WriteLine("  dotnet run -- inspect ../../dataset/rall1.dbf # 檢查 DBF");
         Console.WriteLine("  dotnet run -- validate ../../dataset/zipcode.json");
         Console.WriteLine("  dotnet run -- stats ../../dataset/zipcode.json");
@@ -877,6 +796,368 @@ class Program
         }
 
         return $"{(double)value / total * 100:F1}%";
+    }
+
+    // ── Codegen command ──────────────────────────────────────────────────────
+
+    static int CodegenCommand(string[] args)
+    {
+        if (args.Length < 3)
+        {
+            Console.WriteLine("❌ 錯誤: 請指定輸入 DBF 和輸出路徑");
+            Console.WriteLine("用法: dotnet run -- codegen <input.dbf> <output.g.cs>");
+            return 1;
+        }
+
+        var inputPath  = args[1];
+        var outputPath = args[2];
+
+        if (!File.Exists(inputPath))
+        {
+            Console.WriteLine($"❌ 錯誤: 找不到輸入檔案: {inputPath}");
+            return 1;
+        }
+
+        Console.WriteLine("=== 生成 PostalData.g.cs ===");
+        Console.WriteLine($"輸入: {inputPath}");
+        Console.WriteLine($"輸出: {outputPath}");
+        Console.WriteLine();
+
+        try
+        {
+            // 1. 讀取 DBF
+            Console.Write("讀取 DBF...");
+            var rules = ReadDbfFileStructured(inputPath);
+            Console.WriteLine($" {rules.Count:N0} 筆");
+
+            // 2. 建立 string pools
+            var zipCodePool   = new List<string>();
+            var departments   = new List<string> { string.Empty };  // index 0 = empty
+            var offices       = new List<string> { string.Empty };
+            var scopes        = new List<string> { string.Empty };
+            var zipCodeIndex  = new Dictionary<string, int>(StringComparer.Ordinal);
+            var deptIndex     = new Dictionary<string, int>(StringComparer.Ordinal);
+            var officeIndex   = new Dictionary<string, int>(StringComparer.Ordinal);
+            var scopeIndex    = new Dictionary<string, int>(StringComparer.Ordinal);
+
+            int GetOrAddZip(string s)
+            {
+                if (zipCodeIndex.TryGetValue(s, out int idx)) return idx;
+                idx = zipCodePool.Count;
+                zipCodePool.Add(s);
+                zipCodeIndex[s] = idx;
+                return idx;
+            }
+
+            int GetOrAddPool(List<string> pool, Dictionary<string, int> index, string? s)
+            {
+                if (string.IsNullOrEmpty(s)) return 0;
+                if (index.TryGetValue(s!, out int idx)) return idx;
+                idx = pool.Count;
+                pool.Add(s!);
+                index[s!] = idx;
+                return idx;
+            }
+
+            // 3. 找出特殊路名（不以路/街/道結尾）
+            var normalSuffixes = new[] { "路", "街", "道" };
+            var specialRoadNames = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var rule in rules)
+            {
+                if (!string.IsNullOrEmpty(rule.Road) &&
+                    !normalSuffixes.Any(s => rule.Road!.EndsWith(s, StringComparison.Ordinal)))
+                {
+                    specialRoadNames.Add(rule.Road!);
+                }
+            }
+
+            // 4. 按 city|area|road 分組，各組按特異性排序
+            var groups = new Dictionary<string, List<PostalRuleData>>(5200, StringComparer.Ordinal);
+            foreach (var rule in rules)
+            {
+                var key = $"{rule.City}|{rule.Area}|{rule.Road}";
+                if (!groups.TryGetValue(key, out var list))
+                {
+                    list = new List<PostalRuleData>();
+                    groups[key] = list;
+                }
+                list.Add(rule);
+            }
+
+            // Sort each group by specificity descending
+            foreach (var kvp in groups)
+            {
+                kvp.Value.Sort((a, b) => GetSpecificity(b).CompareTo(GetSpecificity(a)));
+            }
+
+            // 5. 階層排序（縣市 → 行政區 → 路名，各層 Ordinal，需與 PostalLookup 的二分搜尋一致）
+            //    並攤平為階層索引 + 全域 SoA（primitive initializer → RVA blob，啟動零配置）
+            var flatGroups = groups
+                .Select(kvp =>
+                {
+                    var k  = kvp.Key;
+                    var p1 = k.IndexOf('|');
+                    var p2 = k.IndexOf('|', p1 + 1);
+                    return (city: k[..p1], district: k[(p1 + 1)..p2], road: k[(p2 + 1)..], rules: kvp.Value);
+                })
+                .OrderBy(e => e.city, StringComparer.Ordinal)
+                .ThenBy(e => e.district, StringComparer.Ordinal)
+                .ThenBy(e => e.road, StringComparer.Ordinal)
+                .ToList();
+
+            var cityNames            = new List<string>();
+            var cityDistrictOffsets  = new List<int> { 0 };
+            var districtNames        = new List<string>();
+            var districtGroupOffsets = new List<int> { 0 };
+            var roadBlob             = new StringBuilder();
+            var roadOffsets          = new List<int> { 0 };
+            var groupRuleOffsets     = new List<int> { 0 };
+
+            int total = rules.Count;
+            var ns  = new List<int>(total); var ne  = new List<int>(total);
+            var ls  = new List<int>(total); var le  = new List<int>(total);
+            var als = new List<int>(total); var ale = new List<int>(total);
+            var nss = new List<int>(total); var nse = new List<int>(total);
+            var ruleFlags = new List<int>(total);
+            var zi  = new List<int>(total); var di  = new List<int>(total);
+            var oi  = new List<int>(total); var sci = new List<int>(total);
+
+            foreach (var cityGroup in flatGroups.GroupBy(e => e.city))
+            {
+                cityNames.Add(cityGroup.Key);
+                foreach (var distGroup in cityGroup.GroupBy(e => e.district))
+                {
+                    districtNames.Add(distGroup.Key);
+                    foreach (var entry in distGroup)
+                    {
+                        roadBlob.Append(entry.road);
+                        roadOffsets.Add(roadBlob.Length);
+
+                        foreach (var r in entry.rules)
+                        {
+                            ns.Add(r.NumberStart ?? 0);
+                            ne.Add(r.NumberEnd ?? int.MaxValue);
+
+                            // RuleFlags 位元佈局：bit0 HasLane, bit1 HasAlley, bits2-3 EvenOdd
+                            int f = 0;
+                            if (r.LaneStart.HasValue)
+                            {
+                                f |= 1;
+                                ls.Add(r.LaneStart.Value);
+                                le.Add(r.LaneEnd ?? r.LaneStart.Value);
+                            }
+                            else { ls.Add(0); le.Add(0); }
+
+                            if (r.AlleyStart.HasValue)
+                            {
+                                f |= 2;
+                                als.Add(r.AlleyStart.Value);
+                                ale.Add(r.AlleyEnd ?? r.AlleyStart.Value);
+                            }
+                            else { als.Add(0); ale.Add(0); }
+
+                            int eoVal = r.EvenOdd ?? 0;
+                            if (eoVal < 0 || eoVal > 2)
+                                throw new InvalidOperationException($"EvenOdd 值 {eoVal} 超出 flags 編碼範圍（0-2）");
+                            f |= eoVal << 2;
+                            ruleFlags.Add(f);
+
+                            nss.Add(r.NumberStartSub ?? 0);
+                            nse.Add(r.NumberEndSub ?? int.MaxValue);
+                            zi.Add(GetOrAddZip(r.ZipCode));
+                            di.Add(GetOrAddPool(departments, deptIndex, r.Department));
+                            oi.Add(GetOrAddPool(offices, officeIndex, r.Office));
+                            sci.Add(GetOrAddPool(scopes, scopeIndex, r.Scope));
+                        }
+                        groupRuleOffsets.Add(ns.Count);
+                    }
+                    districtGroupOffsets.Add(roadOffsets.Count - 1);
+                }
+                cityDistrictOffsets.Add(districtNames.Count);
+            }
+
+            int groupCount = roadOffsets.Count - 1;
+
+            // 6. Write the generated file
+            Console.Write("生成 C# 原始碼...");
+            var generatedDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            var outDir = Path.GetDirectoryName(outputPath);
+            if (!string.IsNullOrEmpty(outDir) && !Directory.Exists(outDir))
+            {
+                Directory.CreateDirectory(outDir);
+            }
+
+            using var sw = new StreamWriter(outputPath, false, Encoding.UTF8);
+
+            sw.WriteLine("// <auto-generated/>");
+            sw.WriteLine("// SPDX-License-Identifier: MIT");
+            sw.WriteLine("// Postal code data from Chunghwa Post under OGDL-Taiwan-1.0");
+            sw.WriteLine("// This file is generated by: dotnet run --project tools/postal/Postal.Builder -- codegen [dbf] [output]");
+            sw.WriteLine("// DO NOT EDIT MANUALLY.");
+            sw.WriteLine($"// Generated: {generatedDate} | Records: {rules.Count:N0} | Groups: {groupCount:N0}");
+            sw.WriteLine();
+            sw.WriteLine("#nullable enable");
+            sw.WriteLine();
+            sw.WriteLine("namespace TaiwanUtilities.Internals;");
+            sw.WriteLine();
+            sw.WriteLine("internal static class PostalData");
+            sw.WriteLine("{");
+            sw.WriteLine($"    internal static readonly string GeneratedDate = \"{generatedDate}\";");
+            sw.WriteLine($"    internal static readonly int RecordCount = {rules.Count};");
+            sw.WriteLine();
+
+            // ZipCodePool
+            sw.Write("    internal static readonly string[] ZipCodePool = new[] { ");
+            sw.Write(string.Join(", ", zipCodePool.Select(z => $"\"{EscapeString(z)}\"")));
+            sw.WriteLine(" };");
+            sw.WriteLine();
+
+            // Departments
+            sw.Write("    internal static readonly string[] Departments = new[] { ");
+            sw.Write(string.Join(", ", departments.Select(d => d.Length == 0 ? "string.Empty" : $"\"{EscapeString(d)}\"")));
+            sw.WriteLine(" };");
+            sw.WriteLine();
+
+            // Offices
+            sw.Write("    internal static readonly string[] Offices = new[] { ");
+            sw.Write(string.Join(", ", offices.Select(o => o.Length == 0 ? "string.Empty" : $"\"{EscapeString(o)}\"")));
+            sw.WriteLine(" };");
+            sw.WriteLine();
+
+            // Scopes
+            sw.Write("    internal static readonly string[] Scopes = new[] { ");
+            sw.Write(string.Join(", ", scopes.Select(s => s.Length == 0 ? "string.Empty" : $"\"{EscapeString(s)}\"")));
+            sw.WriteLine(" };");
+            sw.WriteLine();
+
+            // SpecialRoadNames
+            sw.Write("    internal static readonly System.Collections.Generic.HashSet<string> SpecialRoadNames =");
+            sw.WriteLine();
+            sw.Write("        new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal) { ");
+            sw.Write(string.Join(", ", specialRoadNames.OrderBy(r => r).Select(r => $"\"{EscapeString(r)}\"")));
+            sw.WriteLine(" };");
+            sw.WriteLine();
+
+            // ── 階層索引（ordinal 排序，供 PostalLookup 二分搜尋）──
+            WriteStringArray(sw, "CityNames", cityNames);
+            WriteNumericArray(sw, "int", "CityDistrictOffsets", cityDistrictOffsets);
+            WriteStringArray(sw, "DistrictNames", districtNames);
+            WriteNumericArray(sw, "int", "DistrictGroupOffsets", districtGroupOffsets);
+            WriteRoadBlob(sw, roadBlob.ToString());
+            WriteNumericArray(sw, "int", "RoadOffsets", roadOffsets);
+            WriteNumericArray(sw, "int", "GroupRuleOffsets", groupRuleOffsets);
+
+            // ── 規則 SoA（全域陣列，PostalRuleSet 以 Offset/Count 切片檢視）──
+            WriteNumericArray(sw, "int", "NumberStarts", ns);
+            WriteNumericArray(sw, "int", "NumberEnds", ne);
+            WriteNumericArray(sw, PickType(ls),  "LaneStarts", ls);
+            WriteNumericArray(sw, PickType(le),  "LaneEnds", le);
+            WriteNumericArray(sw, PickType(als), "AlleyStarts", als);
+            WriteNumericArray(sw, PickType(ale), "AlleyEnds", ale);
+            WriteNumericArray(sw, PickType(nss), "SubStarts", nss);
+            WriteNumericArray(sw, "int", "SubEnds", nse);
+            WriteNumericArray(sw, "byte", "RuleFlags", ruleFlags);
+            WriteNumericArray(sw, PickType(zi),  "ZipIdx", zi);
+            WriteNumericArray(sw, PickType(di),  "DeptIdx", di);
+            WriteNumericArray(sw, PickType(oi),  "OfficeIdx", oi);
+            WriteNumericArray(sw, PickType(sci), "ScopeIdx", sci);
+
+            sw.WriteLine("}");
+
+            Console.WriteLine(" 完成！");
+
+            var fi = new FileInfo(outputPath);
+            Console.WriteLine($"輸出大小: {fi.Length / 1024.0 / 1024.0:F2} MB");
+            Console.WriteLine($"路索引鍵數: {groupCount:N0}");
+            Console.WriteLine($"ZipCode pool: {zipCodePool.Count:N0}");
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"\n❌ 錯誤: {ex.Message}");
+            Console.WriteLine(ex.StackTrace);
+            return 1;
+        }
+    }
+
+    static int GetSpecificity(PostalRuleData rule)
+    {
+        int score = 0;
+        if (rule.LaneStart.HasValue)  score += 1000;
+        if (rule.AlleyStart.HasValue) score += 500;
+        if (rule.NumberStartSub.HasValue && rule.NumberStartSub.Value > 0) score += 100;
+        if (rule.NumberEndSub.HasValue && rule.NumberEndSub.Value > 0 && rule.NumberEndSub.Value < int.MaxValue) score += 100;
+        if (rule.NumberStart.HasValue && rule.NumberEnd.HasValue && rule.NumberStart.Value == rule.NumberEnd.Value) score += 50;
+        if (rule.NumberStart.HasValue || rule.NumberEnd.HasValue) score += 20;
+        if (rule.EvenOdd.HasValue && rule.EvenOdd.Value != 0) score += 10;
+        return score;
+    }
+
+    static string EscapeString(string s) =>
+        s.Replace("\\", "\\\\").Replace("\"", "\\\"");
+
+    /// <summary>依最大值選擇最小可容納的元素型別（RVA blob 尺寸最佳化）。</summary>
+    static string PickType(List<int> values)
+    {
+        int max = 0;
+        foreach (var v in values) if (v > max) max = v;
+        return max <= ushort.MaxValue ? "ushort" : "int";
+    }
+
+    static void WriteNumericArray(StreamWriter sw, string type, string name, List<int> values)
+    {
+        const int PER_LINE = 120;
+        sw.WriteLine($"    internal static readonly {type}[] {name} = new {type}[]");
+        sw.WriteLine("    {");
+        var sb = new StringBuilder(1024);
+        for (int i = 0; i < values.Count; i += PER_LINE)
+        {
+            sb.Clear();
+            sb.Append("        ");
+            int end = Math.Min(i + PER_LINE, values.Count);
+            for (int j = i; j < end; j++)
+            {
+                if (type == "int" && values[j] == int.MaxValue) sb.Append("int.MaxValue");
+                else sb.Append(values[j]);
+                sb.Append(", ");
+            }
+            sw.WriteLine(sb.ToString());
+        }
+        sw.WriteLine("    };");
+        sw.WriteLine();
+    }
+
+    static void WriteStringArray(StreamWriter sw, string name, List<string> values)
+    {
+        const int PER_LINE = 20;
+        sw.WriteLine($"    internal static readonly string[] {name} = new string[]");
+        sw.WriteLine("    {");
+        for (int i = 0; i < values.Count; i += PER_LINE)
+        {
+            int end = Math.Min(i + PER_LINE, values.Count);
+            sw.WriteLine("        " + string.Join(", ", values.Skip(i).Take(end - i).Select(v => $"\"{EscapeString(v)}\"")) + ",");
+        }
+        sw.WriteLine("    };");
+        sw.WriteLine();
+    }
+
+    static void WriteRoadBlob(StreamWriter sw, string blob)
+    {
+        // 相鄰字面值以 + 串接，由編譯器常數折疊為單一 US-heap 條目
+        const int CHUNK = 4000;
+        sw.WriteLine("    internal static readonly string RoadBlob =");
+        int i = 0;
+        while (true)
+        {
+            int len = Math.Min(CHUNK, blob.Length - i);
+            if (i + len < blob.Length && char.IsHighSurrogate(blob[i + len - 1])) len++;
+            var piece = blob.Substring(i, len);
+            i += len;
+            sw.WriteLine($"        \"{EscapeString(piece)}\"{(i < blob.Length ? " +" : ";")}");
+            if (i >= blob.Length) break;
+        }
+        sw.WriteLine();
     }
 
     static List<string[]> ReadDbfFile(string dbfPath)

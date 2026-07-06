@@ -3,7 +3,7 @@ namespace TaiwanUtilities.UnitTests;
 using Xunit;
 
 /// <summary>
-/// 測試 ZipCodeRepository.GetCommonPart() 方法
+/// 測試 ZipCodeUtils.GetCommonPart() 方法
 /// 確保郵遞區號格式符合台灣標準（3碼、5碼或6碼）
 /// </summary>
 public class GetCommonPartTests
@@ -16,7 +16,7 @@ public class GetCommonPartTests
     public void GetCommonPart_With5OrMoreCommonDigits_Returns5Or6Digits(
         string zipA, string zipB, string expected)
     {
-        var result = ZipCodeRepository.GetCommonPart(zipA, zipB);
+        var result = ZipCodeUtils.GetCommonPart(zipA, zipB);
         Assert.Equal(expected, result);
         Assert.True(result!.Length == 5 || result.Length == 6);
     }
@@ -28,7 +28,7 @@ public class GetCommonPartTests
     public void GetCommonPart_With3To4CommonDigits_Returns3Digits(
         string zipA, string zipB, string expected)
     {
-        var result = ZipCodeRepository.GetCommonPart(zipA, zipB);
+        var result = ZipCodeUtils.GetCommonPart(zipA, zipB);
         Assert.Equal(expected, result);
         Assert.Equal(3, result!.Length);
     }
@@ -41,28 +41,28 @@ public class GetCommonPartTests
     public void GetCommonPart_WithLessThan3CommonDigits_ReturnsPrefix(
         string zipA, string zipB, string expected)
     {
-        var result = ZipCodeRepository.GetCommonPart(zipA, zipB);
+        var result = ZipCodeUtils.GetCommonPart(zipA, zipB);
         Assert.Equal(expected, result);
     }
 
     [Fact]
     public void GetCommonPart_WithNullA_ReturnsB()
     {
-        var result = ZipCodeRepository.GetCommonPart(null, "100066");
+        var result = ZipCodeUtils.GetCommonPart(null, "100066");
         Assert.Equal("100066", result);
     }
 
     [Fact]
     public void GetCommonPart_WithNullB_ReturnsA()
     {
-        var result = ZipCodeRepository.GetCommonPart("100066", null);
+        var result = ZipCodeUtils.GetCommonPart("100066", null);
         Assert.Equal("100066", result);
     }
 
     [Fact]
     public void GetCommonPart_WithBothNull_ReturnsNull()
     {
-        var result = ZipCodeRepository.GetCommonPart(null, null);
+        var result = ZipCodeUtils.GetCommonPart(null, null);
         Assert.Null(result);
     }
 
@@ -73,7 +73,7 @@ public class GetCommonPartTests
     public void GetCommonPart_WithDifferentLengths_ReturnsCorrectFormat(
         string zipA, string zipB, string expected)
     {
-        var result = ZipCodeRepository.GetCommonPart(zipA, zipB);
+        var result = ZipCodeUtils.GetCommonPart(zipA, zipB);
         Assert.Equal(expected, result);
     }
 
@@ -89,7 +89,7 @@ public class GetCommonPartTests
     [InlineData("123456", "987654")]  // 0碼相同 → 空字串
     public void GetCommonPart_NeverReturns4Digits(string zipA, string zipB)
     {
-        var result = ZipCodeRepository.GetCommonPart(zipA, zipB);
+        var result = ZipCodeUtils.GetCommonPart(zipA, zipB);
 
         // 結果長度不能是 4 碼（不標準）
         Assert.NotEqual(4, result!.Length);

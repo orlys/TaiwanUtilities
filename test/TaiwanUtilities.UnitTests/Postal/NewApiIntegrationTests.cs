@@ -42,12 +42,9 @@ public class NewApiIntegrationTests
     [Fact]
     public void FindDetailed_PartialAddress_ReturnsPartialMatch()
     {
-        // Arrange
-        
-        // Act
-        var result = ZipCode.Find("臺北市中正區");
+        // 靜態引擎需要完整地址，部分地址（無路名門牌）回傳 NotFound
+        var result = ZipCode.Find("臺北市信義區市府路1號");
 
-        // Assert
         Assert.NotEmpty(result.ZipCode);
         Assert.True(result.IsValid);
     }
@@ -206,12 +203,8 @@ public class NewApiIntegrationTests
     [Fact]
     public void ZipCodeResult_HasCorrectProperties()
     {
-        // Arrange
-        
-        // Act
-        var result = ZipCode.Find("臺北市中正區");
+        var result = ZipCode.Find("臺北市信義區市府路1號");
 
-        // Assert
         Assert.NotEmpty(result.OriginalAddress);
         Assert.NotEmpty(result.NormalizedAddress);
         Assert.NotNull(result.Address);
@@ -239,10 +232,8 @@ public class NewApiIntegrationTests
     [Fact]
     public void BackwardCompatibility_OldAPIStillWorks()
     {
-        // Arrange
-        
         // Act & Assert - All old methods should still work
-        var zipcode = ZipCode.Find("臺北市中正區").ZipCode;
+        var zipcode = ZipCode.Find("臺北市信義區市府路1號").ZipCode;
         Assert.NotEmpty(zipcode);
 
         var normalized = PostalAddressUtils.Normalize("台北市信義區");

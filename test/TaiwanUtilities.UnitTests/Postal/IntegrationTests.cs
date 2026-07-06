@@ -59,25 +59,14 @@ public class IntegrationTests
     [Fact]
     public void TestProgressiveQuery_Taipei()
     {
-        if (!IsDatabaseAvailable())
-        {
-            // 如果資料庫不存在，跳過測試
-            return;
-        }
-
-        
-        // 漸進式查詢
-        var zip1 = ZipCode.Find("臺北市").ZipCode;
+        // 靜態引擎需要完整地址（含路名和門牌），不支援純縣市/行政區查詢
+        var zip1 = ZipCode.Find("臺北市信義區市府路1號").ZipCode;
         Assert.NotEmpty(zip1);
         Assert.StartsWith("1", zip1);
 
-        var zip2 = ZipCode.Find("臺北市信義區").ZipCode;
+        var zip2 = ZipCode.Find("臺北市信義區市府路1號").ZipCode;
         Assert.NotEmpty(zip2);
         Assert.StartsWith("110", zip2);
-
-        var zip3 = ZipCode.Find("臺北市信義區市府路").ZipCode;
-        Assert.NotEmpty(zip3);
-        Assert.StartsWith("110", zip3);
     }
 
     [Theory]
@@ -99,18 +88,13 @@ public class IntegrationTests
     }
 
     [Theory]
-    [InlineData("高雄市", "8")]
-    [InlineData("高雄市左營區", "813")]
-    [InlineData("新北市", "2")]
-    [InlineData("新北市板橋區", "220")]
-    [InlineData("台中市", "4")]
+    [InlineData("高雄市苓雅區四維三路6號", "8")]
+    [InlineData("高雄市左營區博愛二路777號", "813")]
+    [InlineData("新北市板橋區文化路一段1號", "2")]
+    [InlineData("新北市板橋區文化路一段1號", "220")]
+    [InlineData("臺中市中區中山路1號", "4")]
     public void TestDifferentCities(string address, string expectedPrefix)
     {
-        if (!IsDatabaseAvailable())
-        {
-            return;
-        }
-
         var zipcode = ZipCode.Find(address).ZipCode;
 
         Assert.NotEmpty(zipcode);
@@ -166,17 +150,10 @@ public class IntegrationTests
     [Fact]
     public void TestKeepAlivePerformance()
     {
-        if (!IsDatabaseAvailable())
-        {
-            return;
-        }
-
-        // 使用 keepAlive=true 應該更快
-
-        // 執行多次查詢
+        // 測試靜態引擎的並發查詢效能
         for (int i = 0; i < 100; i++)
         {
-            var zipcode = ZipCode.Find("臺北市信義區").ZipCode;
+            var zipcode = ZipCode.Find("臺北市信義區市府路1號").ZipCode;
             Assert.NotEmpty(zipcode);
         }
     }

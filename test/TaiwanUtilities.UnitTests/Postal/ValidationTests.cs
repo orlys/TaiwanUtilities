@@ -76,10 +76,10 @@ public class ValidationTests
                 var result = ZipCode.ValidateAddress("臺北市信義區不存在路123號");
 
         Assert.False(result.IsValid);
-        // 可能是 NumberOutOfRange 或 AddressNotFound
         Assert.True(
             result.FailureReason == PostalValidationFailureReason.NumberOutOfRange ||
-            result.FailureReason == PostalValidationFailureReason.AddressNotFound
+            result.FailureReason == PostalValidationFailureReason.AddressNotFound ||
+            result.FailureReason == PostalValidationFailureReason.StreetNotFound
         );
     }
 

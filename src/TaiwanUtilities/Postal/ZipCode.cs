@@ -9,42 +9,18 @@ namespace TaiwanUtilities;
 using System;
 using System.Collections.Generic;
 
+using TaiwanUtilities.Internals;
+
 /// <summary>
 /// 台灣郵遞區號查詢工具
 /// </summary>
-/// <remarks>
-/// 此類別提供台灣郵遞區號的查詢、驗證、解析等功能。
-/// 內部使用單例的 PostalDatabase 類別，無需手動管理資料庫連接。
-/// </remarks>
 public static class ZipCode
 {
-
     /// <summary>
     /// 查詢地址的郵遞區號
     /// </summary>
     /// <param name="address">台灣地址字串</param>
     /// <returns>完整的查詢結果，包含郵遞區號、地址組件、匹配規則等資訊</returns>
-    /// <remarks>
-    /// <para>
-    /// 此方法優先使用預載入規則引擎（純記憶體，延遲 &lt; 0.5ms），
-    /// 若無匹配則自動降級到 SQLite 查詢（漸進式匹配）。
-    /// </para>
-    /// <para>
-    /// 預載入引擎僅支援精確匹配（需要完整的縣市、區、路和門牌號碼），
-    /// 部分地址查詢（如僅提供"臺北市"或"臺北市信義區"）會使用 SQLite 查詢。
-    /// </para>
-    /// </remarks>
-    /// <example>
-    /// <code>
-    /// var result = ZipCode.Find("臺北市信義區市府路1號");
-    /// Console.WriteLine($"郵遞區號: {result.ZipCode}");          // 110204
-    /// Console.WriteLine($"類型: {result.ResultType}");          // ExactMatch
-    /// Console.WriteLine($"縣市: {result.Address.City}");        // 臺北市
-    /// Console.WriteLine($"區: {result.Address.District}");      // 信義區
-    /// if (result.MatchedRule != null)
-    ///     Console.WriteLine($"規則: {result.MatchedRule.GetDescription()}");
-    /// </code>
-    /// </example>
     public static ZipCodeResult Find(string address)
     {
         if (string.IsNullOrWhiteSpace(address))
@@ -52,24 +28,11 @@ public static class ZipCode
             return ZipCodeResult.NotFound(address ?? string.Empty);
         }
 
-        // 檢查環境變數，允許用戶選擇是否使用預載入引擎
-        var enablePreloaded = (Environment.GetEnvironmentVariable("TAIWANUTILITIES_ENABLE_PRELOADED")
-                            ?? Environment.GetEnvironmentVariable("PEAK_ENABLE_PRELOADED")) != "0";
-
-        if (enablePreloaded)
-        {
-            // 優先使用預載入引擎（純記憶體，無 SQLite I/O）
-            var addr = PostalAddress.Parse(address);
-            var preloadedResult = PostalRulesEngine.Find(addr);
-
-            if (preloadedResult != null)
-            {
-                return preloadedResult;
-            }
-        }
-
-        // 降級到 SQLite 查詢（支援漸進式匹配和其他複雜場景）
-        return PostalDatabase.ExecuteQuery(dir => dir.FindDetailed(address));
+        var addr = PostalAddress.Parse(address);
+        var result = PostalRulesEngine.Find(addr);
+        if (result == null && !string.IsNullOrEmpty(addr.NormalizedAddress))
+            result = FindByExactTextMatch(addr.NormalizedAddress);
+        return result ?? ZipCodeResult.NotFound(address);
     }
 
     /// <summary>
@@ -77,24 +40,62 @@ public static class ZipCode
     /// </summary>
     /// <param name="address">完整地址字串</param>
     /// <returns>驗證結果，包含是否有效、郵遞區號、錯誤訊息等</returns>
-    /// <example>
-    /// <code>
-    /// // 有效地址
-    /// var result = ZipCode.ValidateAddress("臺北市信義區市府路1號");
-    /// // result.IsValid = true, result.ZipCode = "110204"
-    ///
-    /// // 門牌號碼超出範圍
-    /// var result2 = ZipCode.ValidateAddress("臺北市信義區市府路99999號");
-    /// // result2.IsValid = false, result2.FailureReason = NumberOutOfRange
-    ///
-    /// // 不存在的地址
-    /// var result3 = ZipCode.ValidateAddress("臺北市不存在區某某路1號");
-    /// // result3.IsValid = false, result3.FailureReason = AddressNotFound
-    /// </code>
-    /// </example>
     public static PostalValidationResult ValidateAddress(string address)
     {
-        return PostalDatabase.ExecuteQuery(dir => dir.ValidateAddress(address));
+        var addr = PostalAddress.Parse(address);
+        var normalized = addr?.NormalizedAddress ?? address;
+
+        if (addr == null || string.IsNullOrEmpty(addr.City))
+        {
+            var msg = string.IsNullOrWhiteSpace(address) ? "地址不能為空" : "地址格式無效";
+            return Fail(PostalValidationFailureReason.InvalidFormat, normalized, msg);
+        }
+
+        // Build key with section (same logic as PostalRulesEngine.Find)
+        var road = addr.Road ?? string.Empty;
+        if (!string.IsNullOrEmpty(addr.Section))
+            road = road + PostalRulesEngine.ToChineseSection(addr.Section);
+
+        bool found = PostalLookup.TryFind(addr.City, addr.District, road, out var ruleSet);
+        if (!found && !string.IsNullOrEmpty(road))
+        {
+            var chineseRoad = PostalRulesEngine.ArabicToChineseInRoad(road);
+            if (!ReferenceEquals(chineseRoad, road))
+                found = PostalLookup.TryFind(addr.City, addr.District, chineseRoad, out ruleSet);
+        }
+
+        if (!found)
+        {
+            if (!PostalRulesEngine.CityExists(addr.City!))
+                return Fail(PostalValidationFailureReason.AddressNotFound, normalized, "找不到此地址");
+            if (!string.IsNullOrEmpty(addr.District) && !PostalRulesEngine.DistrictExists(addr.City!, addr.District!))
+                return Fail(PostalValidationFailureReason.DistrictNotFound, normalized, "找不到此行政區");
+            return Fail(PostalValidationFailureReason.StreetNotFound, normalized, "找不到此街道");
+        }
+
+        if (!addr.Number.HasValue)
+        {
+            return Fail(PostalValidationFailureReason.NumberRuleMismatch, normalized, "地址缺少門牌號碼");
+        }
+
+        int lane      = PostalRulesEngine.ParseNumericPrefix(addr.Lane);
+        int alley     = PostalRulesEngine.ParseNumericPrefix(addr.Alley);
+        int subNumber = (addr.SubNumbers != null && addr.SubNumbers.Count > 0)
+                        ? addr.SubNumbers[0] : 0;
+
+        if (!ruleSet.TryMatch(addr.Number.Value, subNumber, lane, alley,
+            out int zipIdx, out _, out _, out _))
+        {
+            return Fail(PostalValidationFailureReason.NumberOutOfRange, normalized, "門牌號碼不在任何投遞規則範圍內");
+        }
+
+        return new PostalValidationResult
+        {
+            IsValid = true,
+            ZipCode = PostalData.ZipCodePool[zipIdx],
+            NormalizedAddress = normalized,
+            Messages = new List<string> { "驗證通過" }
+        };
     }
 
     /// <summary>
@@ -102,21 +103,35 @@ public static class ZipCode
     /// </summary>
     /// <param name="address">地址字串</param>
     /// <returns>郵遞區號和投遞規則的清單</returns>
-    /// <example>
-    /// <code>
-    /// var rules = ZipCode.GetDeliveryRules("臺北市中正區三元街");
-    ///
-    /// foreach (var item in rules)
-    /// {
-    ///     Console.WriteLine($"郵遞區號: {item.ZipCode}");
-    ///     Console.WriteLine($"規則類型: {item.Rule.Type}");
-    ///     Console.WriteLine($"規則描述: {item.Rule.GetDescription()}");
-    /// }
-    /// </code>
-    /// </example>
     public static List<ZipCodeDeliveryRule> GetDeliveryRules(string address)
     {
-        return PostalDatabase.ExecuteQuery(dir => dir.GetDeliveryRules(address));
+        var addr = PostalAddress.Parse(address);
+        if (addr == null || string.IsNullOrEmpty(addr.Road))
+        {
+            return new List<ZipCodeDeliveryRule>();
+        }
+
+        if (!PostalLookup.TryFind(addr.City, addr.District, addr.Road, out var ruleSet))
+        {
+            return new List<ZipCodeDeliveryRule>();
+        }
+
+        var result = new List<ZipCodeDeliveryRule>(ruleSet.Count);
+        for (int i = 0; i < ruleSet.Count; i++)
+        {
+            var zipCode  = PostalData.ZipCodePool[ruleSet.ZipCodeIndex(i)];
+            var scopeStr = ruleSet.ScopeIndex(i) > 0 ? PostalData.Scopes[ruleSet.ScopeIndex(i)] : "全";
+            try
+            {
+                result.Add(new ZipCodeDeliveryRule(zipCode, PostalDeliveryRule.Parse(scopeStr)));
+            }
+            catch
+            {
+                // 忽略規則解析失敗
+            }
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -125,20 +140,58 @@ public static class ZipCode
     /// <param name="partialAddress">部分地址</param>
     /// <param name="maxResults">最大返回數量（預設 10）</param>
     /// <returns>候選地址清單（包含郵遞區號和組件）</returns>
-    /// <example>
-    /// <code>
-    /// var suggestions = ZipCode.GetSuggestions("臺北市中正區中", 5);
-    ///
-    /// foreach (var suggestion in suggestions)
-    /// {
-    ///     Console.WriteLine($"地址: {suggestion.AddressText}");
-    ///     Console.WriteLine($"郵遞區號: {suggestion.ZipCode}");
-    ///     Console.WriteLine($"縣市: {suggestion.Address?.City}");
-    /// }
-    /// </code>
-    /// </example>
     public static List<PostalAddressSuggestion> GetSuggestions(string partialAddress, int maxResults = 10)
     {
-        return PostalDatabase.ExecuteQuery(dir => dir.GetSuggestionsDetailed(partialAddress, maxResults));
+        if (string.IsNullOrWhiteSpace(partialAddress))
+        {
+            return new List<PostalAddressSuggestion>();
+        }
+
+        var normalized = AddressTokenizer.Normalize(partialAddress);
+        var results = new List<PostalAddressSuggestion>();
+
+        foreach (var (city, district, road, group) in PostalLookup.EnumerateGroups())
+        {
+            if (results.Count >= maxResults)
+            {
+                break;
+            }
+
+            var fullAddr = city + district + road;
+            if (fullAddr.StartsWith(normalized, StringComparison.Ordinal) ||
+                normalized.StartsWith(fullAddr, StringComparison.Ordinal))
+            {
+                var zipCode = PostalData.ZipCodePool[PostalLookup.GetRuleSet(group).ZipCodeIndex(0)];
+                results.Add(new PostalAddressSuggestion(fullAddr, zipCode, PostalAddress.Parse(fullAddr)));
+            }
+        }
+
+        return results;
     }
+
+    // Handles special territories (南海諸, 釣魚臺) where the tokenizer can't parse
+    // City|District|Road from text like "南海諸東沙東沙". Returns match only when
+    // the concatenated key address exactly equals the normalized input.
+    private static ZipCodeResult? FindByExactTextMatch(string normalized)
+    {
+        foreach (var (city, district, road, group) in PostalLookup.EnumerateGroups())
+        {
+            var fullAddr = city + district + road;
+            if (string.Equals(fullAddr, normalized, StringComparison.Ordinal))
+            {
+                var zipCode = PostalData.ZipCodePool[PostalLookup.GetRuleSet(group).ZipCodeIndex(0)];
+                return ZipCodeResult.ExactMatch(normalized, zipCode, fullAddr);
+            }
+        }
+        return null;
+    }
+
+    private static PostalValidationResult Fail(PostalValidationFailureReason reason, string normalized, string message)
+        => new PostalValidationResult
+        {
+            IsValid = false,
+            NormalizedAddress = normalized,
+            FailureReason = reason,
+            Messages = new List<string> { message }
+        };
 }

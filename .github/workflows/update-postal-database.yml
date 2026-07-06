@@ -10,8 +10,8 @@ on:
     - cron: '0 0 2 1,4,7,10 *'
 
 jobs:
-  update-database:
-    name: Download and Build Database
+  update-postal-data:
+    name: Generate PostalData.g.cs from DBF
     runs-on: windows-latest
     permissions:
       contents: write
@@ -26,6 +26,12 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+
+      - name: Install T4 Text Template Tool
+        run: dotnet tool install -g dotnet-t4
+
+      - name: Generate holiday data
+        run: t4 ${{ github.workspace }}/src/TaiwanUtilities/RocDateTime/RocHolidayDataSet.tt
 
       - name: Download rall1.dbf from Postal Service
         id: download
@@ -49,95 +55,60 @@ jobs:
             exit 1
           }
 
-      - name: Install T4 Text Template Tool
-        run: dotnet tool install -g dotnet-t4
-
-      - name: Generate holiday data
-        run: t4 ${{ github.workspace }}/src/TaiwanUtilities/RocDateTime/RocHolidayDataSet.tt
-
-      - name: Build SQLite Database
-        id: build
+      - name: Run codegen to generate PostalData.g.cs
+        id: codegen
         shell: pwsh
         run: |
-          Write-Host "開始建立 SQLite 資料庫..." -ForegroundColor Cyan
-          cd tools\postal
-          .\Build-PostalDatabase.ps1
+          Write-Host "開始產生 PostalData.g.cs..." -ForegroundColor Cyan
+          dotnet run --project tools/postal/Postal.Builder/ --framework net10.0 -- codegen `
+            temp\rall1.dbf `
+            src\TaiwanUtilities\Postal\PostalData.g.cs
 
           if ($LASTEXITCODE -ne 0) {
-            Write-Error "資料庫建立失敗"
+            Write-Error "codegen 失敗"
             exit 1
           }
 
-          if (Test-Path "..\..\src\TaiwanUtilities\Postal\zipcode.db") {
-            $dbInfo = Get-Item "..\..\src\TaiwanUtilities\Postal\zipcode.db"
-            $dbSizeMB = [math]::Round($dbInfo.Length / 1MB, 2)
-            $dbHash = (Get-FileHash "..\..\src\TaiwanUtilities\Postal\zipcode.db" -Algorithm SHA256).Hash.ToLower()
-
-            echo "db_size=$dbSizeMB MB" >> $env:GITHUB_OUTPUT
-            echo "db_sha256=$dbHash" >> $env:GITHUB_OUTPUT
+          $outFile = "src\TaiwanUtilities\Postal\PostalData.g.cs"
+          if (Test-Path $outFile) {
+            $lines = (Get-Content $outFile).Count
+            echo "line_count=$lines" >> $env:GITHUB_OUTPUT
             echo "success=true" >> $env:GITHUB_OUTPUT
+            Write-Host "產生完成：$lines 行" -ForegroundColor Green
           } else {
-            Write-Error "資料庫建立失敗：找不到 zipcode.db"
+            Write-Error "codegen 失敗：找不到 PostalData.g.cs"
             exit 1
           }
-          cd ..\..
 
-      - name: Upload database artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: postal-database-${{ steps.download.outputs.file_date }}
-          path: |
-            temp/rall1.dbf
-            src/TaiwanUtilities/Postal/zipcode.db
-          retention-days: 90
+      - name: Verify build with generated data
+        shell: pwsh
+        run: |
+          Write-Host "驗證建置..." -ForegroundColor Cyan
+          dotnet build src/TaiwanUtilities/ --configuration Release
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "建置驗證失敗"
+            exit 1
+          }
+          Write-Host "建置驗證成功" -ForegroundColor Green
 
-      - name: Upload to GitHub Release
+      - name: Commit and push PostalData.g.cs
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $releaseTag = "database-latest"
-          $releaseTitle = "郵遞區號資料庫 (${{ steps.download.outputs.file_date }})"
-          $releaseBody = @"
-          ## 📦 最新郵遞區號資料庫
+          $fileDate = "${{ steps.download.outputs.file_date }}"
+          $lineCount = "${{ steps.codegen.outputs.line_count }}"
 
-          此 Release 包含最新的台灣郵遞區號資料庫，供自動化建置使用。
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          ### 📊 資料資訊
+          git add src/TaiwanUtilities/Postal/PostalData.g.cs
 
-          - **來源檔案**: rall1.dbf
-            - 大小: ${{ steps.download.outputs.file_size }}
-            - 日期: ${{ steps.download.outputs.file_date }}
-
-          - **資料庫檔案**: zipcode.db
-            - 大小: ${{ steps.build.outputs.db_size }}
-
-          - **更新時間**: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") UTC
-
-          ### 📥 使用方式
-
-          建置 TaiwanUtilities 專案時會自動下載此資料庫。
-
-          手動下載：
-          ``````bash
-          gh release download database-latest --pattern "zipcode.db" --repo ${{ github.repository }}
-          ``````
-
-          ---
-
-          🤖 由 GitHub Actions 自動更新
-          "@
-
-          $releaseExists = gh release view $releaseTag --repo $env:GITHUB_REPOSITORY 2>$null
-
-          if ($LASTEXITCODE -eq 0) {
-            gh release delete $releaseTag --repo $env:GITHUB_REPOSITORY --yes
-            git push --delete origin $releaseTag 2>$null
+          $status = git status --porcelain
+          if ($status) {
+            git commit -m "chore(postal): update PostalData.g.cs from $fileDate DBF ($lineCount lines)"
+            git push
+            Write-Host "已提交並推送 PostalData.g.cs" -ForegroundColor Green
+          } else {
+            Write-Host "PostalData.g.cs 無變更，略過提交" -ForegroundColor Yellow
           }
-
-          gh release create $releaseTag `
-            --repo $env:GITHUB_REPOSITORY `
-            --title "$releaseTitle" `
-            --notes "$releaseBody" `
-            --latest=false `
-            src/TaiwanUtilities/Postal/zipcode.db

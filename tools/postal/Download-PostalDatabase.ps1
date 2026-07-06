@@ -19,11 +19,19 @@ if (-not $IsWindows -and $PSVersionTable.PSVersion.Major -ge 6) {
     exit 1
 }
 
-# 檢查 7-Zip 是否安裝
+# 檢查 7-Zip 是否安裝（標準路徑 → 註冊表 → PATH）
 $7zipPaths = @(
     "C:\Program Files\7-Zip\7z.exe",
     "C:\Program Files (x86)\7-Zip\7z.exe"
 )
+
+foreach ($hive in 'HKLM:\SOFTWARE\7-Zip', 'HKCU:\SOFTWARE\7-Zip') {
+    $regPath = (Get-ItemProperty $hive -ErrorAction SilentlyContinue).Path
+    if ($regPath) { $7zipPaths += (Join-Path $regPath '7z.exe') }
+}
+
+$cmd = Get-Command 7z.exe -ErrorAction SilentlyContinue
+if ($cmd) { $7zipPaths += $cmd.Source }
 
 $7zip = $7zipPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
 
