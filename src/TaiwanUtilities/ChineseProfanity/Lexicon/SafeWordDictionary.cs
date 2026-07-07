@@ -269,6 +269,13 @@ internal static class SafeWordDictionary
         // 拎 的正常用法（閩南話代詞「你」，但普通話中是「提」的意思）
         // ============================================================
         "拎包", "拎著", "拎起", "拎東西",
+
+        // ============================================================
+        // 三小 的正常用法（「三小時」的「三小」為時間量詞，非台語「衝三小」的三小）
+        // 例：公車三小時、開會三小時後。SafeWord 於每個位置優先命中，
+        // 故「三小時」會先被視為安全，避免「三小」Slur 誤觸。
+        // ============================================================
+        "三小時", "三小節", "三小段", "三小隊", "三小組", "三小塊",
     ];
 
     private static Trie Build()
@@ -276,7 +283,7 @@ internal static class SafeWordDictionary
         var trie = new Trie();
         foreach (var word in s_safeWords)
         {
-            trie.Add(word);
+            trie.Add(ProfanityNormalizer.NormalizeToString(word));
         }
         return trie;
     }

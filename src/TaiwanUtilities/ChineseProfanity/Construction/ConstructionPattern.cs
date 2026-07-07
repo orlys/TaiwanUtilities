@@ -18,7 +18,7 @@ internal abstract class ConstructionPattern
         return !token.IsSafe && (token.Category & category) != 0;
     }
 
-    protected static bool IsBoundary(ReadOnlySpan<char> text, int index)
+    internal static bool IsBoundary(ReadOnlySpan<char> text, int index)
     {
         if (index < 0 || index >= text.Length)
         {
@@ -140,12 +140,6 @@ internal sealed class VerbKinshipPattern : ConstructionPattern
         if (!hasPronoun && !hasKinship)
         {
             return null;
-        }
-
-        // optional: [Particle]
-        if (i < tokens.Count && HasCategory(tokens[i], WordCategory.Particle) && IsAdjacent(prevToken, tokens[i]))
-        {
-            endPos = tokens[i].Index + tokens[i].Length;
         }
 
         return (startPos, endPos - startPos);
@@ -312,69 +306,6 @@ internal sealed class BodyPartPattern : ConstructionPattern
 
         var endPos = tokens[i].Index + tokens[i].Length;
         return (startPos, endPos - startPos);
-    }
-}
-
-/// <summary>
-/// Compound verb phrases — fixed multi-character expressions.
-/// </summary>
-internal sealed class CompoundVerbPattern : ConstructionPattern
-{
-    private static readonly Lazy<Trie> s_compounds = new(BuildCompounds);
-
-    private static Trie BuildCompounds()
-    {
-        var trie = new Trie();
-        var words = new[]
-        {
-            "打手槍", "賣淫", "賣逼", "賣屄", "賣身", "賣B",
-            "強姦", "強上", "姦屍", "手淫", "姦淫",
-            "性愛", "做愛", "口交", "乳交", "足交", "肛交", "援交", "性交",
-            "自慰", "站壁", "破處", "陽痿",
-            "去死", "放屁", "天殺的", "下三濫",
-            "吃屎", "吃大便", "喝尿", "食屎", "食大便",
-            "肉便器", "母貓", "母狗", "公狗", "小母狗",
-            "狗屎", "狗崽",
-            "幹砲", "幹炮", "淦砲", "淦炮", "贛砲", "贛炮",
-            "欠幹", "欠淦", "欠贛", "破幹", "破淦", "破贛", "下幹", "下淦", "下贛", "狗幹",
-            "操蛋", "肏蛋", "草蛋", "糙蛋",
-            "媽逼", "媽屄", "馬逼", "馬屄", "嬤逼", "嬤屄",
-            "媽了個逼", "媽了個屄", "馬了個逼",
-            "靠北", "靠爸", "靠杯", "靠盃", "靠邀", "靠腰", "靠么", "靠夭", "靠參",
-            "哭北", "哭爸", "哭杯",
-            "看三小", "看三洨", "殺三小", "殺三洨", "沙三小", "莎三小",
-            "你老子",
-
-            // 閩南話特有複合表達
-            "賽拎娘", "駛拎娘", "幹拎娘", "操拎娘", "肏拎娘",
-            "賽拎老母", "駛拎老母",
-            "賽你娘", "駛你娘",
-            "賽你媽", "駛你媽",
-            "拎北", "拎爸", "林北", "林爸",  // 閩南話「你爸」= 老子、我
-            "欠駛",
-            "賽三小", "駛三小",
-
-            // 射 的性相關固定詞組（「射在」不加，避免誤殺「射在靶上」）
-            "射精", "顏射", "內射", "外射", "體內射精", "體外射精",
-            "射了一臉", "射在臉上", "射在身上", "射在嘴裡",
-        };
-        foreach (var w in words)
-        {
-            trie.Add(w);
-        }
-        return trie;
-    }
-
-    internal override (int start, int length)? TryMatch(
-        List<ProfanityAnalyzer.AnalyzedToken> tokens, int startIndex,
-        ReadOnlySpan<char> originalText)
-    {
-        return null;
-    }
-
-    internal static int TryMatchCompound(ReadOnlySpan<char> text, int index)
-    {
-        return s_compounds.Value.LongestMatch(text, index);
     }
 }
 

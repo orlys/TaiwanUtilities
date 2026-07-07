@@ -28,49 +28,14 @@ internal static class ProfanityAnalyzer
     /// </summary>
     internal static List<(int index, int length)> Analyze(ReadOnlySpan<char> text)
     {
+        var normalized = ProfanityNormalizer.Normalize(text);
+        var normalizedText = normalized.AsSpan();
         var matches = new List<(int index, int length)>();
-
-        // Phase 0: compound expression matching (fixed phrases)
-        var compoundCovered = new HashSet<int>();
-        for (var i = 0; i < text.Length; i++)
-        {
-            if (compoundCovered.Contains(i))
-            {
-                continue;
-            }
-
-            // Try safe word first
-            var safeLen = SafeWordDictionary.TryMatchSafeWord(text, i);
-            if (safeLen > 0)
-            {
-                // Mark safe range — skip compound matching here
-                for (var s = i; s < i + safeLen; s++)
-                {
-                    compoundCovered.Add(s);
-                }
-
-                i += safeLen - 1;
-                continue;
-            }
-
-            var compLen = CompoundVerbPattern.TryMatchCompound(text, i);
-            if (compLen > 0)
-            {
-                matches.Add((i, compLen));
-                for (var c = i; c < i + compLen; c++)
-                {
-                    compoundCovered.Add(c);
-                }
-
-                i += compLen - 1;
-            }
-        }
-
-        // Phase 1-2: Tokenize (safe word filtering + lexicon classification)
-        var tokens = Tokenize(text, compoundCovered);
+        var covered = new bool[normalizedText.Length];
+        var tokens = Tokenize(normalizedText, covered, matches);
 
         // Phase 3: Apply construction patterns
-        var patternMatches = ApplyPatterns(tokens, text);
+        var patternMatches = ApplyPatterns(tokens, normalizedText);
 
         // Merge compound and pattern matches, avoiding overlaps
         foreach (var m in patternMatches)
@@ -87,21 +52,23 @@ internal static class ProfanityAnalyzer
         return matches;
     }
 
-    private static List<AnalyzedToken> Tokenize(ReadOnlySpan<char> text, HashSet<int> covered)
+    private static List<AnalyzedToken> Tokenize(
+        ReadOnlySpan<char> text,
+        bool[] covered,
+        List<(int index, int length)> matches)
     {
         var tokens = new List<AnalyzedToken>();
 
         for (var i = 0; i < text.Length; i++)
         {
             // Skip already covered positions (compound matches)
-            if (covered.Contains(i))
+            if (covered[i])
             {
                 continue;
             }
 
             // Skip whitespace and punctuation
-            var ch = text[i];
-            if (char.IsWhiteSpace(ch) || IsPunctuation(ch))
+            if (ConstructionPattern.IsBoundary(text, i))
             {
                 continue;
             }
@@ -121,7 +88,21 @@ internal static class ProfanityAnalyzer
                 continue;
             }
 
-            // Layer 2: Lexicon classification
+            // Layer 2: Fixed compound expression matching
+            var compLen = CompoundMatcher.TryMatchCompound(text, i);
+            if (compLen > 0)
+            {
+                matches.Add((i, compLen));
+                for (var c = i; c < i + compLen; c++)
+                {
+                    covered[c] = true;
+                }
+
+                i += compLen - 1;
+                continue;
+            }
+
+            // Layer 3: Lexicon classification
             var (category, length) = ProfanityLexicon.Classify(text, i);
             if (category != WordCategory.None && length > 0)
             {
@@ -202,21 +183,4 @@ internal static class ProfanityAnalyzer
         return false;
     }
 
-    private static bool IsPunctuation(char ch)
-    {
-        // CJK punctuation range + fullwidth forms + common ASCII punctuation
-        return (ch >= '\u3000' && ch <= '\u303F') ||
-               (ch >= '\uFF00' && ch <= '\uFF60') ||
-               (ch >= '!' && ch <= '/') ||
-               (ch >= ':' && ch <= '@') ||
-               (ch >= '[' && ch <= '`') ||
-               (ch >= '{' && ch <= '~');
-    }
-
-    private static bool IsAsciiAlphanumeric(char ch)
-    {
-        return (ch >= '0' && ch <= '9') ||
-               (ch >= 'a' && ch <= 'z') ||
-               (ch >= 'A' && ch <= 'Z');
-    }
 }

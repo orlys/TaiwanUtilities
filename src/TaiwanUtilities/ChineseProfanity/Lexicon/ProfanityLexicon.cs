@@ -42,7 +42,7 @@ internal static class ProfanityLexicon
             "婊子", "賤人", "賤貨", "蕩婦", "淫婦", "娼妓",
             "白痴", "白癡", "白目", "白爛", "智障", "智缺", "腦殘", "腦弱", "腦包",
             "低能兒", "低能", "弱智", "弱雞", "北七", "北柒", "北爛",
-            "笨蛋", "混蛋", "混帳", "王八蛋", "王八羔子", "王八犢子", "傻瓜", "傻子",
+            "笨蛋", "混蛋", "混帳", "王八", "王八蛋", "王八羔子", "王八犢子", "傻瓜", "傻子",
             "傻逼", "傻屄", "傻屌", "窩囊廢", "窩囊",
             "敗類", "低端", "孬種", "孬貨", "孬包", "孬孬", "慫包",
             "俗辣", "乞丐", "要飯", "狗崽子", "兔崽子",
@@ -88,7 +88,7 @@ internal static class ProfanityLexicon
     {
         foreach (var word in words)
         {
-            dict.TryAdd(word, category);
+            dict.TryAdd(ProfanityNormalizer.NormalizeToString(word), category);
         }
     }
 
@@ -98,22 +98,11 @@ internal static class ProfanityLexicon
     /// </summary>
     internal static (WordCategory category, int length) Classify(ReadOnlySpan<char> text, int index)
     {
-        var trie = s_lexicon.Value;
-
-        // 嘗試不同長度的子字串，取最長匹配
-        WordCategory bestCategory = WordCategory.None;
-        int bestLength = 0;
-
-        // 從當前位置開始，逐漸增加長度嘗試匹配（使用 Span 避免字串分配）
-        for (int len = 1; len <= Math.Min(text.Length - index, 6); len++)
+        if (s_lexicon.Value.LongestMatch(text, index, out var category, out var length))
         {
-            if (trie.TryGetValue(text.Slice(index, len), out var cat))
-            {
-                bestCategory = cat;
-                bestLength = len;
-            }
+            return (category, length);
         }
 
-        return (bestCategory, bestLength);
+        return (WordCategory.None, 0);
     }
 }

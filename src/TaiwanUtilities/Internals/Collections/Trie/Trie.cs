@@ -109,6 +109,8 @@ internal sealed class Trie : ICollection<string>, IReadOnlyCollection<string>
 
     bool ICollection<string>.IsReadOnly => false;
 
+    internal CharTrieNode Root => _root;
+
     public bool Add(string word)
     {
         Guard.ThrowIfNullOrEmpty(word);
@@ -498,7 +500,7 @@ internal sealed class Trie : ICollection<string>, IReadOnlyCollection<string>
         }
     }
 
-    private CharTrieNode? GetChildNode(CharTrieNode node, char key)
+    internal CharTrieNode? GetChildNode(CharTrieNode node, char key)
     {
         for (var i = 0; i < node.Children.Length; i++)
         {
@@ -722,6 +724,31 @@ internal sealed class TrieDictionary<TValue>(IEqualityComparer<char>? comparer =
         _trie.AddTerminalNode(parent, existingTerminalNode, newTerminalNode, key);
 
         return true;
+    }
+
+    internal bool LongestMatch(ReadOnlySpan<char> text, int startIndex, [MaybeNullWhen(false)] out TValue value, out int length)
+    {
+        var current = _trie.Root;
+        value = default;
+        length = 0;
+
+        for (var i = startIndex; i < text.Length; i++)
+        {
+            current = _trie.GetChildNode(current, text[i]);
+
+            if (current is null)
+            {
+                break;
+            }
+
+            if (current.IsTerminal)
+            {
+                value = ((TerminalValueCharTrieNode)current).Value;
+                length = i - startIndex + 1;
+            }
+        }
+
+        return length > 0;
     }
 
     private sealed class TerminalValueCharTrieNode(char key) : TerminalCharTrieNode(key)
