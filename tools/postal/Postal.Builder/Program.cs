@@ -735,8 +735,23 @@ class Program
         return score;
     }
 
-    static string EscapeString(string s) =>
-        s.Replace("\\", "\\\\").Replace("\"", "\\\"");
+    static string EscapeString(string s)
+    {
+        var sb = new StringBuilder(s.Length);
+        foreach (var ch in s)
+        {
+            if (ch == '\\') { sb.Append("\\\\"); continue; }
+            if (ch == '"') { sb.Append("\\\""); continue; }
+            // 控制字元（< 0x20）與 Unicode 行終止符（NEL 0x85、LS 0x2028、PS 0x2029）會讓
+            // 生成的字串字面值編譯失敗（CS1010），逸出為 \uXXXX。防的是損壞/惡意 DBF 讓季更
+            // codegen 產出無法編譯的檔案。
+            if (ch < 0x20 || ch == (char)0x85 || ch == (char)0x2028 || ch == (char)0x2029)
+                sb.Append("\\u").Append(((int)ch).ToString("x4"));
+            else
+                sb.Append(ch);
+        }
+        return sb.ToString();
+    }
 
     /// <summary>依最大值選擇最小可容納的元素型別（RVA blob 尺寸最佳化）。</summary>
     static string PickType(List<int> values)
