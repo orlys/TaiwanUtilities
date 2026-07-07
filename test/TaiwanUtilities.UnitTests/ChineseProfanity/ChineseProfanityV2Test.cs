@@ -19,9 +19,19 @@ public class ChineseProfanityV2Test
     [InlineData("幹.你.娘")]         // CompoundMatcher boundary-gap walk（. 為 boundary）
     [InlineData("幹 你 娘")]         // 空白也是 boundary
     [InlineData("靠~北")]            // ~ 是 boundary，CompoundMatcher 靠北 命中
+    [InlineData("這份報告不錯只是你他媽完全沒看懂")]  // 你他媽 副詞用法（無「的」），compound 命中
+    [InlineData("我他媽早就說過了")]                  // 我他媽 副詞用法
     public static void 簡繁變體規避應被偵測(string profaneText)
     {
         Assert.True(ChineseProfanity.Censor(profaneText));
+    }
+
+    [Theory]
+    [InlineData("靠杯子太近容易打翻水")]   // 靠+杯子（物品）≠ 靠杯（罵）：SafeWord 靠杯子 同位置優先
+    [InlineData("靠盃子放好")]
+    public static void 靠加杯子物品語境不應誤殺(string benignText)
+    {
+        Assert.False(ChineseProfanity.Censor(benignText));
     }
 
     // ================================================================
