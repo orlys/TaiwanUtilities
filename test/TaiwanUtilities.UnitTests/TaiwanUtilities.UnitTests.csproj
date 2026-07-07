@@ -29,4 +29,10 @@
     <ProjectReference Include="..\..\src\TaiwanUtilities\TaiwanUtilities.csproj" />
   </ItemGroup> 
 
+  <ItemGroup>
+    <None Update="ChineseProfanity\Fixtures\profanity_corpus_10k.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
