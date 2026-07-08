@@ -33,6 +33,13 @@ internal static class PostalLookup
         return PostalData.RoadBlob.Substring(start, PostalData.RoadOffsets[group + 1] - start);
     }
 
+    /// <summary>取得第 group 組的官方英文路名（配置字串；英文地址格式化用）。</summary>
+    internal static string GetEnglishRoad(int group)
+    {
+        int start = PostalData.EnglishRoadOffsets[group];
+        return PostalData.EnglishRoadBlob.Substring(start, PostalData.EnglishRoadOffsets[group + 1] - start);
+    }
+
     internal static bool TryFind(string? city, string? district, string? road, out PostalRuleSet ruleSet)
     {
         int g = FindGroup(city, district, road);
@@ -61,6 +68,35 @@ internal static class PostalLookup
         if (d < 0) return -1;
 
         return FindRoad(PostalData.DistrictGroupOffsets[d], PostalData.DistrictGroupOffsets[d + 1], road);
+    }
+
+    /// <summary>回傳縣市、行政區、群組索引；false = 找不到。</summary>
+    internal static bool TryFindIndexed(
+        string? city,
+        string? district,
+        string? road,
+        out int cityIdx,
+        out int districtIdx,
+        out int groupIdx)
+    {
+        cityIdx = -1;
+        districtIdx = -1;
+        groupIdx = -1;
+
+        if (string.IsNullOrEmpty(city) || string.IsNullOrEmpty(district) || road == null)
+        {
+            return false;
+        }
+
+        cityIdx = FindName(PostalData.CityNames, 0, PostalData.CityNames.Length, city!);
+        if (cityIdx < 0) return false;
+
+        districtIdx = FindName(PostalData.DistrictNames,
+            PostalData.CityDistrictOffsets[cityIdx], PostalData.CityDistrictOffsets[cityIdx + 1], district!);
+        if (districtIdx < 0) return false;
+
+        groupIdx = FindRoad(PostalData.DistrictGroupOffsets[districtIdx], PostalData.DistrictGroupOffsets[districtIdx + 1], road);
+        return groupIdx >= 0;
     }
 
     internal static bool CityExists(string city)

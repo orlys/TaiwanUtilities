@@ -3,6 +3,8 @@ namespace TaiwanUtilities;
 using System.Collections.Generic;
 using System.Text;
 
+using TaiwanUtilities.Internals;
+
 partial class PostalAddress
 {
     /// <summary>
@@ -174,5 +176,116 @@ partial class PostalAddress
         }
 
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// 轉換為官方格式英文地址；無法解析或查無官方英文路名時回傳 null。
+    /// </summary>
+    public string? ToEnglish()
+    {
+        if (string.IsNullOrEmpty(City) ||
+            string.IsNullOrEmpty(District) ||
+            string.IsNullOrEmpty(Road))
+        {
+            return null;
+        }
+
+        var road = Road!;
+        if (!string.IsNullOrEmpty(Section))
+        {
+            road += PostalRulesEngine.ToChineseSection(Section!);
+        }
+
+        if (!PostalLookup.TryFindIndexed(City, District, road, out int cityIdx, out int districtIdx, out int groupIdx))
+        {
+            var chineseRoad = PostalRulesEngine.ArabicToChineseInRoad(road);
+            if (ReferenceEquals(chineseRoad, road) ||
+                !PostalLookup.TryFindIndexed(City, District, chineseRoad, out cityIdx, out districtIdx, out groupIdx))
+            {
+                return null;
+            }
+        }
+
+        var englishCity = PostalData.EnglishCityNames[cityIdx];
+        var englishDistrict = PostalData.EnglishDistrictNames[districtIdx];
+        var englishRoad = PostalLookup.GetEnglishRoad(groupIdx);
+        if (string.IsNullOrEmpty(englishCity) ||
+            string.IsNullOrEmpty(englishDistrict) ||
+            string.IsNullOrEmpty(englishRoad))
+        {
+            return null;
+        }
+
+        var parts = new List<string>(7);
+        AddIfNotEmpty(parts, FormatFloor());
+        AddIfNotEmpty(parts, FormatNumber());
+        AddIfNotEmpty(parts, FormatNumericComponent("Aly.", Alley));
+        AddIfNotEmpty(parts, FormatNumericComponent("Ln.", Lane));
+        parts.Add(englishRoad);
+        parts.Add(englishDistrict);
+        parts.Add(englishCity);
+
+        return string.Join(", ", parts);
+    }
+
+    private string? FormatNumber()
+    {
+        if (!Number.HasValue)
+        {
+            return null;
+        }
+
+        var sb = new StringBuilder();
+        sb.Append("No. ");
+        sb.Append(Number.Value);
+        if (SubNumbers != null && SubNumbers.Count > 0)
+        {
+            for (int i = 0; i < SubNumbers.Count; i++)
+            {
+                sb.Append('-');
+                sb.Append(SubNumbers[i]);
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private string? FormatFloor()
+    {
+        var floorNumber = PostalRulesEngine.ParseNumericPrefix(Floor);
+        if (floorNumber <= 0)
+        {
+            return null;
+        }
+
+        var sb = new StringBuilder();
+        if (IsBasement)
+        {
+            sb.Append('B');
+        }
+
+        sb.Append(floorNumber);
+        sb.Append("F.");
+        if (SubFloor.HasValue)
+        {
+            sb.Append('-');
+            sb.Append(SubFloor.Value);
+        }
+
+        return sb.ToString();
+    }
+
+    private static string? FormatNumericComponent(string prefix, string? value)
+    {
+        var n = PostalRulesEngine.ParseNumericPrefix(value);
+        return n > 0 ? prefix + " " + n : null;
+    }
+
+    private static void AddIfNotEmpty(List<string> parts, string? value)
+    {
+        if (!string.IsNullOrEmpty(value))
+        {
+            parts.Add(value!);
+        }
     }
 }

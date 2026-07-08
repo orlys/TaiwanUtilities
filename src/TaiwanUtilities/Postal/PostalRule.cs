@@ -184,6 +184,9 @@ internal class PostalRuleData
     public string City { get; set; } = string.Empty;
     public string Area { get; set; } = string.Empty;
     public string Road { get; set; } = string.Empty;
+    public string? EnglishCity { get; set; }
+    public string? EnglishArea { get; set; }
+    public string? EnglishRoad { get; set; }
 
     public int? LaneStart { get; set; }
     public int? LaneEnd { get; set; }

@@ -547,11 +547,15 @@ class Program
                 .ToList();
 
             var cityNames            = new List<string>();
+            var englishCityNames     = new List<string>();
             var cityDistrictOffsets  = new List<int> { 0 };
             var districtNames        = new List<string>();
+            var englishDistrictNames = new List<string>();
             var districtGroupOffsets = new List<int> { 0 };
             var roadBlob             = new StringBuilder();
+            var englishRoadBlob      = new StringBuilder();
             var roadOffsets          = new List<int> { 0 };
+            var englishRoadOffsets   = new List<int> { 0 };
             var groupRuleOffsets     = new List<int> { 0 };
 
             int total = rules.Count;
@@ -566,13 +570,17 @@ class Program
             foreach (var cityGroup in flatGroups.GroupBy(e => e.city))
             {
                 cityNames.Add(cityGroup.Key);
+                englishCityNames.Add(FirstNonEmpty(cityGroup.SelectMany(e => e.rules).Select(r => r.EnglishCity)));
                 foreach (var distGroup in cityGroup.GroupBy(e => e.district))
                 {
                     districtNames.Add(distGroup.Key);
+                    englishDistrictNames.Add(FirstNonEmpty(distGroup.SelectMany(e => e.rules).Select(r => r.EnglishArea)));
                     foreach (var entry in distGroup)
                     {
                         roadBlob.Append(entry.road);
                         roadOffsets.Add(roadBlob.Length);
+                        englishRoadBlob.Append(FirstNonEmpty(entry.rules.Select(r => r.EnglishRoad)));
+                        englishRoadOffsets.Add(englishRoadBlob.Length);
 
                         foreach (var r in entry.rules)
                         {
@@ -681,11 +689,15 @@ class Program
 
             // ── 階層索引（ordinal 排序，供 PostalLookup 二分搜尋）──
             WriteStringArray(sw, "CityNames", cityNames);
+            WriteStringArray(sw, "EnglishCityNames", englishCityNames);
             WriteNumericArray(sw, "int", "CityDistrictOffsets", cityDistrictOffsets);
             WriteStringArray(sw, "DistrictNames", districtNames);
+            WriteStringArray(sw, "EnglishDistrictNames", englishDistrictNames);
             WriteNumericArray(sw, "int", "DistrictGroupOffsets", districtGroupOffsets);
-            WriteRoadBlob(sw, roadBlob.ToString());
+            WriteRoadBlob(sw, "RoadBlob", roadBlob.ToString());
             WriteNumericArray(sw, "int", "RoadOffsets", roadOffsets);
+            WriteRoadBlob(sw, "EnglishRoadBlob", englishRoadBlob.ToString());
+            WriteNumericArray(sw, "int", "EnglishRoadOffsets", englishRoadOffsets);
             WriteNumericArray(sw, "int", "GroupRuleOffsets", groupRuleOffsets);
 
             // ── 規則 SoA（全域陣列，PostalRuleSet 以 Offset/Count 切片檢視）──
@@ -753,6 +765,19 @@ class Program
         return sb.ToString();
     }
 
+    static string FirstNonEmpty(IEnumerable<string?> values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value!.Trim();
+            }
+        }
+
+        return string.Empty;
+    }
+
     /// <summary>依最大值選擇最小可容納的元素型別（RVA blob 尺寸最佳化）。</summary>
     static string PickType(List<int> values)
     {
@@ -798,11 +823,11 @@ class Program
         sw.WriteLine();
     }
 
-    static void WriteRoadBlob(StreamWriter sw, string blob)
+    static void WriteRoadBlob(StreamWriter sw, string name, string blob)
     {
         // 相鄰字面值以 + 串接，由編譯器常數折疊為單一 US-heap 條目
         const int CHUNK = 4000;
-        sw.WriteLine("    internal static readonly string RoadBlob =");
+        sw.WriteLine($"    internal static readonly string {name} =");
         int i = 0;
         while (true)
         {
@@ -907,6 +932,9 @@ class Program
                     City = city,
                     Area = area,
                     Road = reader.GetString(reader.GetOrdinal("ROAD"))?.Trim() ?? "",
+                    EnglishCity = reader.GetString(reader.GetOrdinal("ECITY"))?.Trim(),
+                    EnglishArea = reader.GetString(reader.GetOrdinal("EAREA"))?.Trim(),
+                    EnglishRoad = reader.GetString(reader.GetOrdinal("EROAD"))?.Trim(),
 
                     LaneStart = GetNullableInt(reader, "LANE"),
                     LaneEnd = GetNullableInt(reader, "LANE1"),

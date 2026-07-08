@@ -17,6 +17,26 @@ using TaiwanUtilities.Internals;
 public static class ZipCode
 {
     /// <summary>
+    /// 將中文地址轉換為官方格式英文地址；無法解析或查無官方英文路名時回傳 null。
+    /// </summary>
+    public static string? ToEnglishAddress(string address)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            return null;
+        }
+
+        try
+        {
+            return PostalAddress.Parse(address).ToEnglish();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
     /// 查詢地址的郵遞區號
     /// </summary>
     /// <param name="address">台灣地址字串</param>
