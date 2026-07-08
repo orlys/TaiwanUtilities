@@ -146,6 +146,30 @@ jobs:
     - name: Publish NuGet package
       run: dotnet nuget push ./nupkg/TaiwanUtilities.*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
+    # 同一天、同 major.minor 的舊版本 unlist，只保留剛發佈的最新版（保持 NuGet 頁面整潔）。
+    # 只比對 <major.minor>.<yyyyMMdd> 前綴：不同日期、不同 major.minor 的版本不動。
+    # unlist 為可逆（可重新 list），單筆失敗不讓整個 job 掛掉。
+    - name: Unlist older same-day versions
+      shell: bash
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        PREFIX="$(echo "$VERSION" | sed 's/..$//')"   # 去掉 NN 兩位 → <major.minor>.<yyyyMMdd>
+        echo "keep: $VERSION ; unlist prefix: ${PREFIX}NN"
+        VERSIONS=$(curl -s https://api.nuget.org/v3-flatcontainer/taiwanutilities/index.json | jq -r '.versions[]?' || true)
+        for v in $VERSIONS; do
+          case "$v" in
+            "$PREFIX"*)
+              if [ "$v" != "$VERSION" ]; then
+                echo "unlisting $v"
+                dotnet nuget delete TaiwanUtilities "$v" \
+                  --source https://api.nuget.org/v3/index.json \
+                  --api-key ${{ secrets.NUGET_API_KEY }} \
+                  --non-interactive || echo "  (unlist failed for $v, continuing)"
+              fi
+              ;;
+          esac
+        done
+
     - name: Update package-latest release
       shell: bash
       env:
