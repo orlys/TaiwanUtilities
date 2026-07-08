@@ -146,19 +146,27 @@ public static class PostalRulesEngine
     {
         // Convert single Arabic digits before 路/街/巷/弄 to Chinese ordinals
         // "四維3路" → "四維三路", "龍岡路3段" already handled by ToChineseSection
+        System.Text.StringBuilder? sb = null;
+        int copied = 0;
         for (int i = 1; i < road.Length; i++)
         {
             char unit = road[i];
             if ((unit == '路' || unit == '街' || unit == '巷' || unit == '弄') && char.IsDigit(road[i - 1]))
             {
-                var sb = new System.Text.StringBuilder(road.Length);
-                sb.Append(road, 0, i - 1);
+                sb ??= new System.Text.StringBuilder(road.Length);
+                sb.Append(road, copied, i - 1 - copied);
                 sb.Append("○一二三四五六七八九"[road[i - 1] - '0']);
-                sb.Append(road, i, road.Length - i);
-                return sb.ToString();
+                copied = i;
             }
         }
-        return road;
+
+        if (sb == null)
+        {
+            return road;
+        }
+
+        sb.Append(road, copied, road.Length - copied);
+        return sb.ToString();
     }
 
     internal static string ToChineseSection(string section)

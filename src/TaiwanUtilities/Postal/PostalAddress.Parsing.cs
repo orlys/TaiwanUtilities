@@ -197,7 +197,7 @@ partial class PostalAddress
             }
 
             // 解析路街
-            if (unit is "路" or "街")
+            if (unit is "路" or "街" or "道")
             {
                 components.Road = name + unit;
             }
@@ -232,22 +232,31 @@ partial class PostalAddress
                 }
                 else if (!string.IsNullOrEmpty(name))
                 {
-                    var match = System.Text.RegularExpressions.Regex.Match(name, @"^(.+?)(\d+)$");
-                    if (match.Success)
+                    // NAME 若為純數字（段號已與路名分離，如 tokenizer 剝離後的「10」），
+                    // 直接當段號用；不可套 ^(.+?)(\d+)$，否則「10」會被拆成路名「1」+段號「0」。
+                    if (IsAllAsciiDigits(name))
                     {
-                        var roadName = match.Groups[1].Value;
-                        var sectionNo = match.Groups[2].Value;
-
-                        if (string.IsNullOrEmpty(components.Road))
-                        {
-                            components.Road = roadName;
-                        }
-
-                        components.Section = sectionNo + "段";
+                        components.Section = name + "段";
                     }
                     else
                     {
-                        components.Section = name + "段";
+                        var match = System.Text.RegularExpressions.Regex.Match(name, @"^(.+?)(\d+)$");
+                        if (match.Success)
+                        {
+                            var roadName = match.Groups[1].Value;
+                            var sectionNo = match.Groups[2].Value;
+
+                            if (string.IsNullOrEmpty(components.Road))
+                            {
+                                components.Road = roadName;
+                            }
+
+                            components.Section = sectionNo + "段";
+                        }
+                        else
+                        {
+                            components.Section = name + "段";
+                        }
                     }
                 }
             }
@@ -352,5 +361,13 @@ partial class PostalAddress
             result = null;
             return false;
         }
+    }
+
+    private static bool IsAllAsciiDigits(string s)
+    {
+        if (s.Length == 0) return false;
+        foreach (var ch in s)
+            if (ch < '0' || ch > '9') return false;
+        return true;
     }
 }

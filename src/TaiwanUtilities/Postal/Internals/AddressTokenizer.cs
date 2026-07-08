@@ -253,11 +253,39 @@ internal class AddressTokenizer
             // 市/鎮/鄉 處誤切（如「前鎮區」被切成「前鎮」+「區復興…路」）。
             // 查無對應區時（未知/改制區名）回退到 regex，不影響原有行為。
             var districtLen = PostalLookup.MatchLongestDistrict(cityName, remainingAddress, 0);
+            string? district = null;
             if (districtLen > 0)
             {
-                var district = remainingAddress[..districtLen];
+                district = remainingAddress[..districtLen];
                 tokens.Add([string.Empty, string.Empty, district[..^1], district[^1..]]);
                 remainingAddress = remainingAddress[districtLen..];
+            }
+
+            if (district != null)
+            {
+                var roadLen = PostalLookup.MatchLongestRoad(cityName, district, remainingAddress, 0);
+                if (roadLen > 0 && roadLen < remainingAddress.Length && remainingAddress[roadLen] is '村' or '里')
+                {
+                    roadLen = 0;
+                }
+
+                if (roadLen == 0)
+                {
+                    var villageLen = MatchVillagePrefix(remainingAddress);
+                    if (villageLen > 0)
+                    {
+                        var village = remainingAddress[..villageLen];
+                        tokens.Add([string.Empty, string.Empty, village[..^1], village[^1..]]);
+                        remainingAddress = remainingAddress[villageLen..];
+                        roadLen = PostalLookup.MatchLongestRoad(cityName, district, remainingAddress, 0);
+                    }
+                }
+
+                if (roadLen > 0)
+                {
+                    AddKnownRoadToken(tokens, remainingAddress[..roadLen]);
+                    remainingAddress = remainingAddress[roadLen..];
+                }
             }
         }
 
@@ -274,6 +302,67 @@ internal class AddressTokenizer
         }
 
         return tokens;
+    }
+
+    private static int MatchVillagePrefix(string text)
+    {
+        for (int i = 0; i < text.Length - 1; i++)
+        {
+            if (text[i] is '村' or '里')
+            {
+                return i + 1;
+            }
+        }
+
+        return 0;
+    }
+
+    private static void AddKnownRoadToken(List<string[]> tokens, string road)
+    {
+        if (road.EndsWith('段'))
+        {
+            var sectionStart = LastRoadUnitIndex(road, road.Length - 2);
+            if (sectionStart >= 0 && sectionStart + 1 < road.Length - 1)
+            {
+                var roadName = road[..(sectionStart + 1)];
+                tokens.Add([string.Empty, string.Empty, roadName[..^1], roadName[^1..]]);
+                tokens.Add([string.Empty, string.Empty, road[(sectionStart + 1)..^1], road[^1..]]);
+                return;
+            }
+        }
+
+        if (road.Length > 0 && IsTokenUnit(road[road.Length - 1]))
+        {
+            tokens.Add([string.Empty, string.Empty, road[..^1], road[^1..]]);
+        }
+        else
+        {
+            tokens.Add([string.Empty, string.Empty, road, string.Empty]);
+        }
+    }
+
+    private static bool IsTokenUnit(char ch)
+        => ch is '縣' or '市' or '鄉' or '鎮' or '區' or '村' or '里' or '鄰' or '路' or '街' or '道' or '段' or '巷' or '弄' or '衖' or '號' or '樓' or '室' or '層' or '線';
+
+    private static bool IsAllAsciiDigits(string s)
+    {
+        if (s.Length == 0) return false;
+        foreach (var ch in s)
+            if (ch < '0' || ch > '9') return false;
+        return true;
+    }
+
+    private static int LastRoadUnitIndex(string text, int startIndex)
+    {
+        for (int i = startIndex; i >= 0; i--)
+        {
+            if (text[i] is '路' or '街' or '道')
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     internal AddressTokenizer(string addrStr)

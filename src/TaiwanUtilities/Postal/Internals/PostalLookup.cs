@@ -132,6 +132,42 @@ internal static class PostalLookup
         return best;
     }
 
+    /// <summary>
+    /// 在指定縣市行政區底下，找出從 text[index] 起與已知路名最長匹配的長度
+    /// （消耗的輸入字元數，0 = 無匹配）。路名以資料庫 RoadBlob 為準，
+    /// 避免 regex 在「鐵路街」「忠孝東路一段」這類內部含路/街/道/段
+    /// 的名稱中途切斷。比對時接受 Normalize 後的阿拉伯數字序號。
+    /// </summary>
+    internal static int MatchLongestRoad(string? city, string? district, string text, int index)
+    {
+        if (string.IsNullOrEmpty(city) || string.IsNullOrEmpty(district) ||
+            string.IsNullOrEmpty(text) || index >= text.Length)
+        {
+            return 0;
+        }
+
+        int c = FindName(PostalData.CityNames, 0, PostalData.CityNames.Length, city!);
+        if (c < 0) return 0;
+
+        int d = FindName(PostalData.DistrictNames,
+            PostalData.CityDistrictOffsets[c], PostalData.CityDistrictOffsets[c + 1], district!);
+        if (d < 0) return 0;
+
+        int lo = PostalData.DistrictGroupOffsets[d];
+        int hi = PostalData.DistrictGroupOffsets[d + 1];
+        int best = 0;
+
+        for (int g = lo; g < hi; g++)
+        {
+            if (TryMatchBlobRoadPrefix(text, index, g, out int consumed) && consumed > best)
+            {
+                best = consumed;
+            }
+        }
+
+        return best;
+    }
+
     internal static bool CityExists(string city)
         => FindName(PostalData.CityNames, 0, PostalData.CityNames.Length, city) >= 0;
 
@@ -242,5 +278,91 @@ internal static class PostalLookup
             if (diff != 0) return diff;
         }
         return road.Length - len;
+    }
+
+    /// <summary>比對 RoadBlob 中第 group 組是否為 text[index] 的前綴，零配置。</summary>
+    private static bool TryMatchBlobRoadPrefix(string text, int index, int group, out int consumed)
+    {
+        var blob = PostalData.RoadBlob;
+        int start = PostalData.RoadOffsets[group];
+        int end = PostalData.RoadOffsets[group + 1];
+        int textIndex = index;
+
+        for (int blobIndex = start; blobIndex < end; blobIndex++)
+        {
+            if (textIndex >= text.Length)
+            {
+                consumed = 0;
+                return false;
+            }
+
+            char expected = blob[blobIndex];
+            char actual = text[textIndex];
+            if (expected == actual)
+            {
+                textIndex++;
+                continue;
+            }
+
+            char nextBlob = blobIndex + 1 < end ? blob[blobIndex + 1] : '\0';
+            if (IsRoadOrdinalUnit(nextBlob) &&
+                TryMatchArabicOrdinal(text, textIndex, expected, out int digitLength))
+            {
+                textIndex += digitLength;
+                continue;
+            }
+
+            consumed = 0;
+            return false;
+        }
+
+        consumed = textIndex - index;
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsRoadOrdinalUnit(char ch)
+        => ch is '段' or '路' or '街' or '巷' or '弄';
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool TryMatchArabicOrdinal(string text, int index, char chinese, out int length)
+    {
+        length = 1;
+        int digit = ChineseOrdinalToDigit(chinese);
+        if (digit >= 0 && text[index] == (char)('0' + digit))
+        {
+            return true;
+        }
+
+        if (chinese == '十' &&
+            index + 1 < text.Length &&
+            text[index] == '1' &&
+            text[index + 1] == '0')
+        {
+            length = 2;
+            return true;
+        }
+
+        length = 0;
+        return false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int ChineseOrdinalToDigit(char ch)
+    {
+        return ch switch
+        {
+            '○' => 0,
+            '一' => 1,
+            '二' => 2,
+            '三' => 3,
+            '四' => 4,
+            '五' => 5,
+            '六' => 6,
+            '七' => 7,
+            '八' => 8,
+            '九' => 9,
+            _ => -1
+        };
     }
 }
