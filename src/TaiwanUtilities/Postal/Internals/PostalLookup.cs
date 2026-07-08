@@ -99,6 +99,39 @@ internal static class PostalLookup
         return groupIdx >= 0;
     }
 
+    /// <summary>
+    /// 在指定縣市底下，找出從 text[index] 起與已知區名最長匹配的長度（字元數，0 = 無匹配）。
+    /// 斷詞時以資料庫的區清單為準切出行政區，避免「前鎮區」「新市區」這類內部含
+    /// 市/鎮/鄉 的區名被 regex 在內部單位字處誤切。零配置比對。
+    /// </summary>
+    internal static int MatchLongestDistrict(string? city, string text, int index)
+    {
+        if (string.IsNullOrEmpty(city) || string.IsNullOrEmpty(text) || index >= text.Length)
+        {
+            return 0;
+        }
+
+        int c = FindName(PostalData.CityNames, 0, PostalData.CityNames.Length, city!);
+        if (c < 0) return 0;
+
+        var names = PostalData.DistrictNames;
+        int lo = PostalData.CityDistrictOffsets[c];
+        int hi = PostalData.CityDistrictOffsets[c + 1];
+        int avail = text.Length - index;
+        int best = 0;
+
+        for (int d = lo; d < hi; d++)
+        {
+            int len = names[d].Length;
+            if (len > best && len <= avail &&
+                string.CompareOrdinal(text, index, names[d], 0, len) == 0)
+            {
+                best = len;
+            }
+        }
+        return best;
+    }
+
     internal static bool CityExists(string city)
         => FindName(PostalData.CityNames, 0, PostalData.CityNames.Length, city) >= 0;
 

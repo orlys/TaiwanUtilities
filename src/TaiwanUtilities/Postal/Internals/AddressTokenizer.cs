@@ -248,6 +248,17 @@ internal class AddressTokenizer
                 var unit = cityName[^1..];
                 tokens.Add([string.Empty, string.Empty, cityNameWithoutUnit, unit]);
             }
+
+            // 以資料庫的區清單為準先切出行政區，避免 regex 在區名內部的
+            // 市/鎮/鄉 處誤切（如「前鎮區」被切成「前鎮」+「區復興…路」）。
+            // 查無對應區時（未知/改制區名）回退到 regex，不影響原有行為。
+            var districtLen = PostalLookup.MatchLongestDistrict(cityName, remainingAddress, 0);
+            if (districtLen > 0)
+            {
+                var district = remainingAddress[..districtLen];
+                tokens.Add([string.Empty, string.Empty, district[..^1], district[^1..]]);
+                remainingAddress = remainingAddress[districtLen..];
+            }
         }
 
         // 對剩餘地址進行正常 tokenization
