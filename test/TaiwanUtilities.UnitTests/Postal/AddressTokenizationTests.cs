@@ -80,7 +80,7 @@ public class AddressTokenizationTests
         var addr = new AddressTokenizer("臺北市中山區敬業1路10號");
 
         Assert.Equal(4, addr.Tokens.Count);
-        Assert.Equal(new[] { "", "", "敬業1", "路" }, addr.Tokens[2]);
+        Assert.Equal(new[] { "", "", "敬業一", "路" }, addr.Tokens[2]);
         Assert.Equal(new[] { "10", "", "", "號" }, addr.Tokens[3]);
     }
 

@@ -66,11 +66,11 @@ internal class AddressTokenizer
 
     /// <summary>
     /// 需要替換的字元正規表達式
-    /// 支援小寫中文數字（一二三...九十）和大寫中文數字（壹貳參...玖拾佰）
-    /// 必須以數字字元（非位數字元如十/拾/百/千）結尾，避免匹配路名中的「二十路」等
+    /// 支援全形數字、空白標點與門牌尾段數值正規化。
+    /// 地理 key（縣市/行政區/路街段）不可在前置階段改寫成資料庫不存在的形式。
     /// </summary>
     private static readonly Regex s_toReplaceRegex = new Regex(
-        @"[ 　,，台鄕~-]|[０-９]|[一二三四五六七八九十壹貳參叁肆伍陸柒捌玖拾佰仟百千]*[一二三四五六七八九壹貳參叁肆伍陸柒捌玖](?=[段路街巷弄號樓層室])",
+        @"[ 　,，鄕~-]|[０-９]|[一二三四五六七八九十壹貳參叁肆伍陸柒捌玖拾佰仟百千]*[一二三四五六七八九壹貳參叁肆伍陸柒捌玖](?=[巷弄號樓層室])",
         RegexOptions.Compiled,
         TimeSpan.FromSeconds(1));
 
@@ -81,7 +81,6 @@ internal class AddressTokenizer
     {
         ["-"] = "之",
         ["~"] = "之",
-        ["台"] = "臺",
         ["鄕"] = "鄉",
         ["１"] = "1",
         ["２"] = "2",
@@ -184,9 +183,6 @@ internal class AddressTokenizer
             s = s[..MAX_ADDRESS_LENGTH];
         }
 
-        // 正則表達式已經限制了只在 [段路街巷弄號樓層] 之前才轉換中文數字
-        // 所以"一村巷"中的"一"不會被轉換（因為後面是"村"）
-        // 但"一段"中的"一"會被轉換（因為後面是"段"）
         return s_toReplaceRegex.Replace(s, m =>
         {
             var found = m.Value;
@@ -224,7 +220,7 @@ internal class AddressTokenizer
 
         foreach (var city in s_allCities)
         {
-            if (normalized.StartsWith(city))
+            if (StartsWithTaiEquivalent(normalized, city))
             {
                 cityName = city;
                 remainingAddress = normalized[city.Length..];
@@ -264,9 +260,13 @@ internal class AddressTokenizer
             if (district != null)
             {
                 var roadLen = PostalLookup.MatchLongestRoad(cityName, district, remainingAddress, 0);
+                string? matchedRoad = roadLen > 0
+                    ? PostalLookup.GetLongestRoadName(cityName, district, remainingAddress, 0)
+                    : null;
                 if (roadLen > 0 && roadLen < remainingAddress.Length && remainingAddress[roadLen] is '村' or '里')
                 {
                     roadLen = 0;
+                    matchedRoad = null;
                 }
 
                 if (roadLen == 0)
@@ -278,12 +278,15 @@ internal class AddressTokenizer
                         tokens.Add([string.Empty, string.Empty, village[..^1], village[^1..]]);
                         remainingAddress = remainingAddress[villageLen..];
                         roadLen = PostalLookup.MatchLongestRoad(cityName, district, remainingAddress, 0);
+                        matchedRoad = roadLen > 0
+                            ? PostalLookup.GetLongestRoadName(cityName, district, remainingAddress, 0)
+                            : null;
                     }
                 }
 
-                if (roadLen > 0)
+                if (roadLen > 0 && matchedRoad != null)
                 {
-                    AddKnownRoadToken(tokens, remainingAddress[..roadLen]);
+                    AddKnownRoadToken(tokens, matchedRoad);
                     remainingAddress = remainingAddress[roadLen..];
                 }
             }
@@ -331,7 +334,7 @@ internal class AddressTokenizer
             }
         }
 
-        if (road.Length > 0 && IsTokenUnit(road[road.Length - 1]))
+        if (road.Length > 0 && IsTokenUnit(road[road.Length - 1]) && road[road.Length - 1] is not ('村' or '里'))
         {
             tokens.Add([string.Empty, string.Empty, road[..^1], road[^1..]]);
         }
@@ -364,6 +367,27 @@ internal class AddressTokenizer
 
         return -1;
     }
+
+    private static bool StartsWithTaiEquivalent(string text, string prefix)
+    {
+        if (text.Length < prefix.Length)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < prefix.Length; i++)
+        {
+            if (!CharsEqualTaiEquivalent(text[i], prefix[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool CharsEqualTaiEquivalent(char a, char b)
+        => a == b || (a is '台' or '臺' && b is '台' or '臺');
 
     internal AddressTokenizer(string addrStr)
     {

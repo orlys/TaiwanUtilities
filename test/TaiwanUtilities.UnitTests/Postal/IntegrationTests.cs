@@ -55,7 +55,7 @@ public class IntegrationTests
     {
         // 測試中文數字
         var normalized = AddressTokenizer.Normalize("信義路一段");
-        Assert.Equal("信義路1段", normalized);
+        Assert.Equal("信義路一段", normalized);
 
         // 測試查詢
         var zip1 = ZipCode.Find("臺北市中正區信義路一段").ZipCode;

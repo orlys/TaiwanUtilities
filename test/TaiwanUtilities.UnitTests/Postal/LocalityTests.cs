@@ -59,7 +59,7 @@ public class LocalityTests
         // Assert
         Assert.Equal("彰化縣", comp.City);
         Assert.Equal("彰化市", comp.District);
-        Assert.Equal("民族1街", comp.Road);
+        Assert.Equal("民族一街", comp.Road);
         Assert.Equal(11, comp.Number);
         Assert.True(comp.IsTemporary);                    // 應該設定臨時門牌標記
         Assert.Null(comp.Locality);          // 「臨」不應該在這裡！
@@ -74,9 +74,40 @@ public class LocalityTests
 
         // Assert
         Assert.Equal("臺灣大道", comp.Road);
-        Assert.Equal("1段", comp.Section);
+        Assert.Equal("一段", comp.Section);
         Assert.Equal(703, comp.Number);
         Assert.Equal("地下1層", comp.Floor);
         Assert.Null(comp.Locality);          // 「地下」不應該在這裡！
+    }
+
+    [Fact]
+    public void Parse_KnownRoadKeyEndingWithVillageUnit_TreatsAsLocality()
+    {
+        var comp = PostalAddress.Parse("南投縣中寮鄉永嘉新村1號");
+
+        Assert.Equal("南投縣", comp.City);
+        Assert.Equal("中寮鄉", comp.District);
+        Assert.Equal("永嘉新村", comp.Locality);
+        Assert.Null(comp.Village);
+        Assert.Null(comp.Road);
+        Assert.Equal(1, comp.Number);
+    }
+
+    [Fact]
+    public void Parse_KnownRoadKeyWithoutTokenUnit_RemainsLocality()
+    {
+        var comp = PostalAddress.Parse("南投縣中寮鄉卜溪部落1號");
+
+        Assert.Equal("卜溪部落", comp.Locality);
+        Assert.Null(comp.Road);
+    }
+
+    [Fact]
+    public void Find_KnownRoadKeyEndingWithVillageUnit_ResolvesToExactMatch()
+    {
+        var result = ZipCode.Find("南投縣中寮鄉永嘉新村1號");
+
+        Assert.Equal(ZipCodeResultType.ExactMatch, result.ResultType);
+        Assert.NotEmpty(result.ZipCode);
     }
 }

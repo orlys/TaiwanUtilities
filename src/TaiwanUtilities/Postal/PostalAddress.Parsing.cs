@@ -238,6 +238,15 @@ partial class PostalAddress
                     {
                         components.Section = name + "段";
                     }
+                    else if (TrySplitTrailingChineseOrdinal(name, out var chineseRoadName, out var chineseSectionNo))
+                    {
+                        if (string.IsNullOrEmpty(components.Road))
+                        {
+                            components.Road = chineseRoadName;
+                        }
+
+                        components.Section = chineseSectionNo + "段";
+                    }
                     else
                     {
                         var match = System.Text.RegularExpressions.Regex.Match(name, @"^(.+?)(\d+)$");
@@ -370,4 +379,28 @@ partial class PostalAddress
             if (ch < '0' || ch > '9') return false;
         return true;
     }
+
+    private static bool TrySplitTrailingChineseOrdinal(string s, out string prefix, out string ordinal)
+    {
+        prefix = string.Empty;
+        ordinal = string.Empty;
+
+        var start = s.Length;
+        while (start > 0 && IsChineseOrdinalChar(s[start - 1]))
+        {
+            start--;
+        }
+
+        if (start == 0 || start == s.Length)
+        {
+            return false;
+        }
+
+        prefix = s[..start];
+        ordinal = s[start..];
+        return true;
+    }
+
+    private static bool IsChineseOrdinalChar(char ch)
+        => ch is '○' or '一' or '二' or '三' or '四' or '五' or '六' or '七' or '八' or '九' or '十';
 }

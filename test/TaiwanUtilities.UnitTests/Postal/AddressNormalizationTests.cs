@@ -10,10 +10,10 @@ using Xunit;
 public class AddressNormalizationTests
 {
     [Theory]
-    [InlineData("台北市", "臺北市")]
-    [InlineData("台灣", "臺灣")]
-    [InlineData("台中市", "臺中市")]
-    public void TestTaiwanCharacterNormalization(string input, string expected)
+    [InlineData("台北市", "台北市")]
+    [InlineData("台灣", "台灣")]
+    [InlineData("台中市", "台中市")]
+    public void TestNormalize_DoesNotGloballyRewriteTaiwanCharacter(string input, string expected)
     {
         Assert.Equal(expected, AddressTokenizer.Normalize(input));
     }
@@ -50,19 +50,19 @@ public class AddressNormalizationTests
     }
 
     [Theory]
-    [InlineData("信義路一段", "信義路1段")]
-    [InlineData("中山路二段", "中山路2段")]
-    [InlineData("敬業一路", "敬業1路")]
-    [InlineData("愛富三街", "愛富3街")]
-    public void TestRoadSectionNumberConversion(string input, string expected)
+    [InlineData("信義路一段", "信義路一段")]
+    [InlineData("中山路二段", "中山路二段")]
+    [InlineData("敬業一路", "敬業一路")]
+    [InlineData("愛富三街", "愛富三街")]
+    public void TestRoadSectionNumberPreservation(string input, string expected)
     {
         Assert.Equal(expected, AddressTokenizer.Normalize(input));
     }
 
     [Theory]
-    [InlineData("台北市，信義區，市府路1號", "臺北市信義區市府路1號")]
-    [InlineData("台北市　信義區　市府路 1 號", "臺北市信義區市府路1號")]
-    [InlineData("台北市, 信義區, 市府路 1 號", "臺北市信義區市府路1號")]
+    [InlineData("台北市，信義區，市府路1號", "台北市信義區市府路1號")]
+    [InlineData("台北市　信義區　市府路 1 號", "台北市信義區市府路1號")]
+    [InlineData("台北市, 信義區, 市府路 1 號", "台北市信義區市府路1號")]
     public void TestSeparatorRemoval(string input, string expected)
     {
         Assert.Equal(expected, AddressTokenizer.Normalize(input));

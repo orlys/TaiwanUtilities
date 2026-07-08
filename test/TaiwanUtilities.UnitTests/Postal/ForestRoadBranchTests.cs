@@ -49,8 +49,8 @@ public class ForestRoadBranchTests
 
     [Theory]
     [InlineData("宜蘭縣大同鄉太平村嘉專1-1線中間1號", "嘉專1-1線", "中間")]  // 林道支線 + 地區
-    [InlineData("花蓮縣秀林鄉富世村台8-1線291號", "臺8-1線", null)]        // 公路支線（台→臺）
-    [InlineData("南投縣信義鄉人和村台21-1線96號", "臺21-1線", null)]       // 公路支線
+    [InlineData("花蓮縣秀林鄉富世村台8-1線291號", "台8-1線", null)]        // 公路支線
+    [InlineData("南投縣信義鄉人和村台21-1線96號", "台21-1線", null)]       // 公路支線
     public void Parse_ForestRoadBranch_ExtractsAllComponents(
         string address, string expectedRoad, string? expectedLocation)
     {

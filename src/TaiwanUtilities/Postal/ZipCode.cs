@@ -84,6 +84,16 @@ public static class ZipCode
                 found = PostalLookup.TryFind(addr.City, addr.District, chineseRoad, out ruleSet);
         }
 
+        if (!found && string.IsNullOrEmpty(addr.Road))
+        {
+            if (!string.IsNullOrEmpty(addr.Locality))
+                found = PostalLookup.TryFind(addr.City, addr.District, addr.Locality, out ruleSet);
+            if (!found && !string.IsNullOrEmpty(addr.Village) && !string.IsNullOrEmpty(addr.Locality))
+                found = PostalLookup.TryFind(addr.City, addr.District, addr.Village + addr.Locality, out ruleSet);
+            if (!found && !string.IsNullOrEmpty(addr.Village))
+                found = PostalLookup.TryFind(addr.City, addr.District, addr.Village, out ruleSet);
+        }
+
         if (!found)
         {
             if (!PostalRulesEngine.CityExists(addr.City!))

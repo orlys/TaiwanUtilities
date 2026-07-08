@@ -160,14 +160,13 @@ public class StructuredValidationTests
     }
 
     [Fact]
-    public void TestAddressNormalization_NormalRoads_ConvertChineseNumbers()
+    public void TestAddressNormalization_NormalRoads_PreserveChineseNumbers()
     {
-        // 測試一般路名的正規化應該轉換中文數字
+        // 地理 key 在前置正規化保留原生形式，靠資料庫最長匹配解析。
         var normalizedAddress = AddressTokenizer.Normalize("臺北市信義區二十一路1號");
 
-        // 一般路名應該轉換中文數字為阿拉伯數字
-        Assert.Contains("21路", normalizedAddress);
-        Assert.DoesNotContain("二十一路", normalizedAddress);
+        Assert.Contains("二十一路", normalizedAddress);
+        Assert.DoesNotContain("21路", normalizedAddress);
     }
 
     [Theory]

@@ -13,8 +13,8 @@ public class RoadSegmentationTests
     [Theory]
     [InlineData("高雄市鼓山區樹德里鐵路街3號", "高雄市", "鼓山區", "樹德里", "鐵路街", null)]
     [InlineData("臺中市東區鐵路街550號", "臺中市", "東區", null, "鐵路街", null)]
-    [InlineData("南投縣南投市三和二路一街1號", "南投縣", "南投市", null, "三和2路1街", null)]
-    [InlineData("臺北市中正區忠孝東路一段1號", "臺北市", "中正區", null, "忠孝東路", "1段")]
+    [InlineData("南投縣南投市三和二路一街1號", "南投縣", "南投市", null, "三和二路一街", null)]
+    [InlineData("臺北市中正區忠孝東路一段1號", "臺北市", "中正區", null, "忠孝東路", "一段")]
     [InlineData("臺北市信義區市府路1號", "臺北市", "信義區", null, "市府路", null)]
     public void Parse_KnownRoadWithInnerUnitChar_SegmentsCorrectly(
         string address,
@@ -45,5 +45,28 @@ public class RoadSegmentationTests
 
         Assert.Equal(ZipCodeResultType.ExactMatch, result.ResultType);
         Assert.NotEmpty(result.ZipCode);
+    }
+
+    [Theory]
+    [InlineData("新竹縣竹北市光明十一路3號", "光明十一路")]
+    [InlineData("新竹縣竹北市光明11路3號", "光明十一路")]
+    [InlineData("高雄市苓雅區四維三路6號", "四維三路")]
+    [InlineData("高雄市苓雅區四維3路6號", "四維三路")]
+    public void Parse_ArabicOrdinalRoadInput_OutputsNativeRoadKey(string address, string expectedRoad)
+    {
+        var comp = PostalAddress.Parse(address);
+
+        Assert.Equal(expectedRoad, comp.Road);
+    }
+
+    [Fact]
+    public void Parse_RoadNameWithNativeTai_PreservesRoadTaiCharacter()
+    {
+        var comp = PostalAddress.Parse("桃園市復興區溪口台1號");
+
+        Assert.Equal("桃園市", comp.City);
+        Assert.Equal("復興區", comp.District);
+        Assert.Equal("溪口台", comp.Locality);
+        Assert.Null(comp.Road);
     }
 }

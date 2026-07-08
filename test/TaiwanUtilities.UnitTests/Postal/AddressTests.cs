@@ -36,8 +36,8 @@ public class AddressTests
     [Fact]
     public void TestNormalization()
     {
-        // 台 -> 臺
-        Assert.Equal("臺北市", AddressTokenizer.Normalize("台北市"));
+        // Normalize 不全域改寫台/臺；縣市等價處理在 city/district 匹配層
+        Assert.Equal("台北市", AddressTokenizer.Normalize("台北市"));
 
         // 全形數字 -> 半形數字
         Assert.Equal("1", AddressTokenizer.Normalize("１"));
@@ -52,9 +52,9 @@ public class AddressTests
         Assert.Equal("八德路", AddressTokenizer.Normalize("八德路"));
         Assert.Equal("三元街", AddressTokenizer.Normalize("三元街"));
 
-        // 段路街的數字要轉換
-        Assert.Equal("信義路1段", AddressTokenizer.Normalize("信義路一段"));
-        Assert.Equal("敬業1路", AddressTokenizer.Normalize("敬業一路"));
+        // 地理 key 的段路街序號保留資料原生形式
+        Assert.Equal("信義路一段", AddressTokenizer.Normalize("信義路一段"));
+        Assert.Equal("敬業一路", AddressTokenizer.Normalize("敬業一路"));
     }
 
     [Fact]
@@ -130,7 +130,7 @@ public class AddressTests
         Assert.Equal(new[] { "", "", "桃園", "市" }, addr.Tokens[0]);
         Assert.Equal(new[] { "", "", "中壢", "區" }, addr.Tokens[1]);
         Assert.Equal(new[] { "", "", "龍岡", "路" }, addr.Tokens[2]);
-        Assert.Equal(new[] { "", "", "3", "段" }, addr.Tokens[3]);      // 「三段」正規化為「3段」，解析為 NAME=3
+        Assert.Equal(new[] { "", "", "三", "段" }, addr.Tokens[3]);
         Assert.Equal(new[] { "243", "", "", "巷" }, addr.Tokens[4]);
         Assert.Equal(new[] { "53", "", "", "弄" }, addr.Tokens[5]);
         Assert.Equal(new[] { "48", "", "", "衖" }, addr.Tokens[6]);     // 衖（弄的下級）
@@ -145,19 +145,19 @@ public class AddressTests
         var addr2 = new AddressTokenizer("臺灣大道二段１８６號二十一樓之１");
 
         // 驗證地址 1: 台中港路一段１５２號二十一樓之１
-        // 正規化為: 臺中港路1段152號21樓之1
+        // 正規化為: 台中港路一段152號21樓之1
         Assert.Equal(5, addr1.Tokens.Count);
-        Assert.Equal(new[] { "", "", "臺中港", "路" }, addr1.Tokens[0]);
-        Assert.Equal(new[] { "", "", "1", "段" }, addr1.Tokens[1]);
+        Assert.Equal(new[] { "", "", "台中港", "路" }, addr1.Tokens[0]);
+        Assert.Equal(new[] { "", "", "一", "段" }, addr1.Tokens[1]);
         Assert.Equal(new[] { "152", "", "", "號" }, addr1.Tokens[2]);
         Assert.Equal(new[] { "21", "", "", "樓" }, addr1.Tokens[3]);
         Assert.Equal(new[] { "", "", "之1", "" }, addr1.Tokens[4]);
 
         // 驗證地址 2: 臺灣大道二段１８６號二十一樓之１
-        // 正規化為: 臺灣大道2段186號21樓之1
-        // 特殊情況：「臺灣大道2段」被解析為單一 token (NAME=臺灣大道2, UNIT=段)
+        // 正規化為: 臺灣大道二段186號21樓之1
+        // 特殊情況：「臺灣大道二段」被解析為單一 token (NAME=臺灣大道二, UNIT=段)
         Assert.Equal(4, addr2.Tokens.Count);
-        Assert.Equal(new[] { "", "", "臺灣大道2", "段" }, addr2.Tokens[0]);
+        Assert.Equal(new[] { "", "", "臺灣大道二", "段" }, addr2.Tokens[0]);
         Assert.Equal(new[] { "186", "", "", "號" }, addr2.Tokens[1]);
         Assert.Equal(new[] { "21", "", "", "樓" }, addr2.Tokens[2]);
         Assert.Equal(new[] { "", "", "之1", "" }, addr2.Tokens[3]);
@@ -170,9 +170,9 @@ public class AddressTests
         var addr = new AddressTokenizer("臺灣大道一段７０３號地下一層");
 
         // 驗證正規化和 tokenization
-        // 正規化: 臺灣大道1段703號地下1層
+        // 正規化: 臺灣大道一段703號地下1層
         Assert.Equal(4, addr.Tokens.Count);
-        Assert.Equal(new[] { "", "", "臺灣大道1", "段" }, addr.Tokens[0]);
+        Assert.Equal(new[] { "", "", "臺灣大道一", "段" }, addr.Tokens[0]);
         Assert.Equal(new[] { "703", "", "", "號" }, addr.Tokens[1]);
         Assert.Equal(new[] { "", "", "地下", "" }, addr.Tokens[2]);      // 「地下」前綴
         Assert.Equal(new[] { "1", "", "", "層" }, addr.Tokens[3]);       // 「1層」
@@ -185,11 +185,11 @@ public class AddressTests
         var addr = new AddressTokenizer("彰化縣彰化市民族一街臨11號");
 
         // 驗證正規化和 tokenization
-        // 正規化: 彰化縣彰化市民族1街臨11號
+        // 正規化: 彰化縣彰化市民族一街臨11號
         Assert.Equal(5, addr.Tokens.Count);
         Assert.Equal(new[] { "", "", "彰化", "縣" }, addr.Tokens[0]);
         Assert.Equal(new[] { "", "", "彰化", "市" }, addr.Tokens[1]);
-        Assert.Equal(new[] { "", "", "民族1", "街" }, addr.Tokens[2]);
+        Assert.Equal(new[] { "", "", "民族一", "街" }, addr.Tokens[2]);
         Assert.Equal(new[] { "", "", "臨", "" }, addr.Tokens[3]);      // 「臨」前綴（臨時門牌）
         Assert.Equal(new[] { "11", "", "", "號" }, addr.Tokens[4]);    // 門牌號碼
     }

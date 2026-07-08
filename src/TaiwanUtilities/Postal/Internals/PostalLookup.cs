@@ -124,7 +124,7 @@ internal static class PostalLookup
         {
             int len = names[d].Length;
             if (len > best && len <= avail &&
-                string.CompareOrdinal(text, index, names[d], 0, len) == 0)
+                RegionMatchesTaiEquivalent(text, index, names[d], len))
             {
                 best = len;
             }
@@ -139,7 +139,17 @@ internal static class PostalLookup
     /// 的名稱中途切斷。比對時接受 Normalize 後的阿拉伯數字序號。
     /// </summary>
     internal static int MatchLongestRoad(string? city, string? district, string text, int index)
+        => MatchLongestRoadCore(city, district, text, index, out _);
+
+    internal static string? GetLongestRoadName(string? city, string? district, string text, int index)
     {
+        var consumed = MatchLongestRoadCore(city, district, text, index, out var group);
+        return consumed > 0 && group >= 0 ? GetRoad(group) : null;
+    }
+
+    private static int MatchLongestRoadCore(string? city, string? district, string text, int index, out int bestGroup)
+    {
+        bestGroup = -1;
         if (string.IsNullOrEmpty(city) || string.IsNullOrEmpty(district) ||
             string.IsNullOrEmpty(text) || index >= text.Length)
         {
@@ -162,6 +172,7 @@ internal static class PostalLookup
             if (TryMatchBlobRoadPrefix(text, index, g, out int consumed) && consumed > best)
             {
                 best = consumed;
+                bestGroup = g;
             }
         }
 
@@ -288,7 +299,7 @@ internal static class PostalLookup
         int end = PostalData.RoadOffsets[group + 1];
         int textIndex = index;
 
-        for (int blobIndex = start; blobIndex < end; blobIndex++)
+        for (int blobIndex = start; blobIndex < end;)
         {
             if (textIndex >= text.Length)
             {
@@ -298,17 +309,17 @@ internal static class PostalLookup
 
             char expected = blob[blobIndex];
             char actual = text[textIndex];
-            if (expected == actual)
+            if (expected == actual || (expected == '臺' && actual == '台'))
             {
                 textIndex++;
+                blobIndex++;
                 continue;
             }
 
-            char nextBlob = blobIndex + 1 < end ? blob[blobIndex + 1] : '\0';
-            if (IsRoadOrdinalUnit(nextBlob) &&
-                TryMatchArabicOrdinal(text, textIndex, expected, out int digitLength))
+            if (TryMatchArabicOrdinal(text, textIndex, blob, blobIndex, end, out int digitLength, out int chineseLength))
             {
                 textIndex += digitLength;
+                blobIndex += chineseLength;
                 continue;
             }
 
@@ -324,28 +335,129 @@ internal static class PostalLookup
     private static bool IsRoadOrdinalUnit(char ch)
         => ch is '段' or '路' or '街' or '巷' or '弄';
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool TryMatchArabicOrdinal(string text, int index, char chinese, out int length)
+    private static bool TryMatchArabicOrdinal(
+        string text,
+        int index,
+        string blob,
+        int blobIndex,
+        int blobEnd,
+        out int length,
+        out int chineseLength)
     {
-        length = 1;
-        int digit = ChineseOrdinalToDigit(chinese);
-        if (digit >= 0 && text[index] == (char)('0' + digit))
-        {
-            return true;
-        }
-
-        if (chinese == '十' &&
-            index + 1 < text.Length &&
-            text[index] == '1' &&
-            text[index + 1] == '0')
-        {
-            length = 2;
-            return true;
-        }
-
         length = 0;
-        return false;
+        chineseLength = 0;
+
+        if (index >= text.Length || text[index] < '0' || text[index] > '9')
+        {
+            return false;
+        }
+
+        var ordinalEnd = blobIndex;
+        while (ordinalEnd < blobEnd && IsChineseOrdinalChar(blob[ordinalEnd]))
+        {
+            ordinalEnd++;
+        }
+
+        if (ordinalEnd == blobIndex || ordinalEnd >= blobEnd || !IsRoadOrdinalUnit(blob[ordinalEnd]))
+        {
+            return false;
+        }
+
+        if (!TryParseChineseOrdinal(blob, blobIndex, ordinalEnd - blobIndex, out var expected))
+        {
+            return false;
+        }
+
+        var digitEnd = index;
+        var actual = 0;
+        while (digitEnd < text.Length && text[digitEnd] >= '0' && text[digitEnd] <= '9')
+        {
+            actual = actual * 10 + (text[digitEnd] - '0');
+            digitEnd++;
+        }
+
+        if (actual != expected)
+        {
+            return false;
+        }
+
+        length = digitEnd - index;
+        chineseLength = ordinalEnd - blobIndex;
+        return true;
     }
+
+    private static bool TryParseChineseOrdinal(string text, int index, int length, out int value)
+    {
+        value = 0;
+        if (length <= 0)
+        {
+            return false;
+        }
+
+        if (length == 1)
+        {
+            value = ChineseOrdinalToDigit(text[index]);
+            return value >= 0;
+        }
+
+        var tenOffset = -1;
+        for (int i = 0; i < length; i++)
+        {
+            if (text[index + i] == '十')
+            {
+                tenOffset = i;
+                break;
+            }
+        }
+
+        if (tenOffset < 0)
+        {
+            return false;
+        }
+
+        var tens = tenOffset == 0 ? 1 : ChineseOrdinalToDigit(text[index]);
+        if (tens <= 0)
+        {
+            return false;
+        }
+
+        var ones = 0;
+        if (tenOffset + 1 < length)
+        {
+            if (tenOffset + 2 != length)
+            {
+                return false;
+            }
+
+            ones = ChineseOrdinalToDigit(text[index + tenOffset + 1]);
+            if (ones < 0)
+            {
+                return false;
+            }
+        }
+
+        value = tens * 10 + ones;
+        return true;
+    }
+
+    private static bool RegionMatchesTaiEquivalent(string text, int textIndex, string expected, int length)
+    {
+        for (int i = 0; i < length; i++)
+        {
+            var actual = text[textIndex + i];
+            var want = expected[i];
+            if (actual != want && !(actual is '台' or '臺' && want is '台' or '臺'))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsChineseOrdinalChar(char ch)
+        => ch is '○' or '一' or '二' or '三' or '四' or '五' or '六' or '七' or '八' or '九' or '十';
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int ChineseOrdinalToDigit(char ch)

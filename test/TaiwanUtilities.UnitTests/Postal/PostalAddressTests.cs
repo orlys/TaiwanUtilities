@@ -58,7 +58,7 @@ public class PostalAddressTests
     }
 
     [Theory]
-    [InlineData("台北市", "臺北市")]  // 台 -> 臺
+    [InlineData("台北市", "臺北市")]  // city 匹配層台臺等價，輸出資料 canonical 縣市
     [InlineData("臺北市信義區市府路１號", "臺北市信義區市府路1號")]  // 全形 -> 半形
     [InlineData("臺北市信義區市府路一號", "臺北市信義區市府路1號")]  // 中文數字 -> 阿拉伯數字
     public void Parse_NormalizesAddress(string input, string expectedNormalized)
@@ -200,8 +200,7 @@ public class PostalAddressTests
         // Assert
         Assert.Equal("新竹縣", comp.City);
         // Note: District extraction for county-level cities depends on tokenization
-        // "九" is normalized to "9"
-        Assert.Equal("縣政9路", comp.Road);
+        Assert.Equal("縣政九路", comp.Road);
         Assert.Equal(1, comp.Number);
     }
 
@@ -433,7 +432,7 @@ public class PostalAddressTests
         Assert.Equal("桃園市", comp.City);
         Assert.Equal("中壢區", comp.District);
         Assert.Equal("龍岡路", comp.Road);
-        Assert.Equal("3段", comp.Section);        // 「三段」正規化為「3段」
+        Assert.Equal("三段", comp.Section);
         Assert.Equal("243巷", comp.Lane);
         Assert.Equal("53弄", comp.Alley);
         Assert.Equal("48衖", comp.SubAlley);
@@ -464,8 +463,8 @@ public class PostalAddressTests
         var comp = PostalAddress.Parse("台中港路一段１５２號二十一樓之１");
 
         // Assert
-        Assert.Equal("臺中港路", comp.Road);        // 「台」正規化為「臺」
-        Assert.Equal("1段", comp.Section);          // 「一段」正規化為「1段」
+        Assert.Equal("台中港路", comp.Road);
+        Assert.Equal("一段", comp.Section);
         Assert.Equal(152, comp.Number);             // 「１５２」正規化為「152」
         Assert.Equal("21樓", comp.Floor);           // 「二十一樓」正規化為「21樓」
         Assert.Equal(1, comp.SubFloor);             // 「之１」正規化為「1」
@@ -480,7 +479,7 @@ public class PostalAddressTests
 
         // Assert
         Assert.Equal("臺灣大道", comp.Road);
-        Assert.Equal("2段", comp.Section);          // 「二段」正規化為「2段」
+        Assert.Equal("二段", comp.Section);
         Assert.Equal(186, comp.Number);             // 「１８６」正規化為「186」
         Assert.Equal("21樓", comp.Floor);           // 「二十一樓」正規化為「21樓」
         Assert.Equal(1, comp.SubFloor);             // 「之１」正規化為「1」
@@ -498,9 +497,9 @@ public class PostalAddressTests
         var normalized2 = addr2.NormalizedAddress;
 
         // Assert
-        // 驗證正規化結果：台→臺、全形→半形、中文數字→阿拉伯數字
-        Assert.Equal("臺中港路1段152號21樓之1", normalized1);
-        Assert.Equal("臺灣大道2段186號21樓之1", normalized2);
+        // 驗證正規化結果：地理 key 保留原生形式；門牌、樓層數值正規化
+        Assert.Equal("台中港路一段152號21樓之1", normalized1);
+        Assert.Equal("臺灣大道二段186號21樓之1", normalized2);
     }
 
     [Fact]
@@ -512,7 +511,7 @@ public class PostalAddressTests
 
         // Assert
         Assert.Equal("臺灣大道", comp.Road);        // 從「臺灣大道1段」提取
-        Assert.Equal("1段", comp.Section);          // 「一段」正規化為「1段」
+        Assert.Equal("一段", comp.Section);
         Assert.Equal(703, comp.Number);             // 「７０３」正規化為「703」
         Assert.Equal("地下1層", comp.Floor);        // 「地下一層」正規化為「地下1層」
     }
@@ -528,7 +527,7 @@ public class PostalAddressTests
 
         // Assert
         // 驗證正規化結果
-        Assert.Equal("臺灣大道1段703號地下1層", normalized);
+        Assert.Equal("臺灣大道一段703號地下1層", normalized);
     }
 
     [Fact]
@@ -541,7 +540,7 @@ public class PostalAddressTests
         // Assert
         Assert.Equal("彰化縣", comp.City);
         Assert.Equal("彰化市", comp.District);
-        Assert.Equal("民族1街", comp.Road);       // 「一街」正規化為「1街」
+        Assert.Equal("民族一街", comp.Road);
         Assert.Equal(11, comp.Number);
         Assert.True(comp.IsTemporary);            // 臨時門牌標記
     }
@@ -557,7 +556,7 @@ public class PostalAddressTests
 
         // Assert
         // 驗證正規化結果
-        Assert.Equal("彰化縣彰化市民族1街臨11號", normalized);
+        Assert.Equal("彰化縣彰化市民族一街臨11號", normalized);
     }
 
     [Fact]
