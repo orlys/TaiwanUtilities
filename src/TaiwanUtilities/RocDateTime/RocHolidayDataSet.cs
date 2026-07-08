@@ -26,34 +26,15 @@ public sealed partial class RocHolidayDataSet
 
     private static HttpClient HttpClient => Internals.SharedHttpClient.Instance;
 
-    private static readonly Lazy<(int Min, int Max)> s_embeddedYearRange = new(() =>
-    {
-        var min = int.MaxValue;
-        var max = int.MinValue;
-        foreach (var key in s_embedded.Keys)
-        {
-            if (key.Year < min)
-            {
-                min = key.Year;
-            }
-
-            if (key.Year > max)
-            {
-                max = key.Year;
-            }
-        }
-        return (min, max);
-    });
-
     /// <summary>
     /// 嵌入資料涵蓋的最早西元年份
     /// </summary>
-    public static int EmbeddedMinYear => s_embeddedYearRange.Value.Min;
+    public static int EmbeddedMinYear => s_embeddedMinYear;
 
     /// <summary>
     /// 嵌入資料涵蓋的最晚西元年份
     /// </summary>
-    public static int EmbeddedMaxYear => s_embeddedYearRange.Value.Max;
+    public static int EmbeddedMaxYear => s_embeddedMaxYear;
 
     /// <summary>
     /// 查詢指定日期的假日資訊
@@ -81,7 +62,22 @@ public sealed partial class RocHolidayDataSet
             return embeddedValue;
         }
 
+        if (dt.Year >= EmbeddedMinYear && dt.Year <= EmbeddedMaxYear)
+        {
+            return DeriveHoliday(dt);
+        }
+
         return RocHoliday.None;
+    }
+
+    private static RocHoliday DeriveHoliday(DateTime date)
+    {
+        return date.DayOfWeek switch
+        {
+            DayOfWeek.Saturday => new RocHoliday(true, HolidayRole.All, "週六"),
+            DayOfWeek.Sunday => new RocHoliday(true, HolidayRole.All, "週日"),
+            _ => new RocHoliday(false, HolidayRole.None, "工作日"),
+        };
     }
 
     /// <summary>
@@ -115,7 +111,8 @@ public sealed partial class RocHolidayDataSet
         var dt = date.ToDateTime().Date;
         var existed = s_overrides.ContainsKey(dt) ||
                       (s_cache.TryGetValue(dt.Year, out var yc) && yc.ContainsKey(dt)) ||
-                      s_embedded.ContainsKey(dt);
+                      s_embedded.ContainsKey(dt) ||
+                      (dt.Year >= EmbeddedMinYear && dt.Year <= EmbeddedMaxYear);
 
         s_overrides[dt] = null; // null = 標記刪除
         return existed;
@@ -306,6 +303,40 @@ public sealed partial class RocHolidayDataSet
         [6] = "週六",
     };
 
+    private readonly struct RoleHolidayRule
+    {
+        public RoleHolidayRule(int month, int day, HolidayRole role, int startYear, string defaultDescription)
+        {
+            Month = month;
+            Day = day;
+            Role = role;
+            StartYear = startYear;
+            DefaultDescription = defaultDescription;
+        }
+
+        public int Month { get; }
+
+        public int Day { get; }
+
+        public HolidayRole Role { get; }
+
+        public int StartYear { get; }
+
+        public string DefaultDescription { get; }
+
+        public bool AppliesTo(DateTime date) =>
+            date.Month == Month && date.Day == Day && date.Year >= StartYear;
+    }
+
+    // data.gov.tw 的行事曆由人事行政總處發布，以公務員行事曆為本位；
+    // 勞工、軍人、教師等角色專屬假日可能被來源標為非假日，需在解析時補上角色語意。
+    private static readonly RoleHolidayRule[] s_roleHolidayRules =
+    [
+        new RoleHolidayRule(5, 1, HolidayRole.Labor, 1, "勞動節"),
+        new RoleHolidayRule(9, 3, HolidayRole.Soldier, 1, "軍人節"),
+        new RoleHolidayRule(9, 28, HolidayRole.Teacher, 2025, "教師節"),
+    ];
+
     private static async Task<Dictionary<DateTime, RocHoliday>> TryDownloadFromGovAsync(int year, CancellationToken ct)
     {
         var result = new Dictionary<DateTime, RocHoliday>();
@@ -490,37 +521,26 @@ public sealed partial class RocHolidayDataSet
 
             var role = HolidayRole.None;
 
-            // 勞動節
-            if (dt.Month == 5 && dt.Day == 1)
+            var matchedRoleRule = false;
+            foreach (var rule in s_roleHolidayRules)
             {
-                role = HolidayRole.Labor;
-                isHoliday = true;
-                if (string.IsNullOrEmpty(description))
+                if (!rule.AppliesTo(dt))
                 {
-                    description = "勞動節";
+                    continue;
                 }
-            }
-            // 軍人節
-            else if (dt.Month == 9 && dt.Day == 3)
-            {
-                role = HolidayRole.Soldier;
+
+                role = rule.Role;
                 isHoliday = true;
                 if (string.IsNullOrEmpty(description) || description == "工作日")
                 {
-                    description = "軍人節";
+                    description = rule.DefaultDescription;
                 }
+
+                matchedRoleRule = true;
+                break;
             }
-            // 教師節（2025年起）
-            else if (dt.Month == 9 && dt.Day == 28 && dt.Year >= 2025)
-            {
-                role = HolidayRole.Teacher;
-                isHoliday = true;
-                if (string.IsNullOrEmpty(description) || description == "工作日")
-                {
-                    description = "教師節";
-                }
-            }
-            else if (isHoliday)
+
+            if (!matchedRoleRule && isHoliday)
             {
                 role = HolidayRole.All;
             }

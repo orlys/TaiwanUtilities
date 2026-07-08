@@ -276,6 +276,40 @@ public partial class RocDateTimeTest
     }
 
     [Fact]
+    public static void ParseGovCsv_角色專屬假日_由規則補上()
+    {
+        var target = new System.Collections.Generic.Dictionary<DateTime, RocHoliday>();
+        var csv = "date,week,is_holiday,description\n" +
+                  "20250501,4,0,工作日\n" +
+                  "20250903,3,0,工作日\n" +
+                  "20250928,0,0,工作日\n";
+
+        RocHolidayDataSet.ParseGovCsv(csv, target);
+
+        Assert.Equal(new RocHoliday(true, HolidayRole.Labor, "勞動節"), target[new DateTime(2025, 5, 1)]);
+        Assert.Equal(new RocHoliday(true, HolidayRole.Soldier, "軍人節"), target[new DateTime(2025, 9, 3)]);
+        Assert.Equal(new RocHoliday(true, HolidayRole.Teacher, "教師節"), target[new DateTime(2025, 9, 28)]);
+    }
+
+    [Fact]
+    public static void ParseGovCsv_2025新增全民假日_沿用來源旗標()
+    {
+        var target = new System.Collections.Generic.Dictionary<DateTime, RocHoliday>();
+        var csv = "date,week,is_holiday,description\n" +
+                  "20251025,6,2,臺灣光復暨金門古寧頭大捷紀念日\n" +
+                  "20251225,4,2,行憲紀念日\n";
+
+        RocHolidayDataSet.ParseGovCsv(csv, target);
+
+        Assert.Equal(
+            new RocHoliday(true, HolidayRole.All, "臺灣光復暨金門古寧頭大捷紀念日"),
+            target[new DateTime(2025, 10, 25)]);
+        Assert.Equal(
+            new RocHoliday(true, HolidayRole.All, "行憲紀念日"),
+            target[new DateTime(2025, 12, 25)]);
+    }
+
+    [Fact]
     public static void 年份轉換測試()
     {
         Assert.Equal(

@@ -7,10 +7,57 @@
 
 <#@ output extension=".g.cs" #>
 <#
-    // 讀取本地 data/holidays/<YEAR>.csv 產生所有假日 entry
+    // 讀取本地 data/holidays/<YEAR>.csv，僅產生無法由週末/工作日規則推導的例外 entry
     string dataDir = Path.GetFullPath(Path.Combine(Host.ResolvePath(""), "..", "..", "..", "data", "holidays"));
     List<(string date, string isHoliday, string role, string description)> entries =
         new List<(string date, string isHoliday, string role, string description)>();
+    int minYear = int.MaxValue;
+    int maxYear = int.MinValue;
+
+    Func<int, int, int, string, string, string, (string isHoliday, string role, string description)> normalize =
+        (y, m, d, isHoliday, role, description) =>
+        {
+            string isHol = isHoliday == "true" ? "true" : "false";
+            string roleEnum;
+
+            bool isLaborDay = m == 5 && d == 1;
+            bool isSoldierDay = m == 9 && d == 3;
+            bool isTeacherDay = m == 9 && d == 28 && y >= 2025;
+            if (isLaborDay || isSoldierDay || isTeacherDay)
+            {
+                isHol = "true";
+            }
+
+            if (isLaborDay)
+                roleEnum = "HolidayRole.Labor";
+            else if (isSoldierDay)
+                roleEnum = "HolidayRole.Soldier";
+            else if (isTeacherDay)
+                roleEnum = "HolidayRole.Teacher";
+            else if (isHol != "true")
+                roleEnum = "HolidayRole.None";
+            else if (role == "labor")
+                roleEnum = "HolidayRole.Labor";
+            else if (role == "soldier")
+                roleEnum = "HolidayRole.Soldier";
+            else if (role == "teacher")
+                roleEnum = "HolidayRole.Teacher";
+            else
+                roleEnum = "HolidayRole.All";
+
+            return (isHol, roleEnum, description);
+        };
+
+    Func<int, int, int, (string isHoliday, string role, string description)> derive =
+        (y, m, d) =>
+        {
+            DateTime date = new DateTime(y, m, d);
+            if (date.DayOfWeek == DayOfWeek.Saturday)
+                return ("true", "HolidayRole.All", "週六");
+            if (date.DayOfWeek == DayOfWeek.Sunday)
+                return ("true", "HolidayRole.All", "週日");
+            return ("false", "HolidayRole.None", "工作日");
+        };
 
     if (Directory.Exists(dataDir))
     {
@@ -32,7 +79,20 @@
                 string role = parts[2].Trim();
                 string description = parts[3].Trim();
 
-                entries.Add((dateStr, isHoliday, role, description));
+                int y = int.Parse(dateStr.Substring(0, 4));
+                int m = int.Parse(dateStr.Substring(4, 2));
+                int d = int.Parse(dateStr.Substring(6, 2));
+                if (y < minYear) minYear = y;
+                if (y > maxYear) maxYear = y;
+
+                var actual = normalize(y, m, d, isHoliday, role, description);
+                var inferred = derive(y, m, d);
+                if (actual.isHoliday != inferred.isHoliday ||
+                    actual.role != inferred.role ||
+                    actual.description != inferred.description)
+                {
+                    entries.Add((dateStr, actual.isHoliday, actual.role, actual.description));
+                }
             }
         }
     }
@@ -55,40 +115,18 @@ using System.Collections.Generic;
 
 partial class RocHolidayDataSet
 {
+    private const int s_embeddedMinYear = <#= minYear #>;
+    private const int s_embeddedMaxYear = <#= maxYear #>;
+
     private static readonly FrozenDictionary<DateTime, RocHoliday> s_embedded = new Dictionary<DateTime, RocHoliday>
     {
 <# foreach ((string date, string isHoliday, string role, string description) e in entries) {
     int y = int.Parse(e.date.Substring(0, 4));
     int m = int.Parse(e.date.Substring(4, 2));
     int d = int.Parse(e.date.Substring(6, 2));
-    string isHol = e.isHoliday == "true" ? "true" : "false";
-    // 特殊職業假日：勞動節(5/1)、軍人節(9/3)、教師節(9/28, 2025年起) 無論 CSV 標記都強制為假日
-    bool isSpecialRole = (m == 5 && d == 1) || (m == 9 && d == 3) || (m == 9 && d == 28 && y >= 2025);
-    if (isSpecialRole)
-    {
-        isHol = "true";
-    }
-
-    string roleEnum;
-    if (m == 5 && d == 1)
-        roleEnum = "HolidayRole.Labor";
-    else if (m == 9 && d == 3)
-        roleEnum = "HolidayRole.Soldier";
-    else if (m == 9 && d == 28 && y >= 2025)
-        roleEnum = "HolidayRole.Teacher";
-    else if (isHol != "true")
-        roleEnum = "HolidayRole.None";
-    else if (e.role == "labor")
-        roleEnum = "HolidayRole.Labor";
-    else if (e.role == "soldier")
-        roleEnum = "HolidayRole.Soldier";
-    else if (e.role == "teacher")
-        roleEnum = "HolidayRole.Teacher";
-    else
-        roleEnum = "HolidayRole.All";
     string desc = e.description.Replace("\\", "\\\\").Replace("\"", "\\\"");
 #>
-        { new DateTime(<#= y #>, <#= m #>, <#= d #>), new RocHoliday(<#= isHol #>, <#= roleEnum #>, "<#= desc #>") },
+        { new DateTime(<#= y #>, <#= m #>, <#= d #>), new RocHoliday(<#= e.isHoliday #>, <#= e.role #>, "<#= desc #>") },
 <# } #>
     }.ToFrozenDictionary();
 }
