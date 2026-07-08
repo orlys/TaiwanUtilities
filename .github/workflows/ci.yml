@@ -58,8 +58,10 @@ jobs:
         name: test-results-${{ matrix.os }}
         path: '**/test-results.trx'
 
-  # 只有 src/（程式碼與 PostalData.g.cs）或 data/（假日 CSV，經 T4 嵌入套件）變動才發版；
-  # 純 docs/README/.github/tools/test 變更不觸發 NuGet 發佈。
+  # 只有「會改變已發佈 nupkg」的變動才發版。準則：進 nupkg 或直接定義套件內容/版號者觸發。
+  #   觸發：src/（程式碼 + PostalData.g.cs）、data/（假日 CSV 經 T4 嵌入）、
+  #         Directory.Build.props（版號/建置設定）、README.md 與 LICENSE（Pack=true，實體打入 nupkg）
+  #   不觸發：docs/、test/、tools/、.github/、global.json 等建置環境或未隨套件出貨的檔案
   changes:
     name: Detect shippable changes
     runs-on: ubuntu-latest
@@ -77,15 +79,16 @@ jobs:
         BEFORE="${{ github.event.before }}"
         AFTER="${{ github.sha }}"
         ZERO="0000000000000000000000000000000000000000"
+        PATTERN='^(src|data)/|^directory\.build\.props$|^readme\.md$|^license$'
         if [ -z "$BEFORE" ] || [ "$BEFORE" = "$ZERO" ] || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
           echo "publish=true" >> "$GITHUB_OUTPUT"
           echo "無法解析推送前 SHA（首推/強推），保守發佈"
-        elif git diff --name-only "$BEFORE" "$AFTER" | grep -qE '^(src|data)/'; then
+        elif git diff --name-only "$BEFORE" "$AFTER" | grep -qiE "$PATTERN"; then
           echo "publish=true" >> "$GITHUB_OUTPUT"
-          echo "src/ 或 data/ 有變動 → 發佈"
+          echo "有影響套件內容的變動 → 發佈"
         else
           echo "publish=false" >> "$GITHUB_OUTPUT"
-          echo "僅 docs/meta 變更 → 略過發佈"
+          echo "僅 docs/test/tools/meta 變更 → 略過發佈"
         fi
 
   pack-and-publish:
