@@ -31,12 +31,8 @@
     <PackageReadmeFile>readme.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>Taiwan,ROC,ChineseNumeric,ChineseProfanity,RocDateTime,PostalAddress,ZipCode,Validator</PackageTags>
-    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <!-- 版號：major.minor 來自根目錄 Directory.Build.props 的 VersionPrefix；patch 由 CI 於發佈時以 -p:Version 覆寫為 <yyyyMMdd><NN> -->
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="MinVer" Version="6.0.0" PrivateAssets="All" />
-  </ItemGroup>
 
   <ItemGroup>
     <None Include="..\..\readme.md" Link="readme.md" Pack="true" PackagePath="\" />

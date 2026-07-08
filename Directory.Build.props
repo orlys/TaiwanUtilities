@@ -1,0 +1,14 @@
+<Project>
+
+  <!--
+    版本策略（v2.0+）：
+      major.minor 由此檔案控管（人為決定，升 minor/major 時改這一行）。
+      patch 由 CI 於發佈時自動計算為 <yyyyMMdd><NN>（台北日期 + 當日第 NN 次，NN 為兩位 00-99），
+      整數運算 yyyyMMdd*100+NN，撐到 2148 年不溢位 Int32。
+    本地建置沿用 VersionPrefix（例：2.0.0），僅 CI 以 -p:Version 覆寫完整版號。
+  -->
+  <PropertyGroup>
+    <VersionPrefix>2.0</VersionPrefix>
+  </PropertyGroup>
+
+</Project>
