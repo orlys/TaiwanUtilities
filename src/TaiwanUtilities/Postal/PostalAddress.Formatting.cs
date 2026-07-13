@@ -185,18 +185,25 @@ partial class PostalAddress
     {
         if (string.IsNullOrEmpty(City) ||
             string.IsNullOrEmpty(District) ||
-            string.IsNullOrEmpty(Road))
+            (string.IsNullOrEmpty(Road) && string.IsNullOrEmpty(RoadKey)))
         {
             return null;
         }
 
-        var road = Road!;
+        var road = Road ?? string.Empty;
         if (!string.IsNullOrEmpty(Section))
         {
             road += PostalRulesEngine.ToChineseSection(Section!);
         }
 
-        if (!PostalLookup.TryFindIndexed(City, District, road, out int cityIdx, out int districtIdx, out int groupIdx))
+        // 複合路名鍵以完整原生鍵優先查群組（未拆解時 RoadKey == road）
+        int cityIdx = 0, districtIdx = 0, groupIdx = 0;
+        bool found = false;
+        if (!string.IsNullOrEmpty(RoadKey))
+            found = PostalLookup.TryFindIndexed(City, District, RoadKey, out cityIdx, out districtIdx, out groupIdx);
+        if (!found)
+            found = PostalLookup.TryFindIndexed(City, District, road, out cityIdx, out districtIdx, out groupIdx);
+        if (!found)
         {
             var chineseRoad = PostalRulesEngine.ArabicToChineseInRoad(road);
             if (ReferenceEquals(chineseRoad, road) ||

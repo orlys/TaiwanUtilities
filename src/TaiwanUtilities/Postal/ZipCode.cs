@@ -76,7 +76,13 @@ public static class ZipCode
         if (!string.IsNullOrEmpty(addr.Section))
             road = road + PostalRulesEngine.ToChineseSection(addr.Section);
 
-        bool found = PostalLookup.TryFind(addr.City, addr.District, road, out var ruleSet);
+        // 複合路名鍵以完整原生鍵優先查詢（未拆解時 RoadKey == road，行為不變）
+        PostalRuleSet ruleSet = default;
+        bool found = false;
+        if (!string.IsNullOrEmpty(addr.RoadKey))
+            found = PostalLookup.TryFind(addr.City, addr.District, addr.RoadKey, out ruleSet);
+        if (!found)
+            found = PostalLookup.TryFind(addr.City, addr.District, road, out ruleSet);
         if (!found && !string.IsNullOrEmpty(road))
         {
             var chineseRoad = PostalRulesEngine.ArabicToChineseInRoad(road);
@@ -136,18 +142,25 @@ public static class ZipCode
     public static List<ZipCodeDeliveryRule> GetDeliveryRules(string address)
     {
         var addr = PostalAddress.Parse(address);
-        if (addr == null || string.IsNullOrEmpty(addr.Road))
+        if (addr == null || (string.IsNullOrEmpty(addr.Road) && string.IsNullOrEmpty(addr.RoadKey)))
         {
             return new List<ZipCodeDeliveryRule>();
         }
 
         // Same road normalization as Find/ValidateAddress: append section,
         // fall back to Chinese ordinals (Parse normalizes "四維三路" → "四維3路" but DBF stores Chinese)
-        var road = addr.Road!;
+        var road = addr.Road ?? string.Empty;
         if (!string.IsNullOrEmpty(addr.Section))
             road += PostalRulesEngine.ToChineseSection(addr.Section!);
 
-        if (!PostalLookup.TryFind(addr.City, addr.District, road, out var ruleSet))
+        // 複合路名鍵以完整原生鍵優先查詢（未拆解時 RoadKey == road，行為不變）
+        PostalRuleSet ruleSet = default;
+        bool found = false;
+        if (!string.IsNullOrEmpty(addr.RoadKey))
+            found = PostalLookup.TryFind(addr.City, addr.District, addr.RoadKey, out ruleSet);
+        if (!found)
+            found = PostalLookup.TryFind(addr.City, addr.District, road, out ruleSet);
+        if (!found)
         {
             var chineseRoad = PostalRulesEngine.ArabicToChineseInRoad(road);
             if (ReferenceEquals(chineseRoad, road) ||

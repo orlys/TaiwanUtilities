@@ -209,8 +209,11 @@ internal class AddressTokenizer
     /// <summary>
     /// 將地址字串分詞成 token 陣列
     /// </summary>
-    internal static List<string[]> Tokenize(string addrStr)
+    internal static List<string[]> Tokenize(string addrStr) => Tokenize(addrStr, out _);
+
+    internal static List<string[]> Tokenize(string addrStr, out string? matchedRoadKey)
     {
+        matchedRoadKey = null;
         var normalized = Normalize(addrStr);
         var tokens = new List<string[]>();
 
@@ -286,7 +289,8 @@ internal class AddressTokenizer
 
                 if (roadLen > 0 && matchedRoad != null)
                 {
-                    AddKnownRoadToken(tokens, matchedRoad);
+                    matchedRoadKey = matchedRoad;
+                    AddRoadTokens(tokens, cityName, district, matchedRoad);
                     remainingAddress = remainingAddress[roadLen..];
                 }
             }
@@ -318,6 +322,75 @@ internal class AddressTokenizer
         }
 
         return 0;
+    }
+
+    /// <summary>
+    /// 依資料庫拆解命中的路名鍵。若該鍵有個「本身也是同區獨立規則」的路型前綴，
+    /// 且尾段不是純段號（一段/東段），就拆成「前綴路段 ＋ 尾段附加資訊」：
+    /// 尾段以巷/弄結尾歸 Lane/Alley，其餘歸 Locality（如 篤行三村、信和產業道）。
+    /// 否則整串交由 <see cref="AddKnownRoadToken"/> 處理（保留原本的路＋段拆法）。
+    /// </summary>
+    private static void AddRoadTokens(List<string[]> tokens, string city, string district, string road)
+    {
+        int prefixLen = PostalLookup.LongestNestedRoadPrefix(city, district, road);
+        if (prefixLen > 0)
+        {
+            var tail = road[prefixLen..];
+            if (tail.Length >= 2 && !IsPureSection(tail) && !IsNumberedRoadBranch(tail))
+            {
+                AddKnownRoadToken(tokens, road[..prefixLen]);
+                if (tail[^1] is '巷' or '弄')
+                {
+                    tokens.Add([string.Empty, string.Empty, tail[..^1], tail[^1..]]);
+                }
+                else
+                {
+                    tokens.Add([string.Empty, string.Empty, tail, string.Empty]);
+                }
+                return;
+            }
+        }
+
+        AddKnownRoadToken(tokens, road);
+    }
+
+    /// <summary>
+    /// 尾段是否為「編號分支路」（如 一街、二街、三號農路）：以序號起頭、以路/街/道結尾，
+    /// 屬緊附於母路的編號支路，應整串留作路名，不拆成附加資訊。
+    /// 相對地，非序號起頭的路型尾段（如 信和產業道）視為附加資訊拆出。
+    /// </summary>
+    private static bool IsNumberedRoadBranch(string tail)
+    {
+        if (tail[^1] is not ('路' or '街' or '道'))
+        {
+            return false;
+        }
+
+        var first = tail[0];
+        return first is '一' or '二' or '三' or '四' or '五' or '六' or '七' or '八' or '九' or '十' or '○'
+            || (first >= '0' && first <= '9');
+    }
+
+    /// <summary>尾段是否為純段號（如 一段、東段、中段），是則不應被當附加資訊拆走。</summary>
+    private static bool IsPureSection(string tail)
+    {
+        if (tail.Length < 2 || tail[^1] != '段')
+        {
+            return false;
+        }
+
+        for (int i = 0; i < tail.Length - 1; i++)
+        {
+            var ch = tail[i];
+            var ordinal = ch is '一' or '二' or '三' or '四' or '五' or '六' or '七' or '八' or '九' or '十' or '○';
+            var direction = ch is '東' or '西' or '南' or '北' or '中';
+            if (!ordinal && !direction)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static void AddKnownRoadToken(List<string[]> tokens, string road)
@@ -389,9 +462,13 @@ internal class AddressTokenizer
     private static bool CharsEqualTaiEquivalent(char a, char b)
         => a == b || (a is '台' or '臺' && b is '台' or '臺');
 
+    /// <summary>命中資料庫的完整原生路名鍵（未拆解），未匹配時為 null。</summary>
+    internal string? MatchedRoadKey { get; private set; }
+
     internal AddressTokenizer(string addrStr)
     {
-        Tokens = Tokenize(addrStr);
+        Tokens = Tokenize(addrStr, out var roadKey);
+        MatchedRoadKey = roadKey;
     }
 
     /// <summary>

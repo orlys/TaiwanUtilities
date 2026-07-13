@@ -43,6 +43,14 @@ public partial class PostalAddress
     public string? Road { get; set; }
 
     /// <summary>
+    /// 命中資料庫的完整原生路名鍵（未拆解前）。當路名為「規則裡包著別的規則」的
+    /// 複合鍵（如 中正路一段篤行三村）時，<see cref="Road"/>/<see cref="Section"/>/
+    /// <see cref="Locality"/> 為顯示用的拆解結果，而查詢仍以此完整鍵為準。
+    /// 未匹配到資料庫路名時為 null。
+    /// </summary>
+    internal string? RoadKey { get; set; }
+
+    /// <summary>
     /// 段
     /// </summary>
     public string? Section { get; set; }

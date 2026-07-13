@@ -45,7 +45,8 @@ partial class PostalAddress
         var components = new PostalAddress
         {
             RawAddress = address,
-            NormalizedAddress = addr.Flat()
+            NormalizedAddress = addr.Flat(),
+            RoadKey = addr.MatchedRoadKey
         };
 
         // 使用啟發式規則提取各組件
@@ -283,6 +284,11 @@ partial class PostalAddress
                     {
                         components.Road = name + unit;
                     }
+                    else if (string.IsNullOrEmpty(components.Lane))
+                    {
+                        // 具名巷（如 中興路「中一巷」）自複合路名鍵拆出，Road 已填則落 Lane
+                        components.Lane = name + unit;
+                    }
                 }
             }
 
@@ -298,6 +304,10 @@ partial class PostalAddress
                     if (string.IsNullOrEmpty(components.Road))
                     {
                         components.Road = name + unit;
+                    }
+                    else if (string.IsNullOrEmpty(components.Alley))
+                    {
+                        components.Alley = name + unit;
                     }
                 }
             }

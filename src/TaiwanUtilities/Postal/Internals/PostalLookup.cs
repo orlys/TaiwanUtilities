@@ -179,6 +179,56 @@ internal static class PostalLookup
         return best;
     }
 
+    /// <summary>
+    /// 在指定縣市行政區底下，找出 <paramref name="road"/>（已是資料庫原生路名鍵）
+    /// 最長的「真前綴」，條件是：該前綴本身也是同區的獨立 group，且以路型字
+    /// （路/街/道/段/巷/弄/衖/線）結尾。用於把「規則裡包著別的規則」的複合鍵
+    /// （如 中正路一段篤行三村＝中正路一段＋篤行三村）拆出前綴路段與尾段附加資訊。
+    /// 判準完全來自資料庫是否存在該前綴規則，非啟發式猜測。回傳前綴字元長度，0＝無。
+    /// </summary>
+    internal static int LongestNestedRoadPrefix(string? city, string? district, string road)
+    {
+        if (string.IsNullOrEmpty(city) || string.IsNullOrEmpty(district) || string.IsNullOrEmpty(road))
+        {
+            return 0;
+        }
+
+        int c = FindName(PostalData.CityNames, 0, PostalData.CityNames.Length, city!);
+        if (c < 0) return 0;
+
+        int d = FindName(PostalData.DistrictNames,
+            PostalData.CityDistrictOffsets[c], PostalData.CityDistrictOffsets[c + 1], district!);
+        if (d < 0) return 0;
+
+        int lo = PostalData.DistrictGroupOffsets[d];
+        int hi = PostalData.DistrictGroupOffsets[d + 1];
+        int best = 0;
+
+        for (int g = lo; g < hi; g++)
+        {
+            int glen = PostalData.RoadOffsets[g + 1] - PostalData.RoadOffsets[g];
+            if (glen < 2 || glen >= road.Length || glen <= best) continue;
+            if (!IsRoadMarker(road[glen - 1])) continue;
+            if (IsBlobRoadPrefixOf(road, glen, g)) best = glen;
+        }
+
+        return best;
+    }
+
+    private static bool IsRoadMarker(char ch)
+        => ch is '路' or '街' or '道' or '段' or '巷' or '弄' or '衖' or '線';
+
+    private static bool IsBlobRoadPrefixOf(string road, int len, int group)
+    {
+        var blob = PostalData.RoadBlob;
+        int start = PostalData.RoadOffsets[group];
+        for (int i = 0; i < len; i++)
+        {
+            if (road[i] != blob[start + i]) return false;
+        }
+        return true;
+    }
+
     internal static bool CityExists(string city)
         => FindName(PostalData.CityNames, 0, PostalData.CityNames.Length, city) >= 0;
 

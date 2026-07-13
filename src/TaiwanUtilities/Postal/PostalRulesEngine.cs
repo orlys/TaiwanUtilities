@@ -41,7 +41,14 @@ public static class PostalRulesEngine
             road = road + ToChineseSection(addr.Section);
 
         // 零配置查詢：三層二分搜尋（不串接鍵、不算 hash、不配置字串）
-        bool found = PostalLookup.TryFind(addr.City, addr.District, road, out var ruleSet);
+        // 複合路名鍵（如 中正路一段篤行三村）以完整原生鍵查詢，Road/Section/Locality
+        // 僅為拆解後的顯示欄位；未拆解時 RoadKey == road，行為不變。
+        PostalRuleSet ruleSet = default;
+        bool found = false;
+        if (!string.IsNullOrEmpty(addr.RoadKey))
+            found = PostalLookup.TryFind(addr.City, addr.District, addr.RoadKey, out ruleSet);
+        if (!found)
+            found = PostalLookup.TryFind(addr.City, addr.District, road, out ruleSet);
         if (!found && !string.IsNullOrEmpty(road))
         {
             // Road may contain Arabic digits where DBF stores Chinese ordinals (e.g., "四維3路" → "四維三路")
