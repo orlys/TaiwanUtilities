@@ -9,6 +9,7 @@ namespace TaiwanUtilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 
 using TaiwanUtilities.Internals;
@@ -71,6 +72,16 @@ internal class AddressTokenizer
     /// </summary>
     private static readonly Regex s_toReplaceRegex = new Regex(
         @"[ 　,，鄕~-]|[０-９]|[一二三四五六七八九十壹貳參叁肆伍陸柒捌玖拾佰仟百千]*[一二三四五六七八九壹貳參叁肆伍陸柒捌玖](?=[巷弄號樓層室])",
+        RegexOptions.Compiled,
+        TimeSpan.FromSeconds(1));
+
+    /// <summary>
+    /// 門牌附號慣寫重排：「2號之3」→ 官方形式「2之3號」。
+    /// 僅限地址結尾，避免誤動「5樓之3」與「2號之3樓」等歧義形；
+    /// 附號允許中文數字（如 2號之三），重排時一併轉為阿拉伯數字。
+    /// </summary>
+    private static readonly Regex s_trailingSubNoRegex = new Regex(
+        @"(\d+)號((?:之(?:\d+|[一二三四五六七八九十壹貳參叁肆伍陸柒捌玖拾佰仟百千]+))+)$",
         RegexOptions.Compiled,
         TimeSpan.FromSeconds(1));
 
@@ -183,7 +194,7 @@ internal class AddressTokenizer
             s = s[..MAX_ADDRESS_LENGTH];
         }
 
-        return s_toReplaceRegex.Replace(s, m =>
+        var replaced = s_toReplaceRegex.Replace(s, m =>
         {
             var found = m.Value;
 
@@ -203,6 +214,20 @@ internal class AddressTokenizer
             }
 
             return string.Empty;
+        });
+
+        return s_trailingSubNoRegex.Replace(replaced, static m =>
+        {
+            var sb = new StringBuilder(m.Groups[1].Value);
+            foreach (var part in m.Groups[2].Value.Split(['之'], StringSplitOptions.RemoveEmptyEntries))
+            {
+                sb.Append('之');
+                sb.Append(s_chineseNumeralsSet.Contains(part[0]) && ChineseNumeric.TryParse(part, out var parsed)
+                    ? ((int)(decimal)parsed).ToString()
+                    : part);
+            }
+
+            return sb.Append('號').ToString();
         });
     }
 
