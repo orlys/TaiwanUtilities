@@ -64,13 +64,17 @@ public partial class RocDateTimeTest
     [Fact]
     public static void Holiday屬性_勞動節()
     {
-        // 2025/5/1 勞動節
-        var date = new RocDateTime(114, 5, 1);
-        var holiday = date.Holiday;
+        // 2024/5/1 勞動節：僅勞工放假
+        var holiday2024 = new RocDateTime(113, 5, 1).Holiday;
+        Assert.True(holiday2024);
+        Assert.Equal(HolidayRole.Labor, holiday2024.Role);
+        Assert.Equal("勞動節", holiday2024.Description);
 
-        Assert.True(holiday);
-        Assert.Equal(HolidayRole.Labor, holiday.Role);
-        Assert.Equal("勞動節", holiday.Description);
+        // 2025/5/1 勞動節：修法後全國放假
+        var holiday2025 = new RocDateTime(114, 5, 1).Holiday;
+        Assert.True(holiday2025);
+        Assert.Equal(HolidayRole.All, holiday2025.Role);
+        Assert.Equal("勞動節", holiday2025.Description);
     }
 
     [Fact]
@@ -126,11 +130,25 @@ public partial class RocDateTimeTest
         Assert.True(newYear.Role.HasFlag(HolidayRole.Labor));
         Assert.True(newYear.Role.HasFlag(HolidayRole.Teacher));
 
-        // 勞動節只適用勞工
-        var laborDay = new RocDateTime(114, 5, 1).Holiday;
-        Assert.True(laborDay.Role.HasFlag(HolidayRole.Labor));
-        Assert.False(laborDay.Role.HasFlag(HolidayRole.Soldier));
-        Assert.False(laborDay.Role.HasFlag(HolidayRole.Teacher));
+        // 勞動節：2024 以前只適用勞工
+        var laborDay2024 = new RocDateTime(113, 5, 1).Holiday;
+        Assert.True(laborDay2024.Role.HasFlag(HolidayRole.Labor));
+        Assert.False(laborDay2024.Role.HasFlag(HolidayRole.Soldier));
+        Assert.False(laborDay2024.Role.HasFlag(HolidayRole.Teacher));
+
+        // 2025 年《紀念日及節日實施條例》修法後，勞動節與教師節改為全國放假
+        var laborDay2025 = new RocDateTime(114, 5, 1).Holiday;
+        Assert.True(laborDay2025.IsHoliday);
+        Assert.Equal(HolidayRole.All, laborDay2025.Role);
+
+        var teacherDay2026 = new RocDateTime(115, 9, 28).Holiday;
+        Assert.True(teacherDay2026.IsHoliday);
+        Assert.Equal(HolidayRole.All, teacherDay2026.Role);
+        Assert.True(teacherDay2026.Role.HasFlag(HolidayRole.Labor));
+
+        // 軍人節維持僅適用軍人
+        var soldierDay = new RocDateTime(115, 9, 3).Holiday;
+        Assert.Equal(HolidayRole.Soldier, soldierDay.Role);
     }
 
     [Fact]
@@ -256,12 +274,15 @@ public partial class RocDateTimeTest
     [Fact]
     public static void Holiday屬性_教師節()
     {
-        // 2025/9/28 教師節（孔子誕辰紀念日）
+        // 2025/9/28 教師節（孔子誕辰紀念日）：修法後全國放假
         var date = new RocDateTime(114, 9, 28);
         var holiday = date.Holiday;
 
         Assert.True(holiday);
-        Assert.Equal(HolidayRole.Teacher, holiday.Role);
+        Assert.Equal(HolidayRole.All, holiday.Role);
+
+        // 2024/9/28 修法前不是假日（當天為週六，Role 來自週末）
+        Assert.Equal("週六", new RocDateTime(113, 9, 28).Holiday.Description);
     }
 
     [Fact]
@@ -280,15 +301,18 @@ public partial class RocDateTimeTest
     {
         var target = new System.Collections.Generic.Dictionary<DateTime, RocHoliday>();
         var csv = "date,week,is_holiday,description\n" +
+                  "20240501,3,0,工作日\n" +
                   "20250501,4,0,工作日\n" +
                   "20250903,3,0,工作日\n" +
                   "20250928,0,0,工作日\n";
 
         RocHolidayDataSet.ParseGovCsv(csv, target);
 
-        Assert.Equal(new RocHoliday(true, HolidayRole.Labor, "勞動節"), target[new DateTime(2025, 5, 1)]);
+        // 2024 以前勞動節僅勞工；2025 修法後勞動節、教師節全國放假；軍人節不變
+        Assert.Equal(new RocHoliday(true, HolidayRole.Labor, "勞動節"), target[new DateTime(2024, 5, 1)]);
+        Assert.Equal(new RocHoliday(true, HolidayRole.All, "勞動節"), target[new DateTime(2025, 5, 1)]);
         Assert.Equal(new RocHoliday(true, HolidayRole.Soldier, "軍人節"), target[new DateTime(2025, 9, 3)]);
-        Assert.Equal(new RocHoliday(true, HolidayRole.Teacher, "教師節"), target[new DateTime(2025, 9, 28)]);
+        Assert.Equal(new RocHoliday(true, HolidayRole.All, "教師節"), target[new DateTime(2025, 9, 28)]);
     }
 
     [Fact]

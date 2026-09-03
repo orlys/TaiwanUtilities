@@ -92,14 +92,15 @@ jobs:
                   except ValueError:
                       continue
                   role = "none"
+                  # 2025 年《紀念日及節日實施條例》修法後，勞動節與教師節改為全國放假
                   if d.month == 5 and d.day == 1:
-                      role, is_holiday = "labor", True
-                      if not description: description = "勞動節"
+                      role, is_holiday = ("all" if d.year >= 2025 else "labor"), True
+                      if not description or description == "工作日": description = "勞動節"
                   elif d.month == 9 and d.day == 3:
                       role, is_holiday = "soldier", True
                       if not description or description == "工作日": description = "軍人節"
                   elif d.month == 9 and d.day == 28 and d.year >= 2025:
-                      role, is_holiday = "teacher", True
+                      role, is_holiday = "all", True
                       if not description or description == "工作日": description = "教師節"
                   elif is_holiday:
                       role = "all"

@@ -332,9 +332,12 @@ public sealed partial class RocHolidayDataSet
     // 勞工、軍人、教師等角色專屬假日可能被來源標為非假日，需在解析時補上角色語意。
     private static readonly RoleHolidayRule[] s_roleHolidayRules =
     [
+        // 2025 年《紀念日及節日實施條例》修法後，勞動節與教師節改為全國放假。
+        // 迴圈為 first-match，「2025 起 All」須排在「Labor, startYear=1」之前。
+        new RoleHolidayRule(5, 1, HolidayRole.All, 2025, "勞動節"),
         new RoleHolidayRule(5, 1, HolidayRole.Labor, 1, "勞動節"),
         new RoleHolidayRule(9, 3, HolidayRole.Soldier, 1, "軍人節"),
-        new RoleHolidayRule(9, 28, HolidayRole.Teacher, 2025, "教師節"),
+        new RoleHolidayRule(9, 28, HolidayRole.All, 2025, "教師節"),
     ];
 
     private static async Task<Dictionary<DateTime, RocHoliday>> TryDownloadFromGovAsync(int year, CancellationToken ct)

@@ -28,12 +28,13 @@
                 isHol = "true";
             }
 
+            // 2025 年《紀念日及節日實施條例》修法後，勞動節與教師節改為全國放假
             if (isLaborDay)
-                roleEnum = "HolidayRole.Labor";
+                roleEnum = y >= 2025 ? "HolidayRole.All" : "HolidayRole.Labor";
             else if (isSoldierDay)
                 roleEnum = "HolidayRole.Soldier";
             else if (isTeacherDay)
-                roleEnum = "HolidayRole.Teacher";
+                roleEnum = "HolidayRole.All";
             else if (isHol != "true")
                 roleEnum = "HolidayRole.None";
             else if (role == "labor")
