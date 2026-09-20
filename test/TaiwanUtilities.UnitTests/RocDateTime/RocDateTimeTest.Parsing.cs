@@ -23,6 +23,16 @@ partial class RocDateTimeTest
 			actual: RocDateTime.Parse(input));
 	}
 
+    [Theory]
+    [InlineData("民國88年2月29日")]  // 1999 非閏年
+    [InlineData("民國88年4月31日")]
+    public static void 不存在的日期_TryParse_回傳false不拋例外(string input)
+    {
+        Assert.False(RocDateTime.TryParse(input, out _));
+        Assert.False(RocDateTime.TryParse(input.AsSpan(), out _));
+        Assert.Throws<ArgumentOutOfRangeException>(() => RocDateTime.Parse(input));
+    }
+
 
 
 }

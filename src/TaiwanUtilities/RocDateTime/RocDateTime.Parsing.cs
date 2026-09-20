@@ -149,7 +149,19 @@ partial struct RocDateTime
 
         var isBeforeEra = CanParse(m, "BEFORE_ERA");
 
-        rocDateTime = new RocDateTime(isBeforeEra ? -year : year, month, day, hour, minute, second, 0);
+        try
+        {
+            rocDateTime = new RocDateTime(isBeforeEra ? -year : year, month, day, hour, minute, second, 0);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            // 格式合法但日期不存在（例：民國 88 年 2 月 29 日），TryParse 不該拋例外
+            if (throwError)
+            {
+                throw;
+            }
+            return false;
+        }
 
         return true;
 
