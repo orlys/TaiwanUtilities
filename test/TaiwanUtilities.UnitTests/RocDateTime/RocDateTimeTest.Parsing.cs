@@ -30,7 +30,7 @@ partial class RocDateTimeTest
     {
         Assert.False(RocDateTime.TryParse(input, out _));
         Assert.False(RocDateTime.TryParse(input.AsSpan(), out _));
-        Assert.Throws<ArgumentOutOfRangeException>(() => RocDateTime.Parse(input));
+        Assert.Throws<FormatException>(() => RocDateTime.Parse(input));
     }
 
 
