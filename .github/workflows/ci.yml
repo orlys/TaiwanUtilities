@@ -8,6 +8,7 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:   # 手動觸發 = 強制發佈（跳過路徑過濾）
 
 jobs:
   build-and-test:
@@ -65,7 +66,7 @@ jobs:
   changes:
     name: Detect shippable changes
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     outputs:
       publish: ${{ steps.filter.outputs.publish }}
     steps:
@@ -98,6 +99,7 @@ jobs:
     if: needs.changes.outputs.publish == 'true'
     permissions:
       contents: write
+      id-token: write   # Trusted Publishing：讓 GitHub 核發 OIDC token 給 NuGet/login
 
     steps:
     - uses: actions/checkout@v4
@@ -143,8 +145,16 @@ jobs:
     - name: Pack NuGet package
       run: dotnet pack src/TaiwanUtilities/TaiwanUtilities.csproj --configuration Release -p:PackageVersion=${{ steps.version.outputs.version }} --output ./nupkg
 
+    # Trusted Publishing（OIDC）：以 nuget.org 的信任政策換取 1 小時有效的臨時 API key，
+    # 不再保存長期 NUGET_API_KEY secret。政策設定於 nuget.org → 帳號 → Trusted Publishing。
+    - name: NuGet login (OIDC → temp API key)
+      uses: NuGet/login@v1
+      id: login
+      with:
+        user: ${{ vars.NUGET_USER }}
+
     - name: Publish NuGet package
-      run: dotnet nuget push ./nupkg/TaiwanUtilities.*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      run: dotnet nuget push ./nupkg/TaiwanUtilities.*.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
     # 同一天、同 major.minor 的舊版本 unlist，只保留剛發佈的最新版（保持 NuGet 頁面整潔）。
     # 只比對 <major.minor>.<yyyyMMdd> 前綴：不同日期、不同 major.minor 的版本不動。
@@ -163,7 +173,7 @@ jobs:
                 echo "unlisting $v"
                 dotnet nuget delete TaiwanUtilities "$v" \
                   --source https://api.nuget.org/v3/index.json \
-                  --api-key ${{ secrets.NUGET_API_KEY }} \
+                  --api-key ${{ steps.login.outputs.NUGET_API_KEY }} \
                   --non-interactive || echo "  (unlist failed for $v, continuing)"
               fi
               ;;
