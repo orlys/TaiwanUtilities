@@ -157,27 +157,23 @@ jobs:
       run: dotnet nuget push ./nupkg/TaiwanUtilities.*.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
     # 同一天、同 major.minor 的舊版本 unlist，只保留剛發佈的最新版（保持 NuGet 頁面整潔）。
-    # 只比對 <major.minor>.<yyyyMMdd> 前綴：不同日期、不同 major.minor 的版本不動。
+    # 直接列舉 NN 00..(本次-1)，不查 nuget.org 索引：索引在推送後有 10 分鐘以上延遲，
+    # 查索引會漏掉同日稍早的版本。不存在的版本 delete 會失敗，一律忽略。
     # unlist 為可逆（可重新 list），單筆失敗不讓整個 job 掛掉。
     - name: Unlist older same-day versions
       shell: bash
       run: |
         VERSION="${{ steps.version.outputs.version }}"
-        PREFIX="$(echo "$VERSION" | sed 's/..$//')"   # 去掉 NN 兩位 → <major.minor>.<yyyyMMdd>
-        echo "keep: $VERSION ; unlist prefix: ${PREFIX}NN"
-        VERSIONS=$(curl -s https://api.nuget.org/v3-flatcontainer/taiwanutilities/index.json | jq -r '.versions[]?' || true)
-        for v in $VERSIONS; do
-          case "$v" in
-            "$PREFIX"*)
-              if [ "$v" != "$VERSION" ]; then
-                echo "unlisting $v"
-                dotnet nuget delete TaiwanUtilities "$v" \
-                  --source https://api.nuget.org/v3/index.json \
-                  --api-key ${{ steps.login.outputs.NUGET_API_KEY }} \
-                  --non-interactive || echo "  (unlist failed for $v, continuing)"
-              fi
-              ;;
-          esac
+        PREFIX="${VERSION%??}"          # 去掉 NN 兩位 → <major.minor>.<yyyyMMdd>
+        NN=$((10#${VERSION: -2}))
+        echo "keep: $VERSION ; unlist ${PREFIX}00..$(printf %02d $((NN-1)))"
+        for i in $(seq 0 $((NN-1))); do
+          v="$(printf '%s%02d' "$PREFIX" "$i")"
+          echo "unlisting $v"
+          dotnet nuget delete TaiwanUtilities "$v" \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key ${{ steps.login.outputs.NUGET_API_KEY }} \
+            --non-interactive || echo "  (unlist failed for $v, continuing)"
         done
 
     - name: Update package-latest release
